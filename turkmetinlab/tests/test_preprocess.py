@@ -107,7 +107,8 @@ def test_url_eposta_doi():
     sonuc = kelimeler(metin)
     assert "https" not in sonuc and "www" not in sonuc and "edu" not in sonuc and "uni" not in sonuc
     assert "abc" not in sonuc
-    assert "bkz" in sonuc and "adresi" in sonuc and "iletişim" in sonuc
+    assert "adresi" in sonuc and "iletişim" in sonuc
+    assert "bkz" not in sonuc  # 1.1: kısaltma durak sözcük listesinde
 
 
 def test_url_kaldirma_kapali():

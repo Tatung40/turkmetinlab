@@ -1,7 +1,8 @@
 # 📚 TürkMetinLab
 
 **Türkçe akademik metinler için ücretsiz, kod bilgisi gerektirmeyen metin madenciliği uygulaması.**
-Sürüm 1.0.0 — Aşama 1
+Sürüm 1.1.0 · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
+[docs/bilimsel_degerlendirme_1.1.md](docs/bilimsel_degerlendirme_1.1.md)
 
 TürkMetinLab; makale özetleri, görüşme dökümleri, açık uçlu anket yanıtları gibi Türkçe metinlerde
 sözcük sıklığı, n-gram ve TF-IDF analizleri yapar. Sonuçları etkileşimli grafikler, kelime bulutu ve
@@ -16,8 +17,10 @@ indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kay
 |---|---|
 | Dosya yükleme | CSV, Excel (.xlsx) ve TXT. Türkçe karakter kodlaması (UTF-8, Windows-1254, ISO-8859-9) otomatik tanınır. |
 | Türkçe ön işleme | Türkçeye uygun küçük harf dönüşümü (I→ı, İ→i), kesme işareti, durak sözcükler, sayılar, web adresleri |
+| Lemmatizasyon (isteğe bağlı) | Sözlük tabanlı (simplemma); Türkçe altın standart verilerde ölçülen doğruluk %94,4–94,5; dönüşüm tablosu |
+| Veri denetimi | Boş/yer tutucu hücreler, yinelenen kimlik ve metinler, formüller, bozuk veya yanlış türde dosyalar bildirilir |
 | Sözcük sıklığı | Ham sıklık, göreli sıklık (%), bin sözcükteki sıklık, belge sıklığı |
-| N-gram | 2, 3 ve 4 sözcüklü öbekler; cümle sınırlarını aşmaz |
+| N-gram | 2, 3 ve 4 sözcüklü öbekler; seçilebilir bölütleme (varsayılan: cümle sonu, virgül, ; ve : aşılmaz) |
 | TF-IDF | Derlem geneli ve belge bazında en ayırt edici terimler, ısı haritası |
 | Görselleştirme | Etkileşimli Plotly grafikleri, Türkçe karakterli kelime bulutu |
 | Dışa aktarım | Tüm tablolar + kullanılan ayarlar tek Excel dosyasında; ayrı CSV dosyaları |
@@ -25,10 +28,27 @@ indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kay
 
 ## Gizlilik
 
-- Yüklediğiniz dosyalar **yalnızca bellekte** işlenir; diske, veritabanına ya da GitHub'a kaydedilmez.
-- Oturumu kapattığınızda veriler silinir.
+- Yüklenen dosyalar ve sonuçlar yalnızca **sizin oturumunuzun belleğinde** tutulur. Başka kullanıcılar
+  erişemez; uygulama hiçbir veriyi diske, veritabanına ya da GitHub'a yazmaz.
+- **🗑️ Verilerimi şimdi temizle** düğmesi her şeyi hemen siler. Sekmeyi kapatırsanız veriler yaklaşık
+  2 dakika sonra sunucu belleğinden silinir.
+- Hata durumunda sunucu günlüğüne metinleriniz yazılmaz.
+- Çevrimiçi sürüm Streamlit Community Cloud (Snowflake) sunucularında çalışır. **Kişisel veya gizli
+  veriler** (KVKK kapsamındaki bilgiler, görüşme dökümleri) için verileri anonimleştirin ya da
+  uygulamayı kendi bilgisayarınızda çalıştırın (aşağıda *Yerel çalıştırma*).
 - `.gitignore` dosyası, proje klasörüne yanlışlıkla kopyalanan veri dosyalarının GitHub'a
   gönderilmesini de engeller.
+
+## Veri boyutu sınırları
+
+| Veri boyutu | Ücretsiz bulut sürümünde ne olur? |
+|---|---|
+| 500 bin sözcüğe kadar | Normal çalışır (300 bin sözcük ~4 sn) |
+| 500 bin – 1,5 milyon sözcük | Uyarı verilir; analiz bir dakikayı bulabilir |
+| 1,5 milyon sözcük üzeri | Analiz yapılmaz (uygulamayı herkes için durdurabilir). Veriyi bölün ya da yerelde çalıştırın. |
+
+Arayüzdeki tablolar ilk 5.000 satırı gösterir; tamamı *İndir* sekmesinden alınır. Excel'de sayfa başına
+en çok 50.000 satır yazılır; daha uzun tabloların tamamı CSV ile indirilir. Yükleme sınırı 30 MB'tır.
 
 ---
 
@@ -94,7 +114,8 @@ saklar) ve **Streamlit Community Cloud** (uygulamayı çalıştırır).
 
 **N-gramlar yapay olarak oluşturulmaz.** Durak sözcük, sayı gibi çıkarılan sözcüklerin yeri boş
 bırakılır. Örneğin "eğitim **ve** öğretim" ifadesinden "eğitim öğretim" ikilisi üretilmez. N-gramlar
-nokta, virgül, noktalı virgül, parantez ve satır sonu gibi sınırları aşmaz.
+varsayılan olarak cümle sonu, virgül, noktalı virgül, iki nokta, parantez ve paragraf sınırlarını aşmaz
+(PDF'ten kopyalanmış metinler nedeniyle tek satır sonu varsayılan olarak sınır değildir; seçilebilir).
 
 **TF-IDF formülü** (scikit-learn `TfidfVectorizer`):
 
@@ -111,9 +132,15 @@ sonucu verir. Kelime bulutu yerleşimi de sabit tohum değeriyle üretilir.
 
 **Sıralama.** Eşit sıklıktaki sözcükler Türk alfabesine göre (a, b, c, ç, d, …, ı, i, …) sıralanır.
 
-### Sınırlılıklar (Aşama 1)
+**N-gram sınırları.** UD Türkçe ağaç bankalarında noktalamasız yan yana sözcüklerin %60,2'si aynı
+sözdizim öbeğindeyken bu oran virgülün iki yanında %3,4'tür. Bu nedenle varsayılan bölütleme virgülü
+de sınır sayar. Ayrıntı: `docs/bilimsel_degerlendirme_1.1.md`.
 
-- Sözcükler köklerine indirgenmez: "eğitim", "eğitimi" ve "eğitimde" ayrı sayılır.
+### Sınırlılıklar
+
+- Varsayılan olarak sözcükler köklerine indirgenmez: "eğitim", "eğitimi" ve "eğitimde" ayrı sayılır.
+  İsteğe bağlı lemmatizasyon bağlama bakmaz (~%94 doğruluk), eylem adlarını fiil köküne indirir
+  (*çalışma → çalış*) ve kalıp terimleri değiştirebilir (*uzaktan eğitim → uzak eğitim*).
 - Türkçe kurala göre "COVID" → "covıd" olur. Gerekirse *Büyük harfli kısaltmaları koru*
   seçeneğini kullanın (bu durumda büyük harfle yazılmış başlıklar da ayrı sayılır).
 - Durak sözcük listesi genel amaçlıdır; alanınıza özgü sözcükleri arayüzden ekleyebilirsiniz.
@@ -123,11 +150,19 @@ sonucu verir. Kelime bulutu yerleşimi de sabit tohum değeriyle üretilir.
 
 ## Geliştiriciler için
 
-### Yerel çalıştırma
+### Yerel çalıştırma (kendi bilgisayarınızda)
+
+Python 3.12 veya 3.13 kurulu olmalıdır.
 
 ```bash
 pip install -r requirements-dev.txt
 streamlit run app.py
+```
+
+Yerelde veri sınırını yükseltmek için (ör. 5 milyon sözcük):
+
+```bash
+TML_EN_FAZLA_SOZCUK=5000000 streamlit run app.py
 ```
 
 ### Testler
@@ -136,9 +171,18 @@ streamlit run app.py
 python -m pytest -q
 ```
 
-122 otomatik test; Türkçe harf dönüşümü, kodlama tanıma, CSV/Excel/TXT okuma, n-gram sınırları,
-TF-IDF formül doğrulaması, dışa aktarım ve uygulamanın uçtan uca çalışmasını kapsar. Testler
-GitHub'a her yüklemede **Actions** sekmesinde otomatik çalışır.
+231 otomatik test. Kapsadıkları konular:
+
+- Türkçe harf dönüşümü, kodlama tanıma, CSV/Excel/TXT okuma
+- Bölütleme ve lemmatizasyon (UD Turkish-BOUN altın standart verisiyle)
+- Gizlilik (paylaşılan önbellek, diske yazma, hata günlüğü)
+- Dosya güvenliği
+- TF-IDF'in bağımsız bir uygulama ve Türkçe referans veriyle karşılaştırılması
+- Performans ve bellek
+- Uygulamanın uçtan uca çalışması
+
+Testler GitHub'a her yüklemede **Actions** sekmesinde Python 3.12 ve 3.13 ile otomatik çalışır.
+Uzun süren büyük veri ölçümü için: `TML_BUYUK_TEST=1 python -m pytest tests/test_performans.py`.
 
 ### Proje yapısı
 
@@ -146,13 +190,20 @@ GitHub'a her yüklemede **Actions** sekmesinde otomatik çalışır.
 turkmetinlab/
 ├── app.py                    # Streamlit arayüzü
 ├── tmlab/
-│   ├── preprocess.py         # Türkçe ön işleme
+│   ├── preprocess.py         # Türkçe ön işleme ve bölütleme
+│   ├── lemma.py              # İsteğe bağlı lemmatizasyon
 │   ├── stopwords.py          # Durak sözcük listeleri
-│   ├── loader.py             # CSV / Excel / TXT okuma
+│   ├── loader.py             # CSV / Excel / TXT okuma ve dosya güvenliği
+│   ├── kalite.py             # Veri kalitesi denetimi
 │   ├── analysis.py           # Sıklık, n-gram, TF-IDF
 │   ├── visualize.py          # Grafikler ve kelime bulutu
-│   └── export.py             # CSV / Excel dışa aktarım
+│   ├── export.py             # CSV / Excel dışa aktarım (formül enjeksiyonu koruması)
+│   ├── oturum.py             # Oturuma özel bellek, veri temizliği, güvenli hata kaydı
+│   └── performans.py         # Veri boyutu sınırları
 ├── tests/                    # Otomatik testler (pytest)
+│   └── veri/                 # UD Turkish-BOUN örneği (CC BY-SA 4.0) ve beklenen sonuçlar
+├── degerlendirme/            # Lemmatizasyon, bölütleme ve performans ölçüm betikleri
+├── docs/                     # Bilimsel değerlendirme raporu
 ├── ornek_veri/               # Örnek veri seti
 ├── .streamlit/config.toml    # Uygulama ayarları
 ├── requirements.txt          # Uygulama bağımlılıkları (sürümleri sabit)
@@ -161,4 +212,5 @@ turkmetinlab/
 
 ### Kullanılan açık kaynak kütüphaneler
 
-Streamlit, pandas, NumPy, scikit-learn, Plotly, wordcloud, Matplotlib (DejaVu Sans fontu), openpyxl.
+Streamlit, pandas, NumPy, scikit-learn, Plotly, wordcloud, Matplotlib (DejaVu Sans fontu), openpyxl,
+XlsxWriter, simplemma. Test verisi: UD Turkish-BOUN (CC BY-SA 4.0; atıf bilgisi `tests/veri/README.md`).

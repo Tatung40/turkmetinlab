@@ -34,6 +34,7 @@ GENEL_DURAK_SOZCUKLER = frozenset(
     ayrıca böylelikle çoğu çok çünkü dair değin denli gerek gerekir gereken göre
     hâlâ hepimiz hiçbiri ile birlikte iken ilk ister kimisi madem mademki meğer nitekim
     oysa oysaki öte ötürü sırf şimdi tabii üzerine üzerinde veyahut ya da yahut
+    vb vs vd bkz bk örn krş
     """.split()
 )
 
