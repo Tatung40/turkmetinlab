@@ -8,6 +8,7 @@ from __future__ import annotations
 import csv
 import io
 import re
+import zipfile
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -29,6 +30,78 @@ TXT_MODLARI = {
 
 class VeriOkumaHatasi(Exception):
     """Kullanıcıya gösterilecek, anlaşılır Türkçe hata."""
+
+
+# --- İçerik türü denetimi ---------------------------------------------------
+
+# Dosya imzaları (ilk baytlar). Uzantı değiştirilmiş dosyaları yakalamak için.
+_IMZALAR = (
+    (b"%PDF", "PDF belgesi"),
+    (b"PK\x03\x04", "sıkıştırılmış dosya (ör. .xlsx, .docx, .zip)"),
+    (b"\xd0\xcf\x11\xe0", "eski Microsoft Office dosyası (.xls/.doc)"),
+    (b"\x89PNG", "PNG görseli"),
+    (b"\xff\xd8\xff", "JPEG görseli"),
+    (b"GIF8", "GIF görseli"),
+    (b"\x1f\x8b", "gzip arşivi"),
+    (b"Rar!", "RAR arşivi"),
+    (b"7z\xbc\xaf", "7z arşivi"),
+    (b"{\\rtf", "RTF belgesi"),
+)
+
+# Excel (.xlsx) açılmadan önce sıkıştırılmış içeriğin güvenli boyutta olduğu denetlenir
+EXCEL_EN_FAZLA_ACIK_BOYUT = 200 * 2**20  # 200 MB (açılmış hali); openpyxl bunun birkaç katı bellek kullanır
+EXCEL_EN_FAZLA_SIKISTIRMA_ORANI = 200
+
+
+def _imza_turu(veri: bytes) -> Optional[str]:
+    for imza, ad in _IMZALAR:
+        if veri.startswith(imza):
+            return ad
+    return None
+
+
+def metin_dosyasi_denetle(veri: bytes, ad: str = "Dosya") -> None:
+    """CSV/TXT olarak yüklenen dosyanın gerçekten düz metin olduğunu denetler."""
+    if not veri:
+        raise VeriOkumaHatasi(f"{ad} boş.")
+    tur = _imza_turu(veri)
+    if tur:
+        raise VeriOkumaHatasi(f"{ad} düz metin değil; bir {tur} gibi görünüyor. Dosya uzantısı yanlış olabilir. "
+                              "Excel dosyalarını .xlsx uzantısıyla yükleyin.")
+    if veri[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return  # UTF-16 metinde NUL baytlar olağandır
+    ornek = veri[:65536]
+    if b"\x00" in ornek:
+        raise VeriOkumaHatasi(f"{ad} düz metin değil (ikili veri içeriyor).")
+    kontrol = sum(1 for b in ornek if b < 32 and b not in (9, 10, 13, 12))
+    if kontrol > max(10, len(ornek) * 0.02):
+        raise VeriOkumaHatasi(f"{ad} düz metin değil gibi görünüyor (çok sayıda denetim karakteri).")
+
+
+def excel_dosyasi_denetle(veri: bytes) -> None:
+    """.xlsx dosyasının gerçek bir Excel çalışma kitabı ve güvenli boyutta olduğunu denetler."""
+    if not veri:
+        raise VeriOkumaHatasi("Dosya boş.")
+    if not veri.startswith(b"PK\x03\x04"):
+        tur = _imza_turu(veri)
+        if veri.startswith(b"\xd0\xcf\x11\xe0"):
+            raise VeriOkumaHatasi("Bu dosya eski .xls biçiminde. Excel'de 'Farklı Kaydet > Excel Çalışma Kitabı "
+                                  "(.xlsx)' ile dönüştürüp yeniden yükleyin.")
+        raise VeriOkumaHatasi("Bu dosya bir Excel çalışma kitabı değil" + (f"; bir {tur} gibi görünüyor." if tur else "."))
+    try:
+        with zipfile.ZipFile(io.BytesIO(veri)) as z:
+            bilgiler = z.infolist()
+            adlar = {b.filename for b in bilgiler}
+            acik = sum(b.file_size for b in bilgiler)
+            sikisik = sum(b.compress_size for b in bilgiler) or 1
+    except zipfile.BadZipFile as e:
+        raise VeriOkumaHatasi("Excel dosyası bozuk ya da eksik yüklenmiş.") from e
+    if "xl/workbook.xml" not in adlar:
+        tur = "Word belgesi" if "word/document.xml" in adlar else "sıkıştırılmış dosya"
+        raise VeriOkumaHatasi(f"Bu dosya bir Excel çalışma kitabı değil; bir {tur} gibi görünüyor.")
+    if acik > EXCEL_EN_FAZLA_ACIK_BOYUT or (acik > 50 * 2**20 and acik / sikisik > EXCEL_EN_FAZLA_SIKISTIRMA_ORANI):
+        raise VeriOkumaHatasi("Excel dosyasının açılmış boyutu çok büyük "
+                              f"({acik / 2**20:.0f} MB). Güvenlik ve bellek sınırları nedeniyle işlenmedi.")
 
 
 @dataclass
@@ -71,7 +144,8 @@ def _ayirici_bul(ornek: str) -> str:
         return en_iyi if adaylar[en_iyi] > 0 else ","
 
 
-def csv_oku(veri: bytes) -> OkumaSonucu:
+def csv_oku(veri: bytes, baslik_satiri: bool = True) -> OkumaSonucu:
+    metin_dosyasi_denetle(veri, "CSV dosyası")
     metin, kodlama = baytlari_coz(veri)
     ayirici = _ayirici_bul(metin[:20000])
     # Ayrıştırma csv modülüyle açıkça yapılır: pandas, başlıktan fazla alan
@@ -84,18 +158,30 @@ def csv_oku(veri: bytes) -> OkumaSonucu:
     satirlar = [s for s in satirlar if any(h.strip() for h in s)]
     if not satirlar:
         raise VeriOkumaHatasi("Dosyada veri bulunamadı.")
-    baslik, veri_satirlari = satirlar[0], satirlar[1:]
+    if baslik_satiri:
+        baslik, veri_satirlari, ilk_no = satirlar[0], satirlar[1:], 2
+    else:
+        genislik = max(len(s) for s in satirlar)
+        baslik, veri_satirlari, ilk_no = [f"Sütun {i + 1}" for i in range(genislik)], satirlar, 1
     genislik = len(baslik)
-    gecerli, hatali = [], []
-    for no, s in enumerate(veri_satirlari, start=2):
+    gecerli, hatali, eksik = [], [], 0
+    for no, s in enumerate(veri_satirlari, start=ilk_no):
         if len(s) > genislik and any(h.strip() for h in s[genislik:]):
             hatali.append(no)
             continue
+        if len(s) < genislik and any(str(b).strip() for b in baslik[len(s):]):
+            eksik += 1
         s = (s + [""] * genislik)[:genislik]
         gecerli.append(s)
     tablo = pd.DataFrame(gecerli, columns=baslik, dtype=object)
     tablo = tablo.replace({"": None})
     uyarilar = []
+    if eksik:
+        uyarilar.append(f"{eksik} satırda başlıktan az sütun vardı; eksik hücreler boş kabul edildi.")
+    supheli = _kapanmamis_tirnak(gecerli, ayirici, ilk_no)
+    if supheli:
+        uyarilar.append(f"Satır {supheli} çevresinde kapanmamış bir tırnak işareti olabilir: bu hücre, dosyanın "
+                        "birçok satırını tek hücrede birleştirmiş görünüyor. Dosyayı kontrol edin.")
     if hatali:
         ornek = ", ".join(map(str, hatali[:10])) + (" …" if len(hatali) > 10 else "")
         uyarilar.append(f"{len(hatali)} satır, başlıktan fazla sütun içerdiği için analize alınmadı "
@@ -107,7 +193,20 @@ def csv_oku(veri: bytes) -> OkumaSonucu:
     return OkumaSonucu(_temizle(tablo), kodlama, ayirici, uyarilar)
 
 
+def _kapanmamis_tirnak(satirlar, ayirici: str, ilk_no: int) -> Optional[int]:
+    """Kapanmamış bir tırnak, sonraki satırları tek hücreye yutar. Böyle bir hücre arar."""
+    for i, s in enumerate(satirlar):
+        for h in s:
+            if h and h.count("\n") >= 10:
+                alt = h.split("\n")
+                ayiricili = sum(1 for a in alt if a.count(ayirici) >= 1)
+                if ayiricili >= 0.3 * len(alt):
+                    return i + ilk_no
+    return None
+
+
 def excel_sayfalari(veri: bytes) -> List[str]:
+    excel_dosyasi_denetle(veri)
     try:
         return list(pd.ExcelFile(io.BytesIO(veri), engine="openpyxl").sheet_names)
     except Exception as e:
@@ -115,12 +214,42 @@ def excel_sayfalari(veri: bytes) -> List[str]:
                               "(eski .xls dosyalarını Excel'de 'Farklı Kaydet > .xlsx' ile dönüştürün).") from e
 
 
-def excel_oku(veri: bytes, sayfa=0) -> OkumaSonucu:
+def excel_oku(veri: bytes, sayfa=0, baslik_satiri: bool = True) -> OkumaSonucu:
+    excel_dosyasi_denetle(veri)
     try:
-        tablo = pd.read_excel(io.BytesIO(veri), sheet_name=sayfa, dtype=str, engine="openpyxl")
+        # keep_default_na=False: "NA", "null" gibi değerler sessizce boşa çevrilmez;
+        # yer tutucular daha sonra açıkça raporlanarak ayıklanır.
+        tablo = pd.read_excel(io.BytesIO(veri), sheet_name=sayfa, dtype=str, engine="openpyxl",
+                              header=0 if baslik_satiri else None, keep_default_na=False, na_values=[""])
     except Exception as e:
         raise VeriOkumaHatasi("Excel dosyası okunamadı. Yalnızca .xlsx biçimi desteklenir.") from e
-    return OkumaSonucu(_temizle(tablo))
+    if not baslik_satiri:
+        tablo.columns = [f"Sütun {i + 1}" for i in range(len(tablo.columns))]
+    uyarilar = []
+    formul = excel_formul_sayisi(veri, sayfa)
+    if formul:
+        uyarilar.append(f"Bu sayfada {formul} hücre formül içeriyor. Formüller çalıştırılmadı; Excel'in dosyaya "
+                        "kaydettiği son hesaplanmış değerler kullanıldı (dosya Excel dışında üretildiyse bu "
+                        "hücreler boş görünebilir).")
+    return OkumaSonucu(_temizle(tablo), uyarilar=uyarilar)
+
+
+def excel_formul_sayisi(veri: bytes, sayfa=0) -> int:
+    """Seçili sayfadaki formül hücrelerini sayar (formüller hiçbir zaman çalıştırılmaz)."""
+    from openpyxl import load_workbook
+
+    try:
+        kitap = load_workbook(io.BytesIO(veri), read_only=True, data_only=False)
+        ws = kitap.worksheets[sayfa] if isinstance(sayfa, int) else kitap[sayfa]
+        sayi = 0
+        for satir in ws.iter_rows():
+            for h in satir:
+                if getattr(h, "data_type", None) == "f":
+                    sayi += 1
+        kitap.close()
+        return sayi
+    except Exception:
+        return 0
 
 
 def txt_belgelere_ayir(metin: str, mod: str = "dosya") -> List[str]:
@@ -144,9 +273,10 @@ def txt_oku(dosyalar: List[Tuple[str, bytes]], mod: str = "dosya") -> OkumaSonuc
     satirlar, uyarilar, kodlamalar = [], [], set()
     for ad, veri in dosyalar:
         try:
+            metin_dosyasi_denetle(veri, f"'{ad}'")
             metin, kod = baytlari_coz(veri)
-        except VeriOkumaHatasi:
-            uyarilar.append(f"'{ad}' boş ya da okunamadı; atlandı.")
+        except VeriOkumaHatasi as e:
+            uyarilar.append(f"{e} Bu dosya atlandı." if veri else f"'{ad}' boş; atlandı.")
             continue
         kodlamalar.add(kod)
         if mojibake_var_mi(metin):
@@ -196,13 +326,13 @@ def metin_sutunu_oner(tablo: pd.DataFrame) -> Optional[str]:
     return en_iyi
 
 
-def dosya_oku(ad: str, veri: bytes, sayfa=0, txt_modu: str = "dosya") -> OkumaSonucu:
+def dosya_oku(ad: str, veri: bytes, sayfa=0, txt_modu: str = "dosya", baslik_satiri: bool = True) -> OkumaSonucu:
     """Uzantıya göre uygun okuyucuyu çağırır."""
     uzanti = ad.lower().rsplit(".", 1)[-1] if "." in ad else ""
     if uzanti in ("csv", "tsv"):
-        return csv_oku(veri)
+        return csv_oku(veri, baslik_satiri)
     if uzanti in ("xlsx", "xlsm"):
-        return excel_oku(veri, sayfa)
+        return excel_oku(veri, sayfa, baslik_satiri)
     if uzanti == "xls":
         raise VeriOkumaHatasi("Eski .xls biçimi desteklenmiyor. Excel'de 'Farklı Kaydet > Excel Çalışma "
                               "Kitabı (.xlsx)' seçeneğiyle dönüştürüp yeniden yükleyin.")

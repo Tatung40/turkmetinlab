@@ -22,13 +22,16 @@ from .preprocess import IslenmisBelge
 
 _ALFABE = "abcçdefgğhıijklmnoöprsştuüvyz"
 _SIRA = {h: i for i, h in enumerate(_ALFABE)}
+# Türk alfabesindeki harfleri sıralı özel kod noktalarına eşleyen dönüşüm tablosu:
+# böylece sıradan dizgi karşılaştırması Türk alfabesi sırasını verir (hızlı, vektörel).
+_SIRALAMA_CEVIRI = {ord(h): chr(0xE000 + i) for i, h in enumerate(_ALFABE)}
 
 
-def turkce_sirala_anahtari(sozcuk: str):
+def turkce_sirala_anahtari(sozcuk: str) -> str:
     """Türk alfabesine göre sıralama anahtarı (ç, c'den sonra; ı, i'den önce gelir)."""
     from .preprocess import turkce_kucuk_harf
 
-    return tuple((_SIRA.get(c, 100 + ord(c))) for c in turkce_kucuk_harf(sozcuk))
+    return turkce_kucuk_harf(sozcuk).translate(_SIRALAMA_CEVIRI)
 
 
 def _sirala(tablo: pd.DataFrame, sayi_sutunu: str, metin_sutunu: str) -> pd.DataFrame:
@@ -36,7 +39,7 @@ def _sirala(tablo: pd.DataFrame, sayi_sutunu: str, metin_sutunu: str) -> pd.Data
     if tablo.empty:
         return tablo
     anahtar = tablo[metin_sutunu].map(turkce_sirala_anahtari)
-    sira = sorted(range(len(tablo)), key=lambda i: (-tablo[sayi_sutunu].iat[i], anahtar.iat[i]))
+    sira = np.lexsort((anahtar.to_numpy(dtype=object), -tablo[sayi_sutunu].to_numpy(dtype=float)))
     return tablo.iloc[sira].reset_index(drop=True)
 
 
@@ -218,14 +221,19 @@ def tfidf_hesapla(
     derlem.insert(0, "Sıra", range(1, len(derlem) + 1))
 
     # Belge bazında en ayırt edici terimler
+    # Eşitlikte Türk alfabesi sırası için her terimin alfabetik sırası bir kez hesaplanır
+    alfabe_sirasi = np.empty(len(terimler), dtype=np.int64)
+    alfabe_sirasi[np.argsort(np.array([turkce_sirala_anahtari(t) for t in terimler], dtype=object),
+                             kind="stable")] = np.arange(len(terimler))
     satirlar = []
     csr = matris.tocsr()
     for i, ad in enumerate(adlar):
-        sayac = Counter(terim_listeleri[i])
-        satir = csr.getrow(i)
-        idx, deger = satir.indices, satir.data
-        sira = sorted(range(len(idx)), key=lambda k: (-deger[k], turkce_sirala_anahtari(terimler[idx[k]])))
-        for r, k in enumerate(sira[:belge_basina_terim], start=1):
+        bas, son = csr.indptr[i], csr.indptr[i + 1]
+        idx, deger = csr.indices[bas:son], csr.data[bas:son]
+        sira = np.lexsort((alfabe_sirasi[idx], -deger))[:belge_basina_terim]
+        secilen = {terimler[idx[k]] for k in sira}
+        sayac = Counter(t for t in terim_listeleri[i] if t in secilen)
+        for r, k in enumerate(sira, start=1):
             t = terimler[idx[k]]
             satirlar.append({"Belge": ad, "Sıra": r, "Terim": t, "TF-IDF": round(float(deger[k]), 6),
                              "Belgedeki sıklık": sayac[t], "Belge sıklığı": int(df[idx[k]])})

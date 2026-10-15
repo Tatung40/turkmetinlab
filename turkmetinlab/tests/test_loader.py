@@ -85,7 +85,7 @@ def test_csv_eksik_alanli_satir_doldurulur():
     s = csv_oku("a,b,c\n1,metin bir\n2,metin iki,x\n".encode("utf-8"))
     assert s.tablo["b"].tolist() == ["metin bir", "metin iki"]
     assert s.tablo["c"].isna().tolist() == [True, False]
-    assert not s.uyarilar
+    assert s.uyarilar == ["1 satırda başlıktan az sütun vardı; eksik hücreler boş kabul edildi."]
 
 
 def test_csv_bos_satir_ve_sutunlar_temizlenir():
