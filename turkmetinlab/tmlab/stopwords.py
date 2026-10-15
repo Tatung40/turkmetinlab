@@ -46,11 +46,28 @@ AKADEMIK_KALIP_SOZCUKLER = frozenset(
     sonuçları sonucunda tespit tespit edilmiştir yöntem yöntemi yöntemiyle
     belirlenmiştir değerlendirilmiştir görülmüştür ortaya konmuştur saptanmıştır
     bulunmaktadır olmaktadır yapılmıştır kullanılmıştır gerçekleştirilmiştir
+    edilmiştir edilmektedir kullanılarak kullanılmaktadır sağlanmıştır önerilmektedir belirtilmiştir
+    amaçlanmıştır verilmiştir
     """.split()
 )
 
 
-def stopword_set(genel: bool = True, akademik: bool = False, ozel=None) -> frozenset:
+# Türkçe akademik derlemlerde sık rastlanan İngilizce özet/başlıklar için yaygın İngilizce durak sözcükler.
+# Türkçede anlamlı olan biçimler (can, his, but, had) listeye alınmadı.
+INGILIZCE_DURAK_SOZCUKLER = frozenset(
+    """
+    a about above after again against all am an and any are as at be because been before being below between
+    both by could did do does doing down during each few for from further has have having he her
+    here hers herself him himself how i if in into is it its itself just me more most my myself no nor not
+    now of off on once only or other our ours ourselves out over own same she should so some such than that
+    the their theirs them themselves then there these they this those through to too under until up very was
+    we were what when where which while who whom why will with would you your yours yourself yourselves also
+    may might must shall within without however thus therefore using used based study paper results
+    """.split()
+)
+
+
+def stopword_set(genel: bool = True, akademik: bool = False, ozel=None, ingilizce: bool = False) -> frozenset:
     """İstenen durak sözcük kümelerini birleştirir.
 
     ozel: kullanıcının eklediği sözcükler (zaten Türkçe küçük harfe çevrilmiş olmalı).
@@ -60,6 +77,8 @@ def stopword_set(genel: bool = True, akademik: bool = False, ozel=None) -> froze
         kume |= GENEL_DURAK_SOZCUKLER
     if akademik:
         kume |= AKADEMIK_KALIP_SOZCUKLER
+    if ingilizce:
+        kume |= INGILIZCE_DURAK_SOZCUKLER
     if ozel:
         kume |= set(ozel)
     return frozenset(kume)

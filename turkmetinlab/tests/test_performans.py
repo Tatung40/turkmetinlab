@@ -111,3 +111,44 @@ def test_buyuk_gercekci_veri():
     r = _olc("buyuk_genis")
     assert r["sözcük (ön işleme öncesi)"] > 2_500_000
     assert r["tepe RSS MB"] < 1200, r
+
+
+def test_buyuk_derlemde_agir_moduller_dugmeyle_baslar(monkeypatch):
+    """Büyük derlemde ağ ve grup analizleri sayfa açılışında hesaplanmaz; düğmeyle başlar."""
+    import importlib.util
+
+    at = AppTest.from_file(APP, default_timeout=180)
+    at.run()
+    assert "ag_hesapla" not in [b.key for b in at.button]  # küçük örnek veri: otomatik
+    # Eşiği düşürerek büyük derlem davranışını sına
+    kaynak = open(APP, encoding="utf-8").read().replace("OTOMATIK_SOZCUK = 300_000", "OTOMATIK_SOZCUK = 10")
+    at = AppTest.from_string(kaynak, default_timeout=180)
+    at.run()
+    assert not at.exception and not at.error
+    dugmeler = [b.key for b in at.button]
+    assert "ag_hesapla" in dugmeler and "grup_hesapla" in dugmeler
+    at.button(key="ag_hesapla").click().run()
+    assert not at.exception and not at.error
+    at.run()  # sonraki yenilemede sonuç oturumdan gelir, düğme gerekmez
+    assert "ag_hesapla" not in [b.key for b in at.button]
+
+
+# --- 2.0 modülleri ----------------------------------------------------------
+
+def _modul_olc(boyut: str) -> dict:
+    cikti = subprocess.run([sys.executable, OLCUM, "--modul", boyut], capture_output=True, text=True, check=True,
+                           cwd=KOK, timeout=1800).stdout
+    return json.loads(cikti.strip().splitlines()[-1])
+
+
+def test_modullerin_orta_veride_suresi_ve_bellegi():
+    """~288 bin sözcük: benzerlik + kümeleme, birliktelik ağı, NMF (10 konu, 3 kararlılık), grup (200 permütasyon)."""
+    r = _modul_olc("orta_genis")
+    assert r["toplam_sn"] < 90, r  # ölçüm makinesinde ~9 sn; yavaş CI için geniş pay
+    assert r["tepe RSS MB"] < 690, r
+
+
+@pytest.mark.skipif(os.environ.get("TML_BUYUK_TEST") != "1", reason="Büyük ölçüm için TML_BUYUK_TEST=1")
+def test_modullerin_buyuk_veride_bellegi():
+    r = _modul_olc("buyuk_genis")
+    assert r["tepe RSS MB"] < 1200, r

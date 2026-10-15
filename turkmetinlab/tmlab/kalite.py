@@ -24,6 +24,26 @@ YER_TUTUCULAR = frozenset({
 })
 
 
+# Türkçede de sözcük olan kısa biçimler (on, an, as, in) bilerek dışarıda bırakıldı
+_INGILIZCE_ISARET = frozenset("the of and to is for this that with are was were be by from".split())
+_SOZCUK_RE = re.compile(r"[^\W\d_]+")
+
+
+def ingilizce_oran(metin: str) -> float:
+    """Metindeki sözcüklerin ne kadarının çok sık İngilizce işlev sözcüğü olduğu (Türkçe metinde ~0)."""
+    sozcukler = [turkce_kucuk_harf(w) for w in _SOZCUK_RE.findall(str(metin))]
+    return sum(w in _INGILIZCE_ISARET for w in sozcukler) / len(sozcukler) if sozcukler else 0.0
+
+
+def ingilizce_iceren(metinler, esik: float = 0.08) -> List[int]:
+    """Belirgin miktarda İngilizce metin içeren belgelerin sıra indisleri.
+
+    Eşik: Türkçe metinlerde bu 15 İngilizce işlev sözcüğünün oranı neredeyse 0'dır; İngilizce
+    metinlerde ~%20-25'tir. %8, yarısı İngilizce olan bir belgeyi yakalar.
+    """
+    return [i for i, m in enumerate(metinler) if ingilizce_oran(m) >= esik]
+
+
 def yer_tutucu_mu(deger) -> bool:
     return turkce_kucuk_harf(str(deger).strip()) in YER_TUTUCULAR
 

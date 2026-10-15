@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -22,10 +23,14 @@ import re
 from collections import Counter
 
 from tmlab import __version__
+from tmlab import benzerlik as bz
+from tmlab import birliktelik as ba
+from tmlab import grup as gr
+from tmlab import konu as km
 from tmlab.analysis import (TfidfHatasi, derlem_ozeti, ngram_sikligi, sozcuk_sikligi,
                             tfidf_hesapla, turkce_sirala_anahtari)
 from tmlab.export import EXCEL_SATIR_SINIRI, csv_bayt, excel_bayt_ve_uyarilar, sozluk_tablosu
-from tmlab.kalite import belgeleri_hazirla
+from tmlab.kalite import belgeleri_hazirla, ingilizce_iceren
 from tmlab.lemma import OLCULEN_DOGRULUK, YONTEM as LEMMA_YONTEMI, kullanilabilir_mi
 from tmlab.loader import (TXT_MODLARI, VeriOkumaHatasi, dosya_oku, excel_sayfalari,
                           metin_sutunu_oner, txt_oku)
@@ -267,6 +272,10 @@ def ana():
         durak_akademik = st.checkbox("Akademik kalıp sözcükleri de çıkar", False, key="durak_akademik",
                                      help="çalışma, araştırma, amaç, bulgular, sonuç, yöntem gibi özetlerde çok sık "
                                           "geçen sözcükler. Araştırma sorunuza göre karar verin.")
+        durak_ingilizce = st.checkbox("İngilizce durak sözcükleri de çıkar (the, of, and…)", False,
+                                      key="durak_ingilizce",
+                                      help="Türkçe akademik kayıtlarda İngilizce özet ya da başlık da varsa açın. "
+                                           "Uygulama İngilizce içeren belgeleri Başlarken sekmesinde bildirir.")
         with st.expander("Durak sözcük listesini gör / kendi sözcüklerini ekle"):
             st.caption("Genel liste")
             st.write(", ".join(sorted(GENEL_DURAK_SOZCUKLER, key=turkce_sirala_anahtari)))
@@ -312,6 +321,7 @@ def ana():
             tireli_birlesik_koru=tire, durak_sozcuk_genel=durak_genel, durak_sozcuk_akademik=durak_akademik,
             ozel_durak_sozcukler=ozel_durak_sozcukleri_ayristir(ozel_metin, sapka), min_uzunluk=int(min_uzunluk),
             bolutleme=bolutleme, satir_sonu_sinir=satir_sonu, lemmatizasyon=bool(lemma and lemma_var),
+            durak_sozcuk_ingilizce=durak_ingilizce,
         )
 
         # -------------------------------------------------------------------
@@ -340,7 +350,7 @@ def ana():
     # Ana alan
     # -----------------------------------------------------------------------
     sekmeler = st.tabs(["🏠 Başlarken", "📄 Veri", "🧹 Ön İşleme", "📊 Sözcük Sıklığı", "🔗 N-gram", "⚖️ TF-IDF",
-                        "☁️ Kelime Bulutu", "⬇️ İndir"])
+                        "🧭 Benzerlik", "🕸️ Sözcük Ağı", "🧩 Konular", "👥 Gruplar", "☁️ Kelime Bulutu", "⬇️ İndir"])
 
     def bos_sekmeler(mesaj: str, hata_metni=None, veri_goster: bool = False):
         with sekmeler[0]:
@@ -426,6 +436,14 @@ def ana():
             st.warning(u)
         for u in rapor.uyarilar():
             st.warning(u)
+        ingilizce = _hesapla("ingilizce", on_isleme_anahtari, lambda: ingilizce_iceren(metinler), 1)
+        if ingilizce:
+            nolar_ = ", ".join(str(satir_nolari[i]) for i in ingilizce[:10]) + (" …" if len(ingilizce) > 10 else "")
+            st.warning(f"{len(ingilizce)} belge belirgin miktarda İngilizce metin içeriyor (satır: {nolar_}). "
+                       "İngilizce sözcükler sıklık, ağ ve konu sonuçlarını bozabilir"
+                       + ("; İngilizce durak sözcükler şu an çıkarılıyor." if ayarlar.durak_sozcuk_ingilizce else
+                          ". Ön işleme bölümünde 'İngilizce durak sözcükleri de çıkar' seçeneğini açabilir ya da bu "
+                          "metinleri dosyanızdan ayırabilirsiniz."))
         k = st.columns(4)
         k[0].metric("Belge", _sayi(ozet_tablo["Belge sayısı"]))
         k[1].metric("Analiz edilen sözcük", _sayi(ozet_tablo["Analiz edilen sözcük (ön işleme sonrası)"]))
@@ -566,8 +584,25 @@ def ana():
                     "belgeler 0 sayılır).\n\nHesaplama scikit-learn kütüphanesinin `TfidfVectorizer` sınıfıyla "
                     "yapılır ve testlerde bağımsız bir uygulamayla karşılaştırılarak doğrulanır.")
 
-    # --- Kelime bulutu ------------------------------------------------------
+    # --- 2.0 analiz modülleri ------------------------------------------------
+    # Her modül, indirilecek tabloları (ek_tablolar) ve yöntemsel ayarlarını (ek_ayarlar) kaydeder.
+    ek_tablolar, ek_ayarlar = {}, {}
+    baglam = dict(belgeler=belgeler, adlar=adlar, metinler=metinler, tfidf=tfidf, tfidf_hata=tfidf_hata,
+                  tfidf_anahtari=tfidf_anahtari, on_isleme_anahtari=on_isleme_anahtari, ayarlar=ayarlar,
+                  tablo=tablo, satir_nolari=satir_nolari, metin_sutunu=metin_sutunu, ad_sutunu=ad_sutunu,
+                  ilk_n=ilk_n, ek_tablolar=ek_tablolar, ek_ayarlar=ek_ayarlar, kaynak=kaynak,
+                  toplam_sozcuk=int(ozet_tablo["Analiz edilen sözcük (ön işleme sonrası)"]))
     with sekmeler[6]:
+        _benzerlik_sekmesi(baglam)
+    with sekmeler[7]:
+        _ag_sekmesi(baglam)
+    with sekmeler[8]:
+        _konu_sekmesi(baglam)
+    with sekmeler[9]:
+        _grup_sekmesi(baglam)
+
+    # --- Kelime bulutu ------------------------------------------------------
+    with sekmeler[10]:
         st.subheader("Kelime bulutu")
         c1, c2, c3 = st.columns(3)
         kaynaklar = ["Sözcük sıklığı", f"{n_deger}-gram sıklığı"] + ([] if tfidf_hata else ["TF-IDF (toplam)"])
@@ -596,7 +631,7 @@ def ana():
                        "seferinde aynıdır (sabit tohum değeri).")
 
     # --- İndir --------------------------------------------------------------
-    with sekmeler[7]:
+    with sekmeler[11]:
         st.subheader("Sonuçları indir")
         zaman = datetime.now().strftime("%Y-%m-%d_%H-%M")
         ayar_tablosu = sozluk_tablosu({
@@ -615,6 +650,7 @@ def ana():
             "TF-IDF en az belge": tf_min_belge,
             "TF-IDF yumuşatılmış IDF": tf_smooth,
             "TF-IDF logaritmik TF": tf_sublinear,
+            **ek_ayarlar,
         })
         tablolar = {
             "Özet": lambda: sozluk_tablosu(ozet_tablo, "Ölçüt", "Değer"),
@@ -631,6 +667,9 @@ def ana():
         if lemma_tablosu is not None:
             tablolar["Lemma dönüşümleri"] = lambda: lemma_tablosu
             satir_sayilari["Lemma dönüşümleri"] = len(lemma_tablosu)
+        for ad_, (fn_, n_) in ek_tablolar.items():
+            tablolar[ad_] = fn_
+            satir_sayilari[ad_] = n_
         tablolar["Ön işlenmiş metinler"] = onizleme_tablosu
         satir_sayilari["Ön işlenmiş metinler"] = len(belgeler)
 
@@ -663,6 +702,470 @@ def ana():
             kolonlar[i % 2].download_button(
                 f"{ad_} (.csv)", (lambda f=fn_: csv_bayt(f(), ayirici, formul_korumasi)),
                 f"{dosya_adi}_{zaman}.csv", "text/csv", key=f"indir_csv_{i}", width="stretch", on_click="ignore")
+
+
+OTOMATIK_SOZCUK = 300_000  # bu büyüklüğün üstünde ağır modüller düğmeyle başlar
+
+
+def _kapili_hesapla(bg: dict, ad: str, anahtar: str, fn, dugme: str, aciklama: str):
+    """Küçük/orta derlemde hemen hesaplar; büyük derlemde düğmeye basılınca (sonuç oturumda saklanır)."""
+    if bg["toplam_sozcuk"] <= OTOMATIK_SOZCUK:
+        return _hesapla(ad, anahtar, fn, 1)
+    sonuc = _bul(ad, anahtar)
+    if sonuc is None:
+        st.caption(f"Büyük derlem ({_sayi(bg['toplam_sozcuk'])} sözcük): {aciklama} Sayfanın hızlı kalması için "
+                   "yalnızca istendiğinde hesaplanır.")
+        if st.button(dugme, key=f"{ad}_hesapla", type="primary"):
+            sonuc = _hesapla(ad, anahtar, fn, 1)
+    return sonuc
+
+
+def _bul(ad: str, anahtar: str):
+    """Düğmeyle başlatılan analizlerin oturum belleğindeki sonucunu (varsa) döndürür."""
+    return OturumBellegi(st.session_state).bul(ad, anahtar)
+
+
+# ---------------------------------------------------------------------------
+# Modül 1 — Belge benzerliği
+# ---------------------------------------------------------------------------
+
+def _benzerlik_sekmesi(bg: dict):
+    st.subheader("Belge benzerliği")
+    st.info(bz.UYARI_METNI, icon="ℹ️")
+    tfidf = bg["tfidf"]
+    if bg["tfidf_hata"]:
+        st.warning(bg["tfidf_hata"])
+        return
+    adlar = tfidf.belge_adlari
+    n = tfidf.analiz_edilen_belge
+    anahtar = bg["tfidf_anahtari"]
+    st.caption(f"{_sayi(n)} belge · TF-IDF sekmesindeki ayarlarla hesaplanan vektörler kullanılır "
+               "(ön işleme ve TF-IDF ayarlarını değiştirmek sonuçları değiştirir).")
+    c1, c2 = st.columns(2)
+    cift_n = c1.number_input("Gösterilecek en benzer çift sayısı", 5, 500, 20, key="benz_cift_n")
+    komsu_k = c2.number_input("Belge başına en yakın komşu sayısı", 1, 50, 5, key="benz_komsu_k")
+    bg["ek_ayarlar"].update({"Benzerlik: ölçüt": "TF-IDF kosinüs benzerliği",
+                             "Benzerlik: en benzer çift sayısı": int(cift_n),
+                             "Benzerlik: belge başına komşu": int(komsu_k)})
+
+    if n <= bz.YOGUN_MATRIS_SINIRI:
+        S = _hesapla("benzerlik", anahtar, lambda: bz.kosinus_matrisi(tfidf.matris), 1)
+        ozet_ = bz.benzerlik_ozeti(S)
+        m = st.columns(4)
+        m[0].metric("Belge çifti", _sayi(ozet_["Belge çifti sayısı"]))
+        m[1].metric("Ortalama benzerlik", f"{ozet_['Ortalama benzerlik']:.3f}".replace(".", ","))
+        m[2].metric("En yüksek benzerlik", f"{ozet_['En yüksek benzerlik']:.3f}".replace(".", ","))
+        m[3].metric("Ortak terimsiz çift", f"%{ozet_['Hiç ortak terimi olmayan çiftler (%)']:.1f}".replace(".", ","))
+        ciftler = bz.en_benzer_ciftler(S, adlar, int(cift_n))
+        komsular = _hesapla("benzerlik_komsu", ozet(anahtar, int(komsu_k)),
+                            lambda: bz.komsu_tablosu(*bz.en_yakin_komsular(tfidf.matris, int(komsu_k)), adlar), 1)
+    else:
+        S = None
+        st.warning(f"{_sayi(n)} belge için tam benzerlik matrisi, ısı haritası ve kümeleme hesaplanmaz (bellek "
+                   f"sınırı: {_sayi(bz.YOGUN_MATRIS_SINIRI)} belge). Her belgenin en yakın komşuları ve en benzer "
+                   "çiftler, bellek dostu parçalı yöntemle tam olarak hesaplanabilir; bu birkaç saniye ile bir "
+                   "dakika sürebilir.")
+        knn_anahtari = ozet(anahtar, max(int(cift_n), int(komsu_k)))
+        sonuc = _bul("benzerlik_knn", knn_anahtari)
+        if sonuc is None and st.button("En yakın komşuları hesapla", key="benz_knn", type="primary"):
+            with st.spinner("En yakın komşular hesaplanıyor…"):
+                sonuc = _hesapla("benzerlik_knn", knn_anahtari,
+                                 lambda: bz.en_yakin_komsular(tfidf.matris, max(int(cift_n), int(komsu_k))), 1)
+        if sonuc is None:
+            return
+        I, V = sonuc
+        ciftler = bz.ciftler_komsulardan(I, V, adlar, int(cift_n))
+        komsular = bz.komsu_tablosu(I[:, :int(komsu_k)], V[:, :int(komsu_k)], adlar)
+
+    st.markdown("##### En benzer belge çiftleri")
+    _tablo_goster(ciftler, 360)
+    bg["ek_tablolar"]["Benzer çiftler"] = (lambda: ciftler, len(ciftler))
+    bg["ek_tablolar"]["En yakın komşular"] = (lambda: komsular, len(komsular))
+
+    st.markdown("##### Bir belgeye en benzer belgeler")
+    secili = st.selectbox("Belge seçin", adlar, key="benz_belge")
+    _tablo_goster(komsular[komsular["Belge"] == secili].drop(columns="Belge"), 240)
+
+    if S is None:
+        return
+
+    kume = st.checkbox("Hiyerarşik kümeleme yap", False, key="benz_kume",
+                       help="Belgeleri benzerliklerine göre ağaç biçiminde gruplar. Kümeler keşif amaçlıdır; "
+                            "araştırmacının yorumlaması gerekir.")
+    sira = None
+    if kume and n < 3:
+        st.warning("Kümeleme için en az 3 belge gerekir.")
+    elif kume:
+        c1, c2 = st.columns(2)
+        yontem = c1.selectbox("Bağlantı yöntemi", list(bz.KUMELEME_YONTEMLERI),
+                              format_func=bz.KUMELEME_YONTEMLERI.get, key="benz_yontem")
+        k = int(c2.number_input("Küme sayısı", 2, max(2, min(30, n - 1)), min(4, n - 1), key="benz_k"))
+        Z = _hesapla("benzerlik_kume", ozet(anahtar, yontem), lambda: bz.hiyerarsik_kumeleme(S, yontem), 1)
+        etiket = bz.kume_etiketleri(Z, k)
+        siluet = _hesapla("benzerlik_siluet", ozet(anahtar, yontem),
+                          lambda: bz.siluet_tablosu(S, Z, yontem, 10), 1)
+        kume_t = bz.kume_tablosu(etiket, adlar)
+        bg["ek_tablolar"]["Kümeler"] = (lambda: kume_t, len(kume_t))
+        bg["ek_tablolar"]["Siluet değerleri"] = (lambda: siluet, len(siluet))
+        bg["ek_ayarlar"].update({"Kümeleme: yöntem": bz.KUMELEME_YONTEMLERI[yontem], "Kümeleme: küme sayısı": k})
+        sol, sag = st.columns([3, 2])
+        with sag:
+            st.markdown("**Siluet değerleri**")
+            _tablo_goster(siluet, 300)
+            en_iyi = float(siluet["Ortalama siluet"].max()) if len(siluet) else 0
+            if en_iyi < 0.25:
+                st.caption("⚠️ Siluet değerleri düşük (< 0,25): belgeler belirgin kümeler oluşturmuyor; kümeleri "
+                           "kesin gruplar gibi yorumlamayın.")
+            else:
+                st.caption("Siluet −1 ile 1 arasındadır; yüksek değer kümelerin birbirinden daha belirgin "
+                           "ayrıldığını gösterir.")
+        with sol:
+            if n <= bz.DENDROGRAM_SINIRI:
+                fig, sira = bz.dendrogram_figuru(Z, adlar, yontem)
+                st.plotly_chart(fig, width="stretch")
+            else:
+                st.caption(f"Dendrogram en fazla {bz.DENDROGRAM_SINIRI} belge için çizilir; küme üyelikleri "
+                           "tablodadır.")
+        st.markdown("**Küme üyelikleri**")
+        _sinirli_tablo(kume_t)
+
+    if n <= bz.ISI_HARITASI_SINIRI:
+        st.plotly_chart(bz.isi_haritasi(S, adlar, list(reversed(sira)) if sira else None), width="stretch")
+        if sira:
+            st.caption("Isı haritası dendrogramdaki sıraya göre dizildi; benzer belgeler yan yana görünür.")
+    else:
+        st.caption(f"Isı haritası en fazla {bz.ISI_HARITASI_SINIRI} belge için çizilir; tablolar tüm belgeleri kapsar.")
+    if n <= 300:
+        matris = pd.DataFrame(np.round(S, 6), index=adlar, columns=adlar).reset_index(names="Belge")
+        bg["ek_tablolar"]["Benzerlik matrisi"] = (lambda: matris, len(matris))
+
+
+# ---------------------------------------------------------------------------
+# Modül 2 — Sözcük birliktelik ağı
+# ---------------------------------------------------------------------------
+
+def _ag_sekmesi(bg: dict):
+    st.subheader("Sözcük birliktelik ağı")
+    st.info(ba.UYARI_METNI, icon="ℹ️")
+    c1, c2, c3 = st.columns(3)
+    baglam = c1.selectbox("Birlikte görülme bağlamı", list(ba.BAGLAM_TURLERI), format_func=ba.BAGLAM_TURLERI.get,
+                          key="ag_baglam",
+                          help="Pencere: iki sözcük arasında en fazla k sözcük varsa birlikte sayılır. Cümle/belge: "
+                               "iki sözcüğün birlikte geçtiği cümle ya da belge sayısı.")
+    pencere = c2.slider("Pencere genişliği (± sözcük)", 1, 15, 5, key="ag_pencere", disabled=baglam != "pencere",
+                        help="Uzaklık özgün metne göre ölçülür; çıkarılan sözcükler (ve, ile…) de yer kaplar.")
+    sinir = c3.checkbox("Pencere cümle sınırını aşmasın", True, key="ag_sinir", disabled=baglam != "pencere",
+                        help="Cümle sınırları, Ön işleme > Diğer ayarlar > N-gram sınırları seçimine göre belirlenir.")
+    c1, c2, c3, c4 = st.columns(4)
+    olcut = c1.selectbox("Bağlantı ölçütü", list(ba.OLCUTLER), format_func=ba.OLCUTLER.get, key="ag_olcut",
+                         help="Jaccard ve PPMI, çok sık sözcüklerin her şeyle bağlantılı görünmesini düzeltir. Gerçek "
+                              "akademik özetlerde yazarların anahtar terimlerini en iyi Jaccard yakaladı.")
+    min_b = int(c2.number_input("En az birlikte görülme", 1, 500, 3, key="ag_min",
+                                help="Bu sayıdan az birlikte geçen çiftler alınmaz (PMI seyrek çiftleri abartır)."))
+    dugum = int(c3.slider("Düğüm havuzu (en sık sözcük)", 10, ba.EN_FAZLA_DUGUM, 50, key="ag_dugum"))
+    kenar = int(c4.slider("En fazla kenar", 10, ba.EN_FAZLA_KENAR, 100, key="ag_kenar"))
+    with st.expander("Gelişmiş"):
+        aday = int(st.number_input("Hesaplamaya alınan en sık sözcük sayısı", 100, ba.EN_FAZLA_ADAY, 1000, step=100,
+                                   key="ag_aday", help="Birliktelikler yalnızca derlemin en sık bu kadar sözcüğü "
+                                                       "arasında hesaplanır (bellek sınırı)."))
+    ayar = ba.AgAyarlari(baglam=baglam, pencere=int(pencere), bolut_siniri=bool(sinir), aday_sozcuk=aday,
+                         min_birlikte=min_b)
+    with st.spinner("Birliktelikler hesaplanıyor…"):
+        sonuc = _kapili_hesapla(bg, "ag", ozet(bg["on_isleme_anahtari"], repr(ayar)),
+                                lambda: ba.birliktelik_hesapla(bg["belgeler"], ayar), "Ağı hesapla",
+                                "birliktelik hesabı yaklaşık 5–15 saniye sürebilir.")
+    if sonuc is None:
+        return
+    sec = ba.ag_sec(sonuc, olcut, dugum, kenar)
+    dugumler = ba.dugum_tablosu(sec, sonuc)
+    bg["ek_ayarlar"].update({f"Ağ: {k}": v for k, v in ayar.sozluk().items()})
+    bg["ek_ayarlar"].update({"Ağ: ölçüt": ba.OLCUTLER[olcut], "Ağ: düğüm havuzu": dugum, "Ağ: en fazla kenar": kenar,
+                             "Ağ: Jaccard birimi": "cümle/bölüt" if sonuc.jaccard_birimi == "bolut" else "belge"})
+    if sec.empty:
+        st.warning("Seçilen ayarlarla gösterilecek bağlantı yok. 'En az birlikte görülme' değerini düşürmeyi ya da "
+                   "düğüm havuzunu büyütmeyi deneyin.")
+        return
+    st.plotly_chart(ba.ag_figuru(sec, dugumler, olcut), width="stretch")
+    if not bg["ayarlar"].durak_sozcuk_akademik:
+        st.caption("💡 Akademik metinlerde ağın merkezini 'elde edilmiştir', 'kullanılarak' gibi kalıp ifadeler "
+                   "kaplayabilir. Ön işleme bölümünde 'Akademik kalıp sözcükleri de çıkar' seçeneğini deneyin.")
+    st.caption(f"{len(dugumler)} düğüm, {len(sec)} kenar. Konumların ve uzaklıkların kendi başına anlamı yoktur; "
+               "yerleşim her seferinde aynıdır (sabit tohum). Merkezîlik değerleri yalnızca gösterilen ağ içindir.")
+    sol, sag = st.columns(2)
+    with sol:
+        st.markdown("**Düğümler**")
+        _tablo_goster(dugumler, 380)
+        st.caption("Derece: bağlantı sayısı. Normalleştirilmiş derece: derece ÷ (düğüm sayısı − 1). Ağırlıklı "
+                   "derece: bağlantı ağırlıklarının toplamı (seçilen ölçüt).")
+    with sag:
+        st.markdown("**Kenarlar (gösterilen ağ)**")
+        _tablo_goster(sec[["Sıra", "Kaynak", "Hedef", "Birlikte görülme", "Jaccard", "PPMI"]], 380)
+    tum_sayi = int(min(np.triu(sonuc.C >= min_b, 1).sum(), ba.KENAR_DISA_AKTARIM_SINIRI))
+    bg["ek_tablolar"]["Ağ düğümleri"] = (lambda: dugumler, len(dugumler))
+    bg["ek_tablolar"]["Ağ kenarları"] = (lambda: sec.drop(columns="Ağırlık"), len(sec))
+    bg["ek_tablolar"]["Birliktelik çiftleri"] = (
+        lambda: ba.kenar_tablosu(sonuc, olcut=olcut, en_fazla=ba.KENAR_DISA_AKTARIM_SINIRI), tum_sayi)
+    st.caption(f"İndir sekmesinde eşiği geçen tüm çiftler de bulunur (en güçlü {_sayi(ba.KENAR_DISA_AKTARIM_SINIRI)} "
+               "çifte kadar). Kenar ve düğüm tabloları Gephi gibi ağ programlarına aktarılabilir.")
+
+
+# ---------------------------------------------------------------------------
+# Modül 3 — Konu modellemesi
+# ---------------------------------------------------------------------------
+
+def _konu_sekmesi(bg: dict):
+    st.subheader("Konu modellemesi")
+    st.info(km.UYARI_METNI, icon="ℹ️")
+    belgeler = bg["belgeler"]
+    toplam_sozcuk = bg["toplam_sozcuk"]
+    c1, c2, c3 = st.columns(3)
+    yontem = c1.radio("Yöntem", list(km.YONTEMLER), format_func=km.YONTEMLER.get, key="konu_yontem",
+                      help="NMF, gerçek Türkçe akademik özetlerde daha tutarlı, daha kararlı ve çok daha hızlı sonuç "
+                           "verdi. LDA olasılıksal bir modeldir ve yazında yaygındır; uzun belgelerde tercih edilebilir.")
+    k = int(c2.slider("Konu sayısı", 2, km.EN_FAZLA_KONU, 5, key="konu_k",
+                      help="Doğru konu sayısı veriden kendiliğinden çıkmaz; aşağıdaki karşılaştırmayı kullanın."))
+    ust = int(c3.slider("Konu başına gösterilecek sözcük", 5, 25, 10, key="konu_ust"))
+    with st.expander("Gelişmiş ayarlar"):
+        g1, g2, g3 = st.columns(3)
+        min_df = int(g1.number_input("Bir sözcük en az kaç belgede geçsin?", 1, 100, 2, key="konu_min_df"))
+        max_df = float(g2.slider("Bir sözcük en fazla belgelerin yüzde kaçında geçsin?", 50, 100, 95, key="konu_max_df")) / 100
+        sozluk = int(g3.number_input("En fazla sözcük sayısı (sözlük)", 500, 20000, 5000, step=500, key="konu_sozluk"))
+        g1, g2, g3 = st.columns(3)
+        tohum = int(g1.number_input("Rastgele başlangıç tohumu", 0, 10_000, 42, key="konu_tohum",
+                                    help="Sabit tohum, aynı ayarlarla her seferinde aynı sonucu verir. Farklı bir tohumla "
+                                         "konular belirgin biçimde değişiyorsa konular kararsızdır."))
+        lda_iter = int(g2.number_input("LDA yineleme sayısı", 10, 200, 30, key="konu_lda_iter",
+                                       disabled=yontem != "lda"))
+        tekrar = int(g3.number_input("Kararlılık için alt örneklem sayısı", 0, 10, 3, key="konu_tekrar",
+                                     help="Model, belgelerin rastgele %80'i üzerinde bu kadar kez yeniden kurulur ve "
+                                          "konuların yeniden bulunup bulunmadığı ölçülür. 0: ölçme."))
+    try:
+        uyarilar = km.uygunluk_denetimi(belgeler, k)
+        ayar = km.KonuAyarlari(yontem=yontem, konu_sayisi=k, en_az_belge=min_df, en_fazla_belge_orani=max_df,
+                               en_fazla_sozcuk=sozluk, ust_sozcuk=ust, tohum=tohum, lda_yineleme=lda_iter)
+    except (km.KonuHatasi, ValueError) as e:
+        st.error(str(e))
+        return
+    for u in uyarilar:
+        st.warning(u)
+    ingilizce = _hesapla("ingilizce", bg["on_isleme_anahtari"], lambda: ingilizce_iceren(bg["metinler"]), 1)
+    if ingilizce and not bg["ayarlar"].durak_sozcuk_ingilizce:
+        st.warning(f"{len(ingilizce)} belge İngilizce metin içeriyor. İngilizce sözcükler ayrı bir 'konu' "
+                   "oluşturabilir; Ön işleme bölümünde 'İngilizce durak sözcükleri de çıkar' seçeneğini açın.")
+    if yontem == "lda" and toplam_sozcuk > km.LDA_SOZCUK_SINIRI:
+        st.error(f"LDA bu büyüklükte bir derlem ({_sayi(toplam_sozcuk)} sözcük) için ücretsiz sunucuda çok uzun sürer "
+                 f"(sınır: {_sayi(km.LDA_SOZCUK_SINIRI)} sözcük). NMF'yi seçin ya da uygulamayı kendi bilgisayarınızda "
+                 "çalıştırın.")
+        return
+    tahmin = km.sure_tahmini(yontem, toplam_sozcuk, k, 1 + tekrar)
+    bg["ek_ayarlar"].update({f"Konu: {a}": v for a, v in ayar.sozluk().items()})
+    bg["ek_ayarlar"]["Konu: kararlılık alt örneklem sayısı"] = tekrar
+    anahtar = ozet(bg["on_isleme_anahtari"], repr(ayar), tekrar)
+    sonuc = _bul("konu", anahtar)
+    if sonuc is None:
+        st.caption(f"Tahmini süre: yaklaşık {_sure(tahmin)} (sunucu yoğunsa daha uzun).")
+        if st.button("Konu modelini çalıştır", key="konu_calistir", type="primary"):
+            with st.spinner("Konu modeli kuruluyor…"):
+                try:
+                    sonuc = _hesapla("konu", anahtar, lambda: km.konu_modeli(belgeler, ayar, tekrar), 2)
+                except km.KonuHatasi as e:
+                    st.error(str(e))
+                    return
+    if sonuc is not None:
+        _konu_sonucu_goster(bg, sonuc, anahtar)
+    _konu_karsilastirma(bg, ayar, toplam_sozcuk)
+
+
+def _sure(sn: float) -> str:
+    return f"{max(1, round(sn))} saniye" if sn < 90 else f"{sn / 60:.1f} dakika".replace(".", ",")
+
+
+def _konu_sonucu_goster(bg: dict, sonuc, anahtar: str):
+    ayar = sonuc.ayarlar
+    o = sonuc.olcutler
+    m = st.columns(4)
+    m[0].metric("NPMI tutarlılığı", f"{o['Ortalama NPMI tutarlılığı']:.3f}".replace(".", ","),
+                help="−1 … 1. Yüksek: konunun sözcükleri aynı belgelerde birlikte geçme eğiliminde.")
+    m[1].metric("UMass tutarlılığı", f"{o['Ortalama UMass tutarlılığı']:.2f}".replace(".", ","),
+                help="0'a yakın değerler daha tutarlı konulara işaret eder.")
+    cesit = next(v for a, v in o.items() if a.startswith("Konu çeşitliliği"))
+    m[2].metric("Konu çeşitliliği", f"{cesit:.2f}".replace(".", ","),
+                help="Konuların ilk 25 sözcüğü içinde benzersiz sözcüklerin oranı. 1: konular sözcük paylaşmıyor.")
+    kar = o.get("Ortalama kararlılık (AJ)")
+    m[3].metric("Kararlılık", "—" if kar is None else f"{kar:.2f}".replace(".", ","),
+                help="0 … 1. Model belgelerin %80'iyle yeniden kurulduğunda aynı konular ne ölçüde bulunuyor?")
+    if kar is not None and kar < 0.5:
+        st.warning("Konular kararsız (kararlılık < 0,5): belgelerin bir kısmı değiştiğinde büyük ölçüde farklı konular "
+                   "ortaya çıkıyor. Konu sayısını değiştirmeyi, NMF'yi denemeyi ya da sonuçları çok dikkatli "
+                   "yorumlamayı düşünün.")
+    if o.get("NMF yakınsadı mı", "evet") != "evet":
+        st.caption("⚠️ NMF yineleme sınırına ulaştı; sonuçlar tam yakınsamamış olabilir.")
+    st.markdown("##### Konuları adlandırın")
+    st.caption("Her konunun sözcüklerini ve aşağıdaki tipik belgelerini okuyarak konuya kendi adınızı verin. Adlar "
+               "tablolara ve indirilen dosyalara yansır; boş bırakılan konular 'Konu N' olarak kalır.")
+    kisa = anahtar[:10]
+    sutunlar = st.columns(min(4, ayar.konu_sayisi))
+    ozel = {}
+    for i in range(ayar.konu_sayisi):
+        ozel[i] = sutunlar[i % len(sutunlar)].text_input(f"Konu {i + 1}", "", key=f"konu_ad_{kisa}_{i}",
+                                                          placeholder=" ".join(sonuc.ust_sozcukler(3)[i]))
+    adlar = km.konu_adlari(sonuc, ozel)
+    st.plotly_chart(km.konu_grafigi(sonuc, adlar), width="stretch")
+    st.caption("LDA'da değerler olasılıktır; NMF'de negatif olmayan ağırlıklardır (olasılık değildir).")
+    st.markdown("##### Her konunun en tipik belgeleri")
+    for i in range(ayar.konu_sayisi):
+        with st.expander(f"{i + 1}. {adlar[i]} — {', '.join(sonuc.ust_sozcukler(6)[i])}"):
+            for j in km.tipik_belgeler(sonuc, i, 3):
+                agirlik = sonuc.belge_konu[list(sonuc.belge_indisleri).index(j), i]
+                metin = str(bg["metinler"][j])
+                st.markdown(f"**{_md(bg['adlar'][j])}** · konu ağırlığı {agirlik:.2f}".replace(".", ",", 1))
+                st.caption(metin[:400] + ("…" if len(metin) > 400 else ""))
+    konu_olc = sonuc.konu_olcutleri.copy()
+    konu_olc.insert(1, "Konu adı", adlar)
+    st.markdown("##### Konu ölçütleri")
+    _tablo_goster(konu_olc, 300)
+    bk = km.belge_konu_tablosu(sonuc, bg["adlar"], adlar)
+    st.markdown("##### Belge–konu dağılımı")
+    _sinirli_tablo(bk)
+    if o["Modeldışı kalan (boş) belge"]:
+        st.caption(f"{o['Modeldışı kalan (boş) belge']} belge, sözlük süzgecinden sonra hiç sözcüğü kalmadığı için "
+                   "modele girmedi.")
+    ks = km.konu_sozcuk_tablosu(sonuc, adlar)
+    ozet_t = sozluk_tablosu({**o, "Konu adları": "araştırmacı tarafından verilmiştir" if any(ozel.values())
+                             else "verilmedi (Konu 1, Konu 2…)"}, "Ölçüt", "Değer")
+    bg["ek_tablolar"].update({"Konu sözcükleri": (lambda: ks, len(ks)), "Belge-konu dağılımı": (lambda: bk, len(bk)),
+                              "Konu ölçütleri": (lambda: konu_olc, len(konu_olc)),
+                              "Konu modeli özeti": (lambda: ozet_t, len(ozet_t))})
+
+
+def _konu_karsilastirma(bg: dict, ayar, toplam_sozcuk: int):
+    from dataclasses import replace
+
+    with st.expander("Farklı konu sayılarını karşılaştır"):
+        st.caption("Her konu sayısı için model kurulur ve ölçütler yan yana gösterilir. Tek bir 'doğru' konu sayısı "
+                   "yoktur: tutarlılığın ve kararlılığın yüksek, çeşitliliğin düşmediği aralıklara bakın ve konuları "
+                   "okuyarak karar verin.")
+        c1, c2, c3 = st.columns(3)
+        aralik = c1.slider("Konu sayısı aralığı", 2, km.EN_FAZLA_KONU, (3, 12), key="konu_aralik")
+        adim = int(c2.number_input("Adım", 1, 5, 1, key="konu_adim"))
+        tekrar = int(c3.number_input("Kararlılık alt örneklemi", 0, 5, 2, key="konu_k_tekrar"))
+        sayilar = list(range(aralik[0], aralik[1] + 1, adim))[:12]
+        tahmin = sum(km.sure_tahmini(ayar.yontem, toplam_sozcuk, kk, 1 + tekrar) for kk in sayilar)
+        st.caption(f"{len(sayilar)} model ({', '.join(map(str, sayilar))}); tahmini süre: yaklaşık {_sure(tahmin)}. "
+                   "En fazla 12 konu sayısı karşılaştırılır.")
+        anahtar = ozet(bg["on_isleme_anahtari"], repr(replace(ayar, konu_sayisi=2)), tuple(sayilar), tekrar)
+        tablo = _bul("konu_karsilastirma", anahtar)
+        if tablo is None and st.button("Karşılaştırmayı çalıştır", key="konu_karsilastir"):
+            cubuk = st.progress(0.0, text="Modeller kuruluyor…")
+
+            def ilerleme(oran, kk):
+                cubuk.progress(min(1.0, oran), text=f"Konu sayısı {kk} kuruluyor…" if kk else "Tamamlandı")
+
+            tablo = _hesapla("konu_karsilastirma", anahtar,
+                             lambda: km.konu_sayisi_karsilastir(bg["belgeler"], ayar, sayilar, tekrar, ilerleme), 1)
+        if tablo is not None:
+            gosterim = tablo[[c for c in tablo.columns if c in ("Konu sayısı", "Ortalama NPMI tutarlılığı",
+                                                                "Konu çeşitliliği (ilk 25 sözcük)",
+                                                                "Ortalama kararlılık (AJ)")]]
+            st.plotly_chart(km.karsilastirma_grafigi(gosterim), width="stretch")
+            _tablo_goster(tablo, 360)
+            bg["ek_tablolar"]["Konu sayısı karşılaştırması"] = (lambda: tablo, len(tablo))
+
+
+# ---------------------------------------------------------------------------
+# Modül 4 — Grup karşılaştırması
+# ---------------------------------------------------------------------------
+
+def _grup_sekmesi(bg: dict):
+    st.subheader("Grup karşılaştırması")
+    st.info(gr.UYARI_METNI, icon="ℹ️")
+    tablo = bg["tablo"]
+    adaylar = [c for c in tablo.columns if c not in (bg["metin_sutunu"],)]
+    if not adaylar or (list(tablo.columns) == ["belge", "metin"] and bg["kaynak"] != "Örnek veri setini kullan"):
+        st.info("Grup karşılaştırması için CSV/Excel dosyanızda metin sütununun yanında bir kategori sütunu (ör. bölüm, "
+                "yıl, cinsiyet, okul türü) bulunmalıdır.")
+        return
+    oneri = gr.grup_sutunu_oner(tablo, haric=(bg["metin_sutunu"], bg["ad_sutunu"])) or adaylar[0]
+    c1, c2, c3 = st.columns(3)
+    sutun = c1.selectbox("Grupları belirleyen sütun", adaylar, index=adaylar.index(oneri), key="grup_sutunu")
+    onsel = c2.selectbox("Önsel (yumuşatma)", list(gr.ONSELLER), format_func=gr.ONSELLER.get, key="grup_onsel",
+                         help="Bilgilendirici önsel, seyrek sözcüklerin abartılı değerler almasını önler ve gerçek "
+                              "akademik özetlerde rastgele gruplamada yanlış pozitif üretmedi (tutucu). Zayıf önsel "
+                              "daha duyarlıdır ama yanlış pozitif oranı biraz yüksektir.")
+    min_s = int(c3.number_input("Bir sözcük toplamda en az kaç kez geçsin?", 1, 1000, 5, key="grup_min"))
+    c1, c2 = st.columns(2)
+    perm = int(c1.number_input("Permütasyon sayısı", 0, 1000, 200, step=50, key="grup_perm",
+                               help="Grup etiketleri belgeler arasında bu kadar kez rastgele karıştırılarak, z "
+                                    "değerlerinin tesadüfen ne kadar yükselebileceği ölçülür. 0: hesaplama."))
+    ilk = int(c2.slider("Grup başına gösterilecek sözcük", 5, 40, 15, key="grup_ilk"))
+    grup_degerleri = [tablo[sutun].iloc[n - 1] for n in bg["satir_nolari"]]
+    try:
+        ayar = gr.GrupAyarlari(onsel=onsel, min_siklik=min_s, permutasyon=perm)
+        anahtar = ozet(bg["on_isleme_anahtari"], sutun, repr(ayar))
+
+        def hesapla():
+            veri, bos = gr.grup_verisi_hazirla(bg["belgeler"], grup_degerleri)
+            t, p = gr.ayirt_edici_sozcukler(veri, ayar)
+            return veri, bos, t, p, gr.grup_ozeti(veri), gr.siklik_karsilastirma(veri, min_s)
+
+        with st.spinner("Gruplar karşılaştırılıyor…"):
+            sonuc = _kapili_hesapla(bg, "grup", anahtar, hesapla, "Grupları karşılaştır",
+                                    "karşılaştırma ve permütasyonlar yaklaşık 10–30 saniye sürebilir.")
+        if sonuc is None:
+            return
+        veri, bos, ayirt, perm_s, ozet_t, siklik = sonuc
+    except (gr.GrupHatasi, ValueError) as e:
+        st.error(str(e))
+        return
+    bg["ek_ayarlar"].update({"Grup: sütun": sutun, **{f"Grup: {a}": v for a, v in ayar.sozluk().items()},
+                             "Grup: yöntem": "Monroe vd. (2008) Dirichlet önselli log-odds; her grup ↔ diğer gruplar"})
+    if bos:
+        nolar_ = ", ".join(str(bg["satir_nolari"][i]) for i in bos[:10]) + (" …" if len(bos) > 10 else "")
+        st.warning(f"{len(bos)} belgenin grup değeri boş olduğu için karşılaştırmaya alınmadı (satır: {nolar_}).")
+    for u in gr.yontemsel_uyarilar(ozet_t):
+        st.warning(u)
+    st.markdown("##### Gruplar")
+    _tablo_goster(ozet_t, 260)
+    st.markdown("##### Ayırt edici sözcükler")
+    esik = perm_s["esik"] if perm_s else None
+    st.plotly_chart(gr.ayirt_edici_grafik(ayirt, veri.gruplar, ilk, esik), width="stretch")
+    if perm_s:
+        st.caption(f"Koyu çubuklar ve kırmızı kesikli çizginin sağı: {perm_s['tekrar']} permütasyonla belirlenen, bu "
+                   "veride rastgele gruplamada %95 olasılıkla aşılmayan eşiği geçen sözcükler. Açık renkli "
+                   "çubuklar daha zayıf kanıttır. Rastgele gruplamada sözcüklerin ortalama "
+                   f"%{perm_s['yanlis_pozitif_orani'] * 100:.1f}'i |z| > 1,96 verdi (kuramsal beklenti %5)."
+                   .replace(".", ",", 1))
+    else:
+        st.caption("z > 1,96 gibi geleneksel eşikler bu yöntemde anlamlılığı abartabilir; permütasyonu açmanız önerilir.")
+    secili = st.selectbox("Ayrıntılı tablo için grup", veri.gruplar, key="grup_secili")
+    gt = ayirt[ayirt["Grup"] == secili].head(max(ilk, 50))
+    _tablo_goster(gt.drop(columns="Grup"), 380)
+    if (gt.head(ilk)["Tek belgeden gelen en büyük pay (%)"] > 50).any():
+        st.caption("⚠️ Bazı sözcüklerin bu gruptaki kullanımının yarıdan fazlası tek bir belgeden geliyor (son sütun); "
+                   "bunlar grubu değil o belgeyi yansıtıyor olabilir.")
+    if len(veri.gruplar) == 2:
+        st.plotly_chart(gr.iki_grup_sacilim(ayirt, veri.gruplar), width="stretch")
+        st.caption("Her nokta bir sözcüktür. Yukarıdakiler birinci, aşağıdakiler ikinci grupta orantılı olarak daha "
+                   "sık; sağdakiler derlemde daha sık. Renkli noktalar |z| > 1,96 (yalnızca yol gösterici).")
+    with st.expander("Gruplara göre sıklık tablosu (ham ve bin sözcükte)"):
+        _sinirli_tablo(siklik)
+        st.caption("Gruplar farklı büyüklükte olduğunda ham sıklıklar yerine 'bin sözcükte' değerlerini karşılaştırın.")
+    with st.expander("Yöntem nasıl çalışır?"):
+        st.markdown(
+            "Her grup, geri kalan tüm grupların birleşimiyle karşılaştırılır. Bir sözcüğün gruptaki ve diğer "
+            "gruplardaki **log-odds** değerleri arasındaki fark (δ), yumuşatma için **Dirichlet önseli** eklenerek "
+            "hesaplanır ve standart hatasına bölünerek **z** değeri elde edilir (Monroe, Colaresi & Quinn, 2008). "
+            "Pozitif z: sözcük grupta daha sık; negatif z: daha seyrek.\n\n"
+            "z, sözcükleri birbirinden bağımsız sayar; oysa aynı belgedeki sözcükler bağımlıdır ve binlerce sözcük "
+            "aynı anda sınanır. Bu nedenle uygulama, grup etiketlerini **belgeler arasında** rastgele karıştırarak "
+            "(permütasyon) bu veriye özgü bir eşik hesaplar. Gerçek akademik özetlerle yapılan sınamada bu eşik, "
+            "anlamsız gruplamaların yaklaşık %5'inde (grup başına) aşıldı; yani beklendiği gibi çalıştı.")
+    bg["ek_tablolar"].update({"Grup özeti": (lambda: ozet_t, len(ozet_t)),
+                              "Ayırt edici sözcükler": (lambda: ayirt, len(ayirt)),
+                              "Gruplara göre sıklık": (lambda: siklik, len(siklik))})
+    if perm_s:
+        pt = pd.DataFrame({"Grup": veri.gruplar, "Permütasyon eşiği (z, %95)": np.round(perm_s["esik"], 4)})
+        bg["ek_tablolar"]["Permütasyon eşikleri"] = (lambda: pt, len(pt))
 
 
 def _sinirli_tablo(tablo: pd.DataFrame):
