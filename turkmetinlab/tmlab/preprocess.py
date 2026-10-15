@@ -75,6 +75,7 @@ class OnIslemeAyarlari:
     bolutleme: str = "kati"
     satir_sonu_sinir: bool = False
     lemmatizasyon: bool = False
+    durak_sozcuk_ingilizce: bool = False
 
     def __post_init__(self):
         if self.bolutleme not in BOLUTLEME_SECENEKLERI:
@@ -258,7 +259,7 @@ def on_isle(metin, ayarlar: OnIslemeAyarlari = OnIslemeAyarlari(),
 
     if durak_kumesi is None:
         durak_kumesi = stopword_set(ayarlar.durak_sozcuk_genel, ayarlar.durak_sozcuk_akademik,
-                                    ayarlar.ozel_durak_sozcukler)
+                                    ayarlar.ozel_durak_sozcukler, ayarlar.durak_sozcuk_ingilizce)
     if ayarlar.sapkali_harf_normallestir:
         durak_kumesi = frozenset(w.translate(_SAPKALI) for w in durak_kumesi)
     if ayarlar.lemmatizasyon and lemmatizer is None:
@@ -307,7 +308,7 @@ def derlem_on_isle(metinler: Iterable, ayarlar: OnIslemeAyarlari = OnIslemeAyarl
                    lemma_kaydi: Optional[Counter] = None) -> List[IslenmisBelge]:
     """Bir metin listesini (derlemi) ön işler."""
     durak = stopword_set(ayarlar.durak_sozcuk_genel, ayarlar.durak_sozcuk_akademik,
-                         ayarlar.ozel_durak_sozcukler)
+                         ayarlar.ozel_durak_sozcukler, ayarlar.durak_sozcuk_ingilizce)
     lem = Lemmatizer() if ayarlar.lemmatizasyon else None
     kucuk: dict = {}  # yalnızca bu çağrı süresince yaşar
     return [on_isle(m, ayarlar, durak, lem, lemma_kaydi, kucuk) for m in metinler]

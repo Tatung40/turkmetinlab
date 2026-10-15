@@ -1,0 +1,304 @@
+{
+ "benzerlik": {
+  "dergipark": {
+   "belge": 1417,
+   "sure_sn_matris": 1.47,
+   "cift": 1003236,
+   "ortak_anahtarli_cift": 6213,
+   "ort_benzerlik_ortak_anahtar_var": 0.0577,
+   "ort_benzerlik_ortak_anahtar_yok": 0.0122,
+   "auc_ortak_anahtar": 0.8653,
+   "spearman_kosinus_anahtar_jaccard": 0.0994,
+   "spearman_p": 0.0,
+   "baslik_sorgu_sayisi": 1417,
+   "baslik_ilk1_isabet": 0.8483,
+   "baslik_ilk5_isabet": 0.9605,
+   "baslik_ortalama_ters_sira": 0.8958,
+   "rastgele_ilk1_beklenen": 0.00071,
+   "knn_tam_matrisle_ayni_deger": true
+  },
+  "ud_boun_tur": {
+   "belge": 78,
+   "tur_sayisi": 5,
+   "ari_average": 0.0279,
+   "ari_ward": 0.0022,
+   "ari_rastgele_ortalama": -0.0011,
+   "ort_benzerlik_ayni_tur": 0.0056,
+   "ort_benzerlik_farkli_tur": 0.0042
+  },
+  "toplam_sure_sn": 4.9
+ },
+ "ag": {
+  "dergipark": {
+   "olumlu_cift_havuzu": 6628,
+   "pencere5_cumle": {
+    "kenar": 9090,
+    "olumlu_kenar": 744,
+    "sure_sn": 0.36,
+    "auc_PPMI": 0.7211,
+    "auc_Jaccard": 0.7398,
+    "auc_Birlikte görülme": 0.6634,
+    "ilk100_ppmi_olumlu_orani": 0.33,
+    "ilk100_ham_olumlu_orani": 0.27,
+    "olumlu_oran_tum_kenarlar": 0.0818
+   },
+   "pencere2_cumle": {
+    "kenar": 4341,
+    "olumlu_kenar": 615,
+    "sure_sn": 0.32,
+    "auc_PPMI": 0.6773,
+    "auc_Jaccard": 0.6952,
+    "auc_Birlikte görülme": 0.642,
+    "ilk100_ppmi_olumlu_orani": 0.33,
+    "ilk100_ham_olumlu_orani": 0.32,
+    "olumlu_oran_tum_kenarlar": 0.1417
+   },
+   "cumle": {
+    "kenar": 16065,
+    "olumlu_kenar": 809,
+    "sure_sn": 0.26,
+    "auc_PPMI": 0.7509,
+    "auc_Jaccard": 0.7749,
+    "auc_Birlikte görülme": 0.6561,
+    "ilk100_ppmi_olumlu_orani": 0.35,
+    "ilk100_ham_olumlu_orani": 0.2,
+    "olumlu_oran_tum_kenarlar": 0.0504
+   },
+   "belge": {
+    "kenar": 192011,
+    "olumlu_kenar": 1205,
+    "sure_sn": 0.79,
+    "auc_PPMI": 0.7079,
+    "auc_Jaccard": 0.735,
+    "auc_Birlikte görülme": 0.6272,
+    "ilk100_ppmi_olumlu_orani": 0.2,
+    "ilk100_ham_olumlu_orani": 0.0,
+    "olumlu_oran_tum_kenarlar": 0.0063
+   },
+   "ornek_ilk15_ppmi": [
+    "para — kripto (11)",
+    "elektron — taramalı (19)",
+    "zinciri — tedarik (10)",
+    "elektron — mikroskobu (18)",
+    "nesnelerin — interneti (18)",
+    "mikroskobu — taramalı (17)",
+    "dönüşümü — fourier (7)",
+    "arıtma — atıksu (9)",
+    "parmak — izi (12)",
+    "kayan — kipli (13)",
+    "türlü — taşımacılık (10)",
+    "bayes — naive (30)",
+    "beraberinde — getirmektedir (6)",
+    "tabi — tutulmuştur (8)",
+    "dönüşümü — dalgacık (8)"
+   ]
+  },
+  "toplam_sure_sn": 3.5
+ },
+ "konu": {
+  "dergipark": {
+   "lda_k5": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.0793,
+    "Ortalama UMass tutarlılığı": -1.5437,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.664,
+    "Şaşkınlık (perplexity)": 2419.0101,
+    "Ortalama kararlılık (AJ)": 0.4845,
+    "anahtar_ortusme": 0.204,
+    "anahtar_ortusme_rastgele": 0.0826,
+    "sure_sn (kararlılık dahil)": 29.1,
+    "ilk3_konu": [
+     "elde çalışmada edilmiştir farklı yüksek kullanılarak sahip incelenmiştir",
+     "enerji çalışmada önemli farklı çalışma büyük elde günümüzde",
+     "veri çalışmada elde öğrenme sınıflandırma algoritması kullanılarak farklı"
+    ]
+   },
+   "lda_k10": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.0609,
+    "Ortalama UMass tutarlılığı": -1.9174,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.652,
+    "Şaşkınlık (perplexity)": 2465.7588,
+    "Ortalama kararlılık (AJ)": 0.4085,
+    "anahtar_ortusme": 0.3162,
+    "anahtar_ortusme_rastgele": 0.1077,
+    "sure_sn (kararlılık dahil)": 32.2,
+    "ilk3_konu": [
+     "kontrol çalışmada elde sistem kullanılarak edilmiştir farklı yük",
+     "enerji türkiye su önemli yer deprem çalışma ekonomik",
+     "ın system can different motor model kurutma proposed"
+    ]
+   },
+   "lda_k15": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.0852,
+    "Ortalama UMass tutarlılığı": -1.8842,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.592,
+    "Şaşkınlık (perplexity)": 2530.4386,
+    "Ortalama kararlılık (AJ)": 0.3915,
+    "anahtar_ortusme": 0.319,
+    "anahtar_ortusme_rastgele": 0.0871,
+    "sure_sn (kararlılık dahil)": 32.3,
+    "ilk3_konu": [
+     "kontrol sistem sistemi akıllı çalışmada sistemleri geliştirilen farklı",
+     "deprem çalışma çalışmada farklı son mobil özellikle yer",
+     "ın system can different model proposed power values"
+    ]
+   },
+   "lda_k20": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.0666,
+    "Ortalama UMass tutarlılığı": -1.9212,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.572,
+    "Şaşkınlık (perplexity)": 2669.5314,
+    "Ortalama kararlılık (AJ)": 0.3737,
+    "anahtar_ortusme": 0.3218,
+    "anahtar_ortusme_rastgele": 0.0768,
+    "sure_sn (kararlılık dahil)": 31.4,
+    "ilk3_konu": [
+     "farklı elde çalışmada edilmiştir araç kullanılarak trafik tespit",
+     "deprem çalışma güvenlik çalışmada son büyük yüksek türkiye",
+     "veri çalışmada power energy müşteri eeg ağ duygu"
+    ]
+   },
+   "nmf_k5": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.2189,
+    "Ortalama UMass tutarlılığı": -1.7208,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.896,
+    "Yeniden oluşturma hatası": 36.8357,
+    "NMF yakınsadı mı": "evet",
+    "Ortalama kararlılık (AJ)": 0.81,
+    "anahtar_ortusme": 0.3818,
+    "anahtar_ortusme_rastgele": 0.1152,
+    "sure_sn (kararlılık dahil)": 0.9,
+    "ilk3_konu": [
+     "elde yüzey farklı edilmiştir yüksek çalışmada malzeme belirlenmiştir",
+     "enerji enerjisi güneş elektrik yenilenebilir rüzgâr hidroelektrik su",
+     "iş güvenlik çalışma bilgi güvenliği sosyal sağlığı yer"
+    ]
+   },
+   "nmf_k10": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.241,
+    "Ortalama UMass tutarlılığı": -1.6665,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.864,
+    "Yeniden oluşturma hatası": 36.5087,
+    "NMF yakınsadı mı": "evet",
+    "Ortalama kararlılık (AJ)": 0.617,
+    "anahtar_ortusme": 0.4255,
+    "anahtar_ortusme_rastgele": 0.0918,
+    "sure_sn (kararlılık dahil)": 1.6,
+    "ilk3_konu": [
+     "elde yüzey farklı edilmiştir yüksek malzeme çalışmada belirlenmiştir",
+     "enerji enerjisi güneş elektrik yenilenebilir rüzgâr hidroelektrik kaynakları",
+     "mobil akıllı güvenlik kontrol sistem sistemi yazılım uygulama"
+    ]
+   },
+   "nmf_k15": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.2582,
+    "Ortalama UMass tutarlılığı": -1.7607,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.848,
+    "Yeniden oluşturma hatası": 36.2402,
+    "NMF yakınsadı mı": "evet",
+    "Ortalama kararlılık (AJ)": 0.5831,
+    "anahtar_ortusme": 0.5018,
+    "anahtar_ortusme_rastgele": 0.0838,
+    "sure_sn (kararlılık dahil)": 1.9,
+    "ilk3_konu": [
+     "yüzey elde farklı edilmiştir malzeme yüksek çalışmada deneysel",
+     "enerji güneş enerjisi elektrik yenilenebilir rüzgâr hidroelektrik kaynakları",
+     "güvenlik mobil akıllı android uygulama yazılım iletişim bulut"
+    ]
+   },
+   "nmf_k20": {
+    "Modele giren belge": 1417,
+    "Modeldışı kalan (boş) belge": 0,
+    "Ortalama NPMI tutarlılığı": 0.2631,
+    "Ortalama UMass tutarlılığı": -1.7691,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.828,
+    "Yeniden oluşturma hatası": 35.9911,
+    "NMF yakınsadı mı": "evet",
+    "Ortalama kararlılık (AJ)": 0.6735,
+    "anahtar_ortusme": 0.5138,
+    "anahtar_ortusme_rastgele": 0.0735,
+    "sure_sn (kararlılık dahil)": 3.4,
+    "ilk3_konu": [
+     "yüzey elde farklı edilmiştir malzeme aşınma kaplama kompozit",
+     "enerji güneş enerjisi elektrik yenilenebilir rüzgâr hidroelektrik kaynakları",
+     "güvenlik mobil akıllı android uygulama şifreleme işletim yazılım"
+    ]
+   }
+  },
+  "toplam_sure_sn": 134.5
+ },
+ "grup": {
+  "dergipark": {
+   "rastgele_bolme_bilgilendirici": {
+    "bolme_sayisi": 30,
+    "nominal_|z|>1.96_orani_ortalama": 0.0085,
+    "kuramsal_beklenen": 0.05,
+    "permutasyon_esigini_asan_sozcuk_ortalama": 0.1,
+    "en_az_bir_sozcuk_asan_bolme_orani": 0.1,
+    "not": "Her bölmede 2 grup sınanır; aile bazında beklenen oran ~%5 × 2 grup ≈ %10"
+   },
+   "rastgele_bolme_zayif": {
+    "bolme_sayisi": 30,
+    "nominal_|z|>1.96_orani_ortalama": 0.0617,
+    "kuramsal_beklenen": 0.05,
+    "permutasyon_esigini_asan_sozcuk_ortalama": 0.1,
+    "en_az_bir_sozcuk_asan_bolme_orani": 0.1,
+    "not": "Her bölmede 2 grup sınanır; aile bazında beklenen oran ~%5 × 2 grup ≈ %10"
+   },
+   "pozitif_kontrol": {
+    "belge": {
+     "deprem": 19,
+     "enerji": 113
+    },
+    "permutasyon_esikleri": {
+     "deprem": 3.87,
+     "enerji": 1.534
+    },
+    "deprem_ilk12": [
+     "deprem (7.8*)",
+     "sismik (4.6*)",
+     "meydana (4.2*)",
+     "zemin (3.9*)",
+     "ivme (3.7)",
+     "yapısal (3.2)",
+     "yer (3.1)",
+     "patlatma (3.0)",
+     "fayı (2.9)",
+     "kayma (2.9)",
+     "spektral (2.7)",
+     "türk (2.7)"
+    ],
+    "enerji_ilk12": [
+     "enerji (3.1*)",
+     "enerjisi (1.8*)",
+     "güneş (1.8*)",
+     "elektrik (1.8*)",
+     "rüzgâr (1.4)",
+     "güç (1.3)",
+     "yenilenebilir (1.2)",
+     "rüzgar (1.1)",
+     "su (1.1)",
+     "üretim (1.1)",
+     "ortalama (1.0)",
+     "fotovoltaik (1.0)"
+    ],
+    "deprem_esigi_asan_sozcuk": 4,
+    "enerji_esigi_asan_sozcuk": 4
+   }
+  },
+  "toplam_sure_sn": 29.3
+ }
+}

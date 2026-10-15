@@ -152,7 +152,53 @@ def tek_olcum(ad: str, lemma: bool = False) -> dict:
     }
 
 
+def modul_olcumu(ad: str) -> dict:
+    """2.0 modülleri: benzerlik, birliktelik ağı, konu modeli (NMF + kararlılık), grup karşılaştırması."""
+    from tmlab.analysis import tfidf_hesapla
+    from tmlab.benzerlik import (YOGUN_MATRIS_SINIRI, ciftler_komsulardan, en_benzer_ciftler, en_yakin_komsular,
+                                 hiyerarsik_kumeleme, kosinus_matrisi, siluet_tablosu)
+    from tmlab.birliktelik import AgAyarlari, ag_sec, birliktelik_hesapla, dugum_tablosu, kenar_tablosu
+    from tmlab.grup import GrupAyarlari, ayirt_edici_sozcukler, grup_verisi_hazirla
+    from tmlab.konu import KonuAyarlari, konu_modeli
+    from tmlab.preprocess import OnIslemeAyarlari, derlem_on_isle
+
+    belge, cumle = BOYUTLAR[ad]
+    metinler = zipf_derlem(belge, cumle) if ad.endswith("_genis") else sentetik_derlem(belge, cumle)
+    belgeler = derlem_on_isle(metinler, OnIslemeAyarlari())
+    tfidf = tfidf_hesapla(belgeler)
+    rss0 = rss_mb()
+    sure = {}
+    t = time.perf_counter()
+    if tfidf.matris.shape[0] <= YOGUN_MATRIS_SINIRI:
+        S = kosinus_matrisi(tfidf.matris)
+        en_benzer_ciftler(S, tfidf.belge_adlari, 50)
+        Z = hiyerarsik_kumeleme(S, "average")
+        siluet_tablosu(S, Z, "average", 10)
+    else:
+        I, V = en_yakin_komsular(tfidf.matris, 50)
+        ciftler_komsulardan(I, V, tfidf.belge_adlari, 50)
+    sure["benzerlik"] = time.perf_counter() - t
+    t = time.perf_counter()
+    r = birliktelik_hesapla(belgeler, AgAyarlari())
+    kenar_tablosu(r, en_fazla=100_000)
+    s_ = ag_sec(r, "jaccard", 50, 100)
+    dugum_tablosu(s_, r)
+    sure["birliktelik ağı"] = time.perf_counter() - t
+    t = time.perf_counter()
+    konu_modeli(belgeler, KonuAyarlari("nmf", 10), kararlilik_tekrari=3)
+    sure["konu (NMF, 10 konu, 3 kararlılık)"] = time.perf_counter() - t
+    t = time.perf_counter()
+    veri, _ = grup_verisi_hazirla(belgeler, [f"G{i % 4}" for i in range(len(belgeler))])
+    ayirt_edici_sozcukler(veri, GrupAyarlari(permutasyon=200))
+    sure["grup (4 grup, 200 permütasyon)"] = time.perf_counter() - t
+    return {"boyut": ad, "belge": belge, "süreler_sn": {k: round(v, 2) for k, v in sure.items()},
+            "toplam_sn": round(sum(sure.values()), 2), "bellek_once_MB": round(rss0, 1), "tepe RSS MB": round(tepe_mb(), 1)}
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--modul":
+        print(json.dumps(modul_olcumu(sys.argv[2]), ensure_ascii=False))
+        sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1] == "--tek":
         print(json.dumps(tek_olcum(sys.argv[2], sys.argv[3] == "1"), ensure_ascii=False))
         sys.exit(0)

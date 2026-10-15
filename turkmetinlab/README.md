@@ -1,11 +1,12 @@
 # 📚 TürkMetinLab
 
 **Türkçe akademik metinler için ücretsiz, kod bilgisi gerektirmeyen metin madenciliği uygulaması.**
-Sürüm 1.1.0 · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
-[docs/bilimsel_degerlendirme_1.1.md](docs/bilimsel_degerlendirme_1.1.md)
+Sürüm 2.0.0 · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
+[2.0](docs/bilimsel_degerlendirme_2.0.md) · [1.1](docs/bilimsel_degerlendirme_1.1.md)
 
 TürkMetinLab; makale özetleri, görüşme dökümleri, açık uçlu anket yanıtları gibi Türkçe metinlerde
-sözcük sıklığı, n-gram ve TF-IDF analizleri yapar. Sonuçları etkileşimli grafikler, kelime bulutu ve
+sözcük sıklığı, n-gram ve TF-IDF analizleri; belge benzerliği, sözcük birliktelik ağları, konu
+modellemesi ve grup karşılaştırması yapar. Sonuçları etkileşimli grafikler, kelime bulutu ve
 indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kaynak araçlarla
 çalışır; ücretli hizmet, veritabanı veya abonelik gerektirmez.
 
@@ -18,12 +19,16 @@ indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kay
 | Dosya yükleme | CSV, Excel (.xlsx) ve TXT. Türkçe karakter kodlaması (UTF-8, Windows-1254, ISO-8859-9) otomatik tanınır. |
 | Türkçe ön işleme | Türkçeye uygun küçük harf dönüşümü (I→ı, İ→i), kesme işareti, durak sözcükler, sayılar, web adresleri |
 | Lemmatizasyon (isteğe bağlı) | Sözlük tabanlı (simplemma); Türkçe altın standart verilerde ölçülen doğruluk %94,4–94,5; dönüşüm tablosu |
-| Veri denetimi | Boş/yer tutucu hücreler, yinelenen kimlik ve metinler, formüller, bozuk veya yanlış türde dosyalar bildirilir |
+| Veri denetimi | Boş/yer tutucu hücreler, yinelenen kimlik ve metinler, formüller, bozuk veya yanlış türde dosyalar, İngilizce içeren belgeler (2.0) bildirilir |
 | Sözcük sıklığı | Ham sıklık, göreli sıklık (%), bin sözcükteki sıklık, belge sıklığı |
 | N-gram | 2, 3 ve 4 sözcüklü öbekler; seçilebilir bölütleme (varsayılan: cümle sonu, virgül, ; ve : aşılmaz) |
 | TF-IDF | Derlem geneli ve belge bazında en ayırt edici terimler, ısı haritası |
+| **Belge benzerliği** (2.0) | TF-IDF kosinüs benzerliği, en benzer çiftler, belge sıralaması, ısı haritası, hiyerarşik kümeleme + dendrogram + siluet; büyük derlemlerde bellek dostu en yakın komşu |
+| **Sözcük birliktelik ağı** (2.0) | ±k sözcük penceresi / cümle / belge bağlamı, cümle sınırı seçeneği, ham sıklık, Jaccard, PPMI, derece ve ağırlıklı derece, etkileşimli ağ, düğüm/kenar tabloları |
+| **Konu modellemesi** (2.0) | NMF (önerilen) ve LDA, sabit tohum, NPMI/UMass tutarlılığı, konu çeşitliliği, alt örneklem kararlılığı, konu sayısı karşılaştırması, araştırmacının konu adlandırması, tipik belgeler |
+| **Grup karşılaştırması** (2.0) | Kategorik sütuna göre ham ve bin sözcükte sıklıklar, Dirichlet önselli log-odds (Monroe vd., 2008), belge düzeyinde permütasyon eşiği, küçük/dengesiz grup uyarıları |
 | Görselleştirme | Etkileşimli Plotly grafikleri, Türkçe karakterli kelime bulutu |
-| Dışa aktarım | Tüm tablolar + kullanılan ayarlar tek Excel dosyasında; ayrı CSV dosyaları |
+| Dışa aktarım | Tüm tablolar (yeni modüller dahil) + tüm yöntemsel ayarlar tek Excel dosyasında; ayrı CSV dosyaları |
 | Örnek veri | 16 kurgusal Türkçe akademik özet (yalnızca deneme amaçlıdır) |
 
 ## Gizlilik
@@ -85,6 +90,31 @@ saklar) ve **Streamlit Community Cloud** (uygulamayı çalıştırır).
 > Uygulama bir süre kullanılmazsa uyku moduna geçer. Açtığınızda "wake up" düğmesine
 > basmanız yeterlidir; yaklaşık bir dakikada yeniden açılır.
 
+### Yeni sürümü güvenle yükleme (canlı uygulamayı bozmadan)
+
+Yeni bir sürümü doğrudan `main` dalına yüklemeyin. Canlı uygulama `main` dalından çalışır. Aşağıdaki
+yolla yeni sürüm önce ayrı bir dalda test edilir ve ayrı bir deneme uygulamasında denenir; canlı
+uygulama ancak siz onayladıktan sonra güncellenir.
+
+1. **Yeni dala yükleyin.** GitHub'da deponuzu açın, ardından **Add file → Upload files**'a tıklayın.
+   Yeni sürüm klasörünün içindeki her şeyi sürükleyin (Mac'te gizli dosyalar için **Cmd + Shift + .**).
+   Sayfanın altında **"Create a new branch for this commit and start a pull request"** seçeneğini
+   işaretleyin. Dal adı olarak `gelistirme-2.0` yazın, **Propose changes**'a, sonra **Create pull
+   request**'e tıklayın. **Henüz birleştirmeyin.**
+2. **Testleri bekleyin.** Pull request sayfasında **Testler** kontrolleri (Python 3.12 ve 3.13) birkaç
+   dakika içinde tamamlanır. İkisinde de yeşil ✓ görmelisiniz. Kırmızı ✗ varsa birleştirmeyin.
+3. **Deneme uygulaması kurun.** <https://share.streamlit.io>'da **Create app → Deploy a public app from
+   GitHub**'ı seçin. Aynı depoyu seçin, **Branch** alanına `gelistirme-2.0`, **Main file path** alanına
+   `app.py` yazın. **App URL** alanına farklı bir ad verin (ör. `turkmetinlab-deneme`). **Advanced
+   settings**'te Python **3.12**'yi seçip **Deploy**'a tıklayın. Canlı uygulamanız bu adımdan etkilenmez.
+4. **Deneyin.** Deneme uygulamasında örnek veriyle ve kendi (anonimleştirilmiş) verinizle yeni
+   sekmeleri deneyin.
+5. **Onaylarsanız birleştirin.** Pull request sayfasında **Merge pull request → Confirm merge**'e
+   tıklayın. Canlı uygulama birkaç dakika içinde yeni sürüme geçer. Ardından deneme uygulamasını
+   share.streamlit.io'da uygulamanın **⋮** menüsünden **Delete** ile silebilirsiniz.
+6. **Onaylamazsanız:** Pull request'i **Close pull request** ile kapatın. Canlı uygulama eski sürümde
+   kalır.
+
 ---
 
 ## Kullanım
@@ -136,8 +166,23 @@ sonucu verir. Kelime bulutu yerleşimi de sabit tohum değeriyle üretilir.
 sözdizim öbeğindeyken bu oran virgülün iki yanında %3,4'tür. Bu nedenle varsayılan bölütleme virgülü
 de sınır sayar. Ayrıntı: `docs/bilimsel_degerlendirme_1.1.md`.
 
+**2.0 modülleri.** Her yeni modül elle hesaplanmış örneklerle, bağımsız uygulamalarla (scikit-learn,
+scipy, networkx, jmhessel/FightingWords) ve 1.417 gerçek DergiPark makale özetiyle sınanmıştır. Öne
+çıkan bulgular:
+- Başlıkla aramada makalenin kendi özeti %84,8 oranında ilk sırada geldi.
+- Yazar anahtar terimlerini ayırt etmede en iyi ölçüt Jaccard oldu.
+- Kısa akademik özetlerde NMF, LDA'dan daha tutarlı ve kararlı konular verdi.
+- Permütasyon eşiği, anlamsız gruplamalarda hedeflenen %5 düzeyinde yanlış pozitif verdi.
+
+Ayrıntı: `docs/bilimsel_degerlendirme_2.0.md`.
+
 ### Sınırlılıklar
 
+- Benzerlik konuyu ölçer; anlamsal eşdeğerlik, intihal ya da metin kökeni tespiti değildir.
+- Birlikte görülme nedensellik ya da doğrudan anlamsal ilişki değildir.
+- Konular algoritmiktir; araştırmacı okuyup adlandırmadıkça doğrulanmış nitel tema değildir.
+- Grup farkları neden-sonuç açıklamaz.
+- Gerçek veri sınaması ağırlıklı olarak mühendislik özetleriyle yapılmıştır.
 - Varsayılan olarak sözcükler köklerine indirgenmez: "eğitim", "eğitimi" ve "eğitimde" ayrı sayılır.
   İsteğe bağlı lemmatizasyon bağlama bakmaz (~%94 doğruluk), eylem adlarını fiil köküne indirir
   (*çalışma → çalış*) ve kalıp terimleri değiştirebilir (*uzaktan eğitim → uzak eğitim*).
@@ -159,10 +204,10 @@ pip install -r requirements-dev.txt
 streamlit run app.py
 ```
 
-Yerelde veri sınırını yükseltmek için (ör. 5 milyon sözcük):
+Yerelde veri sınırlarını yükseltmek için (ör. 5 milyon sözcük, LDA için 3 milyon sözcük):
 
 ```bash
-TML_EN_FAZLA_SOZCUK=5000000 streamlit run app.py
+TML_EN_FAZLA_SOZCUK=5000000 TML_LDA_SOZCUK=3000000 streamlit run app.py
 ```
 
 ### Testler
@@ -171,18 +216,21 @@ TML_EN_FAZLA_SOZCUK=5000000 streamlit run app.py
 python -m pytest -q
 ```
 
-231 otomatik test. Kapsadıkları konular:
+314 otomatik test (1.1'in 232 testi değiştirilmeden korunmuştur; 2 büyük veri testi isteğe bağlıdır). Kapsadıkları konular:
 
 - Türkçe harf dönüşümü, kodlama tanıma, CSV/Excel/TXT okuma
 - Bölütleme ve lemmatizasyon (UD Turkish-BOUN altın standart verisiyle)
 - Gizlilik (paylaşılan önbellek, diske yazma, hata günlüğü)
 - Dosya güvenliği
 - TF-IDF'in bağımsız bir uygulama ve Türkçe referans veriyle karşılaştırılması
+- Benzerlik, birliktelik ağı, konu modeli ve grup karşılaştırması: elle hesaplanmış örnekler, bağımsız
+  uygulamalar, ekilmiş konular, permütasyon kalibrasyonu
 - Performans ve bellek
 - Uygulamanın uçtan uca çalışması
 
 Testler GitHub'a her yüklemede **Actions** sekmesinde Python 3.12 ve 3.13 ile otomatik çalışır.
 Uzun süren büyük veri ölçümü için: `TML_BUYUK_TEST=1 python -m pytest tests/test_performans.py`.
+Gerçek akademik veriyle validasyon (internet gerekir): `python degerlendirme/v2_dogrulama.py`.
 
 ### Proje yapısı
 
@@ -196,13 +244,17 @@ turkmetinlab/
 │   ├── loader.py             # CSV / Excel / TXT okuma ve dosya güvenliği
 │   ├── kalite.py             # Veri kalitesi denetimi
 │   ├── analysis.py           # Sıklık, n-gram, TF-IDF
+│   ├── benzerlik.py          # 2.0: belge benzerliği ve kümeleme
+│   ├── birliktelik.py        # 2.0: sözcük birliktelik ağları
+│   ├── konu.py               # 2.0: konu modellemesi (NMF, LDA)
+│   ├── grup.py               # 2.0: grup karşılaştırması
 │   ├── visualize.py          # Grafikler ve kelime bulutu
 │   ├── export.py             # CSV / Excel dışa aktarım (formül enjeksiyonu koruması)
 │   ├── oturum.py             # Oturuma özel bellek, veri temizliği, güvenli hata kaydı
 │   └── performans.py         # Veri boyutu sınırları
 ├── tests/                    # Otomatik testler (pytest)
 │   └── veri/                 # UD Turkish-BOUN örneği (CC BY-SA 4.0) ve beklenen sonuçlar
-├── degerlendirme/            # Lemmatizasyon, bölütleme ve performans ölçüm betikleri
+├── degerlendirme/            # Lemmatizasyon, bölütleme, performans ve 2.0 validasyon betikleri
 ├── docs/                     # Bilimsel değerlendirme raporu
 ├── ornek_veri/               # Örnek veri seti
 ├── .streamlit/config.toml    # Uygulama ayarları
@@ -212,5 +264,5 @@ turkmetinlab/
 
 ### Kullanılan açık kaynak kütüphaneler
 
-Streamlit, pandas, NumPy, scikit-learn, Plotly, wordcloud, Matplotlib (DejaVu Sans fontu), openpyxl,
+Streamlit, pandas, NumPy, SciPy, scikit-learn, NetworkX, Plotly, wordcloud, Matplotlib (DejaVu Sans fontu), openpyxl,
 XlsxWriter, simplemma. Test verisi: UD Turkish-BOUN (CC BY-SA 4.0; atıf bilgisi `tests/veri/README.md`).

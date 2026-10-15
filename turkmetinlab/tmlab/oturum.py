@@ -79,6 +79,14 @@ class OturumBellegi:
             alan.popitem(last=False)
         return deger
 
+    def bul(self, ad: str, anahtar: str, varsayilan=None):
+        """Hesaplama yapmadan, varsa kayıtlı sonucu döndürür (düğmeyle başlatılan ağır analizler için)."""
+        alan = self._alanlar.get(ad)
+        if alan is not None and anahtar in alan:
+            alan.move_to_end(anahtar)
+            return alan[anahtar]
+        return varsayilan
+
     def kayit_sayisi(self) -> int:
         return sum(len(a) for a in self._alanlar.values())
 

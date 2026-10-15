@@ -1,5 +1,58 @@
 # Değişiklikler
 
+## 2.0.0 — Analiz modülleri
+
+Ayrıntılı validasyon ve performans raporu: [`docs/bilimsel_degerlendirme_2.0.md`](docs/bilimsel_degerlendirme_2.0.md).
+1.1'in bütün özellikleri ve 232 testi (1'i isteğe bağlı) değiştirilmeden korunmuştur.
+
+### Yeni modüller (yeni sekmeler)
+- **🧭 Benzerlik:**
+  - TF-IDF kosinüs benzerliği, en benzer belge çiftleri, seçilen belgeye en benzer belgeler, ısı haritası.
+  - İsteğe bağlı hiyerarşik kümeleme: ortalama bağlantı veya Ward; dendrogram ve siluet değerleri.
+  - 2.000 belgeden büyük derlemlerde bellek dostu, sonucu tam matrisle aynı en yakın komşu hesabı.
+- **🕸️ Sözcük Ağı:**
+  - Üç bağlam türü: ±k sözcük penceresi (cümle sınırına uyma seçeneğiyle), aynı cümle, aynı belge.
+  - Ölçütler: ham sıklık, Jaccard (varsayılan, gerçek veride en iyisi), PPMI.
+  - Derece ve ağırlıklı derece; etkileşimli ağ; Gephi'ye aktarılabilen düğüm ve kenar tabloları;
+    düğüm ve kenar sınırları.
+- **🧩 Konular:**
+  - NMF (varsayılan; gerçek akademik özetlerde daha tutarlı, kararlı ve hızlı) ve LDA; sabit `random_state`.
+  - Ölçütler: NPMI ve UMass tutarlılığı, konu çeşitliliği, alt örneklem kararlılığı.
+  - Farklı konu sayılarının karşılaştırılması.
+  - Küçük derlem, kısa belge ve yüksek konu sayısı uyarıları.
+  - Araştırmacının konu adlandırması (indirilen dosyalara yansır) ve her konunun tipik belgeleri.
+  - LDA'ya derlem büyüklüğü sınırı ve tahmini süre gösterimi.
+- **👥 Gruplar:**
+  - Kategorik sütuna göre grup özeti; ham ve bin sözcükte sıklıklar.
+  - Dirichlet önselli log-odds (Monroe vd., 2008) ve belge düzeyinde permütasyon eşiği.
+  - Belge oranı ve tek belge baskınlığı göstergesi.
+  - Küçük grup, dengesiz grup, kimlik sütunu ve boş grup uyarıları.
+  - İki grupta saçılım grafiği.
+
+### Veri kalitesi ve ön işleme
+- İngilizce metin içeren belgeler satır numarasıyla bildiriliyor.
+- Yeni "İngilizce durak sözcükleri de çıkar" seçeneği.
+- Akademik kalıp sözcük listesine gerçek veride sık görülen 9 kalıp fiil eklendi (seçenek varsayılan olarak kapalı).
+
+### Dışa aktarım
+- Yeni modüllerin bütün tabloları Excel'e ve CSV'ye ekleniyor.
+- Tüm yöntemsel ayarlar (bağlam, ölçüt, önsel, tohum, permütasyon sayısı…) Excel'deki *Ayarlar*
+  sayfasına yazılıyor.
+
+### Performans ve güvenlik
+- Uzun analizler düğmeyle başlıyor; 300 bin sözcüğün üstündeki derlemlerde ağ ve grup analizleri de.
+  Sonuçlar yalnızca kullanıcının oturumunda saklanıyor; paylaşılan önbellek ve disk kullanılmıyor.
+- Eşzamanlı 4 kullanıcıyla oturum yalıtımı, bellek ve süre sınandı.
+
+### Testler ve validasyon
+- Yeni testler: `test_benzerlik.py`, `test_birliktelik.py`, `test_konu.py`, `test_grup.py`; performans
+  ve kalite testlerine ekler.
+- Gerçek akademik veriyle (1.417 DergiPark özeti) yöntemsel validasyon betiği: `degerlendirme/v2_dogrulama.py`.
+
+### Yeni bağımlılıklar
+- `scipy==1.18.1` (önceden scikit-learn ile dolaylı olarak geliyordu; artık doğrudan kullanılıyor).
+- `networkx==3.6.1`: ağ yerleşimi; BSD lisanslı.
+
 ## 1.1.0 — Bilimsel ve teknik iyileştirme
 
 Ayrıntılı gerekçe ve ölçümler: [`docs/bilimsel_degerlendirme_1.1.md`](docs/bilimsel_degerlendirme_1.1.md)

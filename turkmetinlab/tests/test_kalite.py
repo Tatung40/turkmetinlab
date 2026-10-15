@@ -65,3 +65,32 @@ def test_sayisal_kimlik_ve_metin():
     t = pd.DataFrame({"no": [1, 2], "m": [123, "metin"]})
     metinler, adlar, _, _ = belgeleri_hazirla(t, "m", "no")
     assert metinler == ("123", "metin") and adlar == ["1", "2"]
+
+
+# --- İngilizce içerik tespiti (2.0) ----------------------------------------
+
+def test_ingilizce_icerik_tespiti(ud):
+    from tmlab.kalite import ingilizce_iceren, ingilizce_oran
+
+    tr = "Bu çalışmada öğrencilerin okuma becerileri incelenmiştir. Bulgular anlamlı farklar göstermiştir."
+    en = "In this study, the reading skills of the students were examined and the results are presented."
+    karisik = tr + " " + en
+    assert ingilizce_oran(tr) == 0
+    assert ingilizce_oran(en) > 0.2
+    assert ingilizce_iceren([tr, en, karisik]) == [1, 2]
+    # Türkçede de sözcük olan kısa biçimler (on, an, as, in) yanlış alarm üretmez
+    assert ingilizce_iceren(["On yıl önce bir an as kartı in ve cin masalı anlatıldı."]) == []
+    # Gerçek Türkçe metinler (UD BOUN, 5 cümlelik belgeler): yanlış alarm yok
+    belgeler = [" ".join(c["metin"] for c in ud[i:i + 5]) for i in range(0, len(ud), 5)]
+    assert ingilizce_iceren(belgeler) == []
+
+
+def test_ingilizce_durak_sozcukleri_secenegi():
+    from tmlab.preprocess import OnIslemeAyarlari, on_isle
+    from tmlab.stopwords import INGILIZCE_DURAK_SOZCUKLER
+
+    metin = "The results of the study show deprem riski"
+    assert on_isle(metin).sozcukler[:2] == ["the", "results"]
+    assert on_isle(metin, OnIslemeAyarlari(durak_sozcuk_ingilizce=True)).sozcukler == ["show", "deprem", "riski"]
+    # Türkçede anlamlı biçimler İngilizce listesinde yok
+    assert not ({"can", "his", "but", "had"} & INGILIZCE_DURAK_SOZCUKLER)
