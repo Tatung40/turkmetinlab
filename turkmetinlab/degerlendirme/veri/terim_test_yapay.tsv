@@ -1,0 +1,184 @@
+# TürkMetinLab 2.1 — terim tanıma için YAPAY test kümesi (geliştiriciden bağımsız tutulan bölüm)
+#
+# Hazırlanış: Her alandan 12 terim sabit tohumla (random_state=2101) rastgele seçildi; cümleler eşleştirici
+# kodu yazılmadan ÖNCE elle yazıldı ve dondurulduktan sonra geliştirmede kullanılmadı. Cümleler kurgusaldır,
+# gerçek yayınlardan alınmamıştır. Etiketleyen: geliştirici (Claude) — uzman etiketlemesi değildir.
+#
+# Biçim: cümle <TAB> beklenen eşleşmeler
+#   beklenen: "yüzey=TERİM_ID" öğeleri ";" ile ayrılır; eşleşme beklenmiyorsa "-".
+#   Yüzey, cümlede birebir geçen (eklerle birlikte) metin parçasıdır; iç içe terimlerde EN UZUN terim beklenir.
+#   "a|b": kesişen iki terimden HERHANGİ BİRİ doğru kabul edilir (ikisi aynı anda seçilemez).
+#   Türetim ekli biçimler (-CI, -lI, -lIk, -sIz, -sAl …) sözleşme gereği eşleşme DEĞİLDİR.
+# Satır başındaki "[kisaltma]" etiketi: o satır yalnızca "kısaltmaları tanı" seçeneği açıkken değerlendirilir.
+#
+# --- Ekonomi, işletme ve yönetim -------------------------------------------------------------------
+Tüketici fiyat endeksindeki artış beklentileri bozdu.	Tüketici fiyat endeksindeki=T0324
+Merkez bankası tüketici fiyat endeksini yakından izliyor.	tüketici fiyat endeksini=T0324
+Ülkenin ödemeler dengesi son çeyrekte iyileşti.	ödemeler dengesi=T0336
+Ödemeler dengesinde açık büyüdükçe kur baskısı arttı.	Ödemeler dengesinde=T0336
+Ödemeler dengelerine ilişkin veriler üç ülke için karşılaştırıldı.	Ödemeler dengelerine=T0336
+Şirketlerin kurumsal itibarı kriz dönemlerinde zedelenebilir.	kurumsal itibarı=T0378
+Kurumsal itibar ile müşteri sadakati arasındaki ilişki incelendi.	Kurumsal itibar=T0378
+Bankalarda risk yönetiminin etkinliği denetlendi.	risk yönetiminin=T0351
+Risk yönetimcisi olarak görev yapan katılımcılarla görüşüldü.	-
+Gençlerde işsizlik oranları yüksek seyretti.	işsizlik oranları=T0372
+İşsizlik oranının düşmesi tüketimi artırdı.	İşsizlik oranının=T0372
+Sosyal girişimciliğin yerel kalkınmaya katkısı tartışıldı.	Sosyal girişimciliğin=T0406
+Sosyal girişimcilik ekosistemi henüz gelişmemiştir.	Sosyal girişimcilik=T0406|girişimcilik ekosistemi=T0405
+Politika faizindeki indirim piyasalarca olumlu karşılandı.	Politika faizindeki=T0331
+Kurul politika faizini sabit tuttu.	politika faizini=T0331
+Finansal istikrarın korunması için makro ihtiyati önlemler alındı.	Finansal istikrarın=T0341
+Finansal istikrarsızlık dönemlerinde yatırımlar azaldı.	-
+Projenin fayda maliyet analizi olumlu sonuç verdi.	fayda maliyet analizi=T0410
+Fayda maliyet analizlerinde iskonto oranı belirleyicidir.	Fayda maliyet analizlerinde=T0410
+Döngüsel ekonomiye geçiş için politika önerileri geliştirildi.	Döngüsel ekonomiye=T0360
+Döngüsel ekonomik dalgalanmalar ayrıca modellendi.	-
+Avrupa karbon piyasasında fiyatlar yükseldi.	karbon piyasasında=T0357
+Karbon piyasaları ile enerji fiyatları arasında ilişki bulundu.	Karbon piyasaları=T0357
+Reel faiz oranının negatif olması tasarrufları azalttı.	Reel faiz oranının=T0332
+Reel faiz oranlarındaki değişim yatırımı etkiler.	Reel faiz oranlarındaki=T0332
+#
+# --- Eğitim bilimleri ve psikometri -----------------------------------------------------------------
+Sorgulamaya dayalı öğrenmenin fen başarısına etkisi incelendi.	Sorgulamaya dayalı öğrenmenin=T0012
+Derslerde sorgulamaya dayalı öğrenme yaklaşımı uygulandı.	sorgulamaya dayalı öğrenme=T0012
+Yaratıcı düşünmeyi destekleyen etkinlikler tasarlandı.	Yaratıcı düşünmeyi=T0049
+Öğrencilerin yaratıcı düşünme becerileri ölçüldü.	yaratıcı düşünme=T0049
+Yeni öğretim programında kazanımlar sadeleştirildi.	öğretim programında=T0057
+Öğretim programları uluslararası örneklerle karşılaştırıldı.	Öğretim programları=T0057
+Öğretim programcısı olarak çalışan öğretmenlerle görüşüldü.	-
+Madde havuzundaki soruların güçlük düzeyleri hesaplandı.	Madde havuzundaki=T0114
+Madde havuzları düzenli olarak güncellenmelidir.	Madde havuzları=T0114
+Çoktan seçmeli maddelerin ayırt ediciliği yüksek bulundu.	Çoktan seçmeli maddelerin=T0109
+Sınav çoktan seçmeli madde ve açık uçlu sorulardan oluştu.	çoktan seçmeli madde=T0109
+Mobil öğrenmenin erişilebilirliği artırdığı görüldü.	Mobil öğrenmenin=T0016
+Mobil öğrenme uygulamaları yaygınlaşmaktadır.	Mobil öğrenme=T0016
+Diferansiyel madde işleyişinin belirlenmesinde iki yöntem kullanıldı.	Diferansiyel madde işleyişinin=T0086
+Testte diferansiyel madde işleyişi gösteren altı madde bulundu.	diferansiyel madde işleyişi=T0086
+İş birlikli öğrenme grupları dörder kişiden oluşturuldu.	İş birlikli öğrenme=T0009
+İş birlikli öğrenmede bireysel sorumluluk önemlidir.	İş birlikli öğrenmede=T0009
+Oyun tabanlı öğrenmenin motivasyona etkisi araştırıldı.	Oyun tabanlı öğrenmenin=T0017
+Oyun tabanlı öğrenme ortamlarında geri bildirim anlıktır.	Oyun tabanlı öğrenme=T0017
+Örtük özellik modelleri ile kişi parametreleri kestirildi.	Örtük özellik modelleri=T0079
+Bu çalışmada örtük özellik modeline dayalı analiz yapıldı.	örtük özellik modeline=T0079
+Tanılayıcı değerlendirmenin sonuçları öğretmenlerle paylaşıldı.	Tanılayıcı değerlendirmenin=T0027
+Dönem başında tanılayıcı değerlendirme yapıldı.	tanılayıcı değerlendirme=T0027
+Öğretmen adaylarının görüşleri yarı yapılandırılmış görüşmeyle alındı.	Öğretmen adaylarının=T0064
+Araştırmaya 120 öğretmen adayı katıldı.	-
+Öğretmen adaylarına uygulanan ölçeğin güvenirliği yüksektir.	Öğretmen adaylarına=T0064
+#
+# --- Genel araştırma ve istatistik --------------------------------------------------------------------
+Okul düzeyindeki farklılıklar karma etkili modelle incelendi.	karma etkili modelle=T0599
+Karma etkili modellerde rastgele eğimler de tanımlandı.	Karma etkili modellerde=T0599
+Bulguların sağlamlığı duyarlılık analiziyle sınandı.	duyarlılık analiziyle=T0618
+Duyarlılık analizlerinin sonuçları ekte sunulmuştur.	Duyarlılık analizlerinin=T0618
+Araştırma etiğine uygunluk kurul tarafından onaylandı.	Araştırma etiğine=T0531
+Araştırma etiği kurulundan izin alınmıştır.	Araştırma etiği=T0531
+Nitel çalışmada denetim izinin tutulması güvenilirliği artırır.	denetim izinin=T0636
+Denetim izi araştırmacı günlüğüyle desteklendi.	Denetim izi=T0636
+Eksik veri ataması için çoklu atama yöntemi seçildi.	Eksik veri ataması=T0561;çoklu atama=T0562
+Eksik veri atamasının parametre kestirimlerine etkisi incelendi.	Eksik veri atamasının=T0561
+Rastgele eksik veri varsayımı Little testiyle sınandı.	Rastgele eksik veri=T0560
+Verilerin rastgele eksik veriden oluştuğu kabul edildi.	rastgele eksik veriden=T0560
+Alanyazın taramasında üç veri tabanı kullanıldı.	Alanyazın taramasında=T0524
+Kapsamlı bir alanyazın taraması yapılmıştır.	alanyazın taraması=T0524
+Bilimsel etiğe aykırı davranışlar sınıflandırıldı.	Bilimsel etiğe=T0532
+Hiyerarşik regresyon analizinde üç blok kullanıldı.	Hiyerarşik regresyon=T0594
+Hiyerarşik regresyonun ikinci adımında etkileşim terimi eklendi.	Hiyerarşik regresyonun=T0594
+Puanların standart sapması 4,2 olarak hesaplandı.	standart sapması=T0584
+Standart sapmalar gruplar arasında benzerdi.	Standart sapmalar=T0584
+Veri yönetim planında saklama süresi belirtilmelidir.	Veri yönetim planında=T0542
+Projeler için veri yönetim planları zorunlu hale geldi.	veri yönetim planları=T0542
+Bibliyometrik analizde 1.250 yayın incelendi.	Bibliyometrik analizde=T0527
+Bibliyometrik analizler son yıllarda artmıştır.	Bibliyometrik analizler=T0527
+#
+# --- Mühendislik, bilgisayar ve teknoloji -----------------------------------------------------------
+Blok zinciri teknolojisi tedarik zincirinde kullanıldı.	Blok zinciri=T0514
+Blok zincirlerinin enerji tüketimi tartışmalıdır.	Blok zincirlerinin=T0514
+Önerilen sistem blok zincirine dayalı bir doğrulama sunar.	blok zincirine=T0514
+Her sözcük için 300 boyutlu gömme vektörü üretildi.	gömme vektörü=T0435
+Gömme vektörleri arasındaki uzaklık hesaplandı.	Gömme vektörleri=T0435
+Model başarısı on katlı çapraz doğrulamayla ölçüldü.	çapraz doğrulamayla=T0484
+Çapraz doğrulama sonuçları tabloda verilmiştir.	Çapraz doğrulama=T0484
+Model açıklanabilirliğinin artırılması için SHAP değerleri kullanıldı.	Model açıklanabilirliğinin=T0464
+Kendinden denetimli öğrenmeyle etiketsiz veriden temsil öğrenildi.	Kendinden denetimli öğrenmeyle=T0427
+Model önyargısını azaltmak için veri dengelendi.	Model önyargısını=T0466
+Model önyargıları farklı gruplarda ayrı ölçüldü.	Model önyargıları=T0466
+Cümleler arasındaki anlamsal benzerlik kosinüs ölçüsüyle hesaplandı.	anlamsal benzerlik=T0438
+Anlamsal benzerliğin insan yargılarıyla uyumu yüksektir.	Anlamsal benzerliğin=T0438
+Pekiştirmeli öğrenme ajanı ödülü en büyüklemeye çalışır.	Pekiştirmeli öğrenme=T0423
+Pekiştirmeli öğrenmede keşif ve sömürü dengesi önemlidir.	Pekiştirmeli öğrenmede=T0423
+Sözcük türü etiketlemesi için hazır bir araç kullanıldı.	Sözcük türü etiketlemesi=T0456
+Sözcük türü etiketleme doğruluğu %96 bulundu.	Sözcük türü etiketleme=T0456
+Gömülü sistemlerde bellek kısıtlıdır.	Gömülü sistemlerde=T0504
+Geliştirilen gömülü sistem düşük güç tüketir.	gömülü sistem=T0504
+Fabrikanın dijital ikizi gerçek zamanlı güncellendi.	dijital ikizi=T0513
+Dijital ikizler bakım planlamasını kolaylaştırır.	Dijital ikizler=T0513
+Sinir ağının katman sayısı artırıldı.	Sinir ağının=T0428
+Sinir ağları büyük veri gerektirir.	Sinir ağları=T0428
+Yapay sinir ağıyla tahmin yapıldı.	Yapay sinir ağıyla=T0429
+#
+# --- Psikoloji ve sosyal bilimler -------------------------------------------------------------------
+Psikolojik iyi oluşun yordayıcıları incelendi.	Psikolojik iyi oluşun=T0171
+Öğrencilerin psikolojik iyi oluş düzeyleri yüksektir.	psikolojik iyi oluş=T0171
+Davranış değişikliğinin sürdürülmesi zordur.	Davranış değişikliğinin=T0207
+Davranış değişikliği kuramları karşılaştırıldı.	Davranış değişikliği=T0207
+Belge analiziyle yönetmelikler incelendi.	Belge analiziyle=T0167
+Veriler görüşme ve belge analizi yoluyla toplandı.	belge analizi=T0167
+Toplumsal eşitsizliğin eğitime yansımaları tartışıldı.	Toplumsal eşitsizliğin=T0141
+Toplumsal eşitsizlikler pandemide derinleşti.	Toplumsal eşitsizlikler=T0141
+Katılımcı gözlemle sınıf içi etkileşimler kaydedildi.	Katılımcı gözlemle=T0166
+Araştırmacı katılımcı gözlemci rolünü üstlendi.	-
+Göçmen uyumunu etkileyen etmenler belirlendi.	Göçmen uyumunu=T0139
+Toplumsal cinsiyet eşitliğine yönelik tutumlar ölçüldü.	Toplumsal cinsiyet eşitliğine=T0131
+Toplumsal cinsiyet rolleri ayrıca incelendi.	Toplumsal cinsiyet=T0130
+Tutum değişiminde ikna edici iletinin rolü araştırıldı.	Tutum değişiminde=T0206
+Örgütsel vatandaşlık davranışları iş doyumuyla ilişkilidir.	Örgütsel vatandaşlık=T0199;iş doyumuyla=T0196
+Toplumsal tabakalaşmanın kuşaklar arası aktarımı incelendi.	Toplumsal tabakalaşmanın=T0145
+Bilişsel çarpıtmalar terapide ele alındı.	Bilişsel çarpıtmalar=T0183
+Bilişsel çarpıtmaların sınıflandırılması tartışıldı.	Bilişsel çarpıtmaların=T0183
+Hemşirelerde tükenmişlik sendromu yaygındır.	tükenmişlik sendromu=T0194
+Tükenmişlik sendromunun alt boyutları ölçüldü.	Tükenmişlik sendromunun=T0194
+#
+# --- Sağlık bilimleri -------------------------------------------------------------------------------
+Testin negatif öngörü değeri %95 bulundu.	negatif öngörü değeri=T0284
+Negatif öngörü değerinin yüksek olması tarama için önemlidir.	Negatif öngörü değerinin=T0284
+Pozitif öngörü değerleri prevalansa göre değişir.	Pozitif öngörü değerleri=T0283
+Fiziksel aktivitenin ruh sağlığına etkisi incelendi.	Fiziksel aktivitenin=T0314;ruh sağlığına=T0302
+Fiziksel aktivite düzeyi ivmeölçerle belirlendi.	Fiziksel aktivite=T0314
+Fiziksel aktivitesiz geçen süre ayrıca kaydedildi.	-
+Bu retrospektif çalışmada 300 hasta dosyası incelendi.	retrospektif çalışmada=T0242
+Retrospektif çalışmaların sınırlılıkları bilinmektedir.	Retrospektif çalışmaların=T0242
+Metabolik sendromun yaygınlığı yaşla artmaktadır.	Metabolik sendromun=T0269
+Metabolik sendromlu hastalar ayrı analiz edildi.	-
+Antimikrobiyal direncin yayılması küresel bir sorundur.	Antimikrobiyal direncin=T0261
+Antimikrobiyal dirence karşı ulusal eylem planı hazırlandı.	Antimikrobiyal dirence=T0261
+Genetik yatkınlığın rolü ikiz çalışmalarıyla gösterildi.	Genetik yatkınlığın=T0288
+Hastalığa genetik yatkınlık ailesel öyküyle ilişkilidir.	genetik yatkınlık=T0288
+Kardiyovasküler risk faktörleri taranmıştır.	risk faktörleri=T0274
+Sigara önemli bir risk faktörüdür.	risk faktörüdür=T0274
+Risk faktörlerinin birlikte görülmesi riski artırır.	Risk faktörlerinin=T0274
+Hemşirelikte kanıta dayalı uygulamaların önündeki engeller incelendi.	kanıta dayalı uygulamaların=T0233
+Tip 2 diyabetin önlenmesinde yaşam tarzı değişikliği etkilidir.	Tip 2 diyabetin=T0270
+Tip II diyabet tanısı alan hastalar izlendi.	Tip II diyabet=T0270
+Tip 2 diyabetli bireylerde beslenme durumu değerlendirildi.	beslenme durumu=T0315
+Ergen sağlığının korunmasında okulun rolü büyüktür.	Ergen sağlığının=T0305
+Klinik karar desteği sistemleri hatayı azaltabilir.	Klinik karar desteği=T0234
+Klinik karar desteğinin iş akışına uyumu sorgulandı.	Klinik karar desteğinin=T0234
+#
+# --- Alanlar arası, genel dil ve aşırı eşleşme denetimi ----------------------------------------------
+Bu ayar ince bir dengeyi gerektiriyor.	-
+Öğrencilerin risk almaya istekli olduğu görüldü.	-
+Ölçme aracı ve değerlendirme ölçütleri ayrı ayrı hazırlandı.	-
+Uzak eğitim merkezlerine ulaşım zordu.	-
+Model, açıklanabilir sonuçlar üretti.	-
+Hayvan yemi üretiminde yem bitkileri kullanıldı.	-
+Sinir, ağır yük taşıyan işçilerde sık görülür.	-
+Standart, sapma göstermeyen ölçümler için geçerlidir.	-
+Risk; faktörlerin toplamı olarak tanımlandı.	-
+[kisaltma] Model YEM ile sınandı ve uyum iyi bulundu.	YEM=T0104
+[kisaltma] KEKK-YEM yöntemiyle su kalitesi incelendi.	YEM=T0104
+[kisaltma] Bu çiftlikte yem tüketimi kaydedildi.	-
+[kisaltma] YEM'in varsayımları ayrıca sınandı.	YEM'in=T0104
+[kisaltma] HAYVAN YEM SANAYİSİ RAPORU	-
+[kisaltma] Metinler NLP yöntemleriyle işlendi.	NLP=T0415
+[kisaltma] Sensörler IoT ağına bağlandı.	IoT=T0502

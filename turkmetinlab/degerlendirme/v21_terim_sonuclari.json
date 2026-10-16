@@ -1,0 +1,2401 @@
+{
+ "yapay": {
+  "genel": {
+   "tp": 142,
+   "fp": 0,
+   "fn": 0,
+   "kesinlik": 1.0,
+   "duyarlilik": 1.0,
+   "f1": 1.0,
+   "yanlis_pozitif": 0
+  },
+  "alanlar": {
+   "Ekonomi, işletme ve yönetim": {
+    "tp": 22,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "Eğitim bilimleri ve psikometri": {
+    "tp": 24,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "Genel araştırma ve istatistik": {
+    "tp": 24,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "Kısaltma": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "Mühendislik, bilgisayar ve teknoloji": {
+    "tp": 24,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "Psikoloji ve sosyal bilimler": {
+    "tp": 20,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "Sağlık bilimleri": {
+    "tp": 23,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   }
+  },
+  "ek_turu": {
+   "ekli": {
+    "tp": 99,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "eksiz": {
+    "tp": 38,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   },
+   "kısaltma": {
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "kesinlik": 1.0,
+    "duyarlilik": 1.0,
+    "f1": 1.0
+   }
+  },
+  "ic_ice_terimler": {
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "kesinlik": 1.0,
+   "duyarlilik": 1.0,
+   "f1": 1.0
+  },
+  "negatif_cumleler": {
+   "sayi": 19,
+   "yanlis_pozitif_iceren": 0
+  },
+  "hatalar": []
+ },
+ "gercek_dergipark": {
+  "varsayilan": {
+   "yuzey": {
+    "genel": {
+     "tp": 719,
+     "fp": 2,
+     "fn": 2,
+     "kesinlik": 0.9972,
+     "duyarlilik": 0.9972,
+     "f1": 0.9972
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 25,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 472,
+      "fp": 2,
+      "kesinlik": 0.9958
+     },
+     "çekim": {
+      "tp": 219,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kacirilan_ek_durumu": {
+     "ekli": 1,
+     "eksiz": 1
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 1,
+     "kaçırılan: eksiz": 1,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 87,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 72,
+      "fp": 2,
+      "fn": 0,
+      "kesinlik": 0.973,
+      "duyarlilik": 1.0,
+      "f1": 0.9863
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 478,
+      "fp": 0,
+      "fn": 2,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9958,
+      "f1": 0.9979
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     }
+    },
+    "hatalar": [
+     {
+      "kimlik": "D0143",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     }
+    ]
+   },
+   "kavram": {
+    "genel": {
+     "tp": 650,
+     "fp": 71,
+     "fn": 2,
+     "kesinlik": 0.9015,
+     "duyarlilik": 0.9969,
+     "f1": 0.9468
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 24,
+      "fp": 1,
+      "kesinlik": 0.96
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 408,
+      "fp": 66,
+      "kesinlik": 0.8608
+     },
+     "çekim": {
+      "tp": 215,
+      "fp": 4,
+      "kesinlik": 0.9817
+     }
+    },
+    "kacirilan_ek_durumu": {
+     "ekli": 1,
+     "eksiz": 1
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 1,
+     "kaçırılan: eksiz": 1,
+     "yanlış pozitif: anlam/alan farkı (A)": 69,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 19,
+      "fp": 68,
+      "fn": 0,
+      "kesinlik": 0.2184,
+      "duyarlilik": 1.0,
+      "f1": 0.3585
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 71,
+      "fp": 3,
+      "fn": 0,
+      "kesinlik": 0.9595,
+      "duyarlilik": 1.0,
+      "f1": 0.9793
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 478,
+      "fp": 0,
+      "fn": 2,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9958,
+      "f1": 0.9979
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     }
+    },
+    "hatalar": [
+     {
+      "kimlik": "D0053",
+      "yuzey": "performans değerlendirme",
+      "standart": "performans değerlendirmesi",
+      "ek": "iyeliksiz",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0142",
+      "yuzey": "Derin Öğrenmeye",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0142",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0143",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0156",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0156",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0156",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0179",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0205",
+      "yuzey": "Faktör Analizi",
+      "standart": "faktör analizi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0244",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0245",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0246",
+      "yuzey": "derin öğrenmenin",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0305",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0372",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0372",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0452",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0452",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0452",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0456",
+      "yuzey": "performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0526",
+      "yuzey": "Performans Değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0715",
+      "yuzey": "Performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0809",
+      "yuzey": "Derin Öğrenmeye",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0809",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0833",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0833",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0833",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1062",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1063",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1063",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1076",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1087",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1087",
+      "yuzey": "performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1158",
+      "yuzey": "DERİN ÖĞRENME",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1158",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1158",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1164",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1164",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1173",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "DERİN ÖĞRENME",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1182",
+      "yuzey": "DERİN ÖĞRENME",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1182",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1212",
+      "yuzey": "performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1227",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1227",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1267",
+      "yuzey": "derin öğrenmeden",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1269",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1361",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1361",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     }
+    ]
+   },
+   "altin_ozet": {
+    "T": 662,
+    "D": 5,
+    "A": 69,
+    "N": 11,
+    "V": 4
+   },
+   "belge_sayisi": 699
+  },
+  "kisaltmali": {
+   "yuzey": {
+    "genel": {
+     "tp": 729,
+     "fp": 2,
+     "fn": 2,
+     "kesinlik": 0.9973,
+     "duyarlilik": 0.9973,
+     "f1": 0.9973
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 25,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 482,
+      "fp": 2,
+      "kesinlik": 0.9959
+     },
+     "çekim": {
+      "tp": 219,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kacirilan_ek_durumu": {
+     "ekli": 1,
+     "eksiz": 1
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 1,
+     "kaçırılan: eksiz": 1,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 87,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 72,
+      "fp": 2,
+      "fn": 0,
+      "kesinlik": 0.973,
+      "duyarlilik": 1.0,
+      "f1": 0.9863
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 488,
+      "fp": 0,
+      "fn": 2,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9959,
+      "f1": 0.998
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     }
+    },
+    "hatalar": [
+     {
+      "kimlik": "D0143",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     }
+    ]
+   },
+   "kavram": {
+    "genel": {
+     "tp": 660,
+     "fp": 71,
+     "fn": 2,
+     "kesinlik": 0.9029,
+     "duyarlilik": 0.997,
+     "f1": 0.9476
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 24,
+      "fp": 1,
+      "kesinlik": 0.96
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 418,
+      "fp": 66,
+      "kesinlik": 0.8636
+     },
+     "çekim": {
+      "tp": 215,
+      "fp": 4,
+      "kesinlik": 0.9817
+     }
+    },
+    "kacirilan_ek_durumu": {
+     "ekli": 1,
+     "eksiz": 1
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 1,
+     "kaçırılan: eksiz": 1,
+     "yanlış pozitif: anlam/alan farkı (A)": 69,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 19,
+      "fp": 68,
+      "fn": 0,
+      "kesinlik": 0.2184,
+      "duyarlilik": 1.0,
+      "f1": 0.3585
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 71,
+      "fp": 3,
+      "fn": 0,
+      "kesinlik": 0.9595,
+      "duyarlilik": 1.0,
+      "f1": 0.9793
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 488,
+      "fp": 0,
+      "fn": 2,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9959,
+      "f1": 0.998
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     }
+    },
+    "hatalar": [
+     {
+      "kimlik": "D0053",
+      "yuzey": "performans değerlendirme",
+      "standart": "performans değerlendirmesi",
+      "ek": "iyeliksiz",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0142",
+      "yuzey": "Derin Öğrenmeye",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0142",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0143",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0156",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0156",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0156",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0179",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0180",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0205",
+      "yuzey": "Faktör Analizi",
+      "standart": "faktör analizi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0244",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0245",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0246",
+      "yuzey": "derin öğrenmenin",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0305",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0372",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0372",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0452",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0452",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0452",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0456",
+      "yuzey": "performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0526",
+      "yuzey": "Performans Değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0715",
+      "yuzey": "Performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0809",
+      "yuzey": "Derin Öğrenmeye",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0809",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0833",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0833",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0833",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1062",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1063",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1063",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1076",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1087",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1087",
+      "yuzey": "performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1158",
+      "yuzey": "DERİN ÖĞRENME",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1158",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1158",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1164",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1164",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1173",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "DERİN ÖĞRENME",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1175",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1182",
+      "yuzey": "DERİN ÖĞRENME",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1182",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1212",
+      "yuzey": "performans değerlendirmesi",
+      "standart": "performans değerlendirmesi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1225",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1227",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1227",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1267",
+      "yuzey": "derin öğrenmeden",
+      "standart": "derin öğrenme",
+      "ek": "çekim",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1269",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1361",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1361",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin Öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "Derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D1390",
+      "yuzey": "derin öğrenme",
+      "standart": "derin öğrenme",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     }
+    ]
+   },
+   "altin_ozet": {
+    "T": 662,
+    "D": 5,
+    "A": 69,
+    "N": 11,
+    "V": 4
+   },
+   "belge_sayisi": 699
+  },
+  "alan_secimi_muhendislik_genel": {
+   "yuzey": {
+    "genel": {
+     "tp": 550,
+     "fp": 2,
+     "fn": 2,
+     "kesinlik": 0.9964,
+     "duyarlilik": 0.9964,
+     "f1": 0.9964
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 23,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 351,
+      "fp": 2,
+      "kesinlik": 0.9943
+     },
+     "çekim": {
+      "tp": 173,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kacirilan_ek_durumu": {
+     "ekli": 1,
+     "eksiz": 1
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 1,
+     "kaçırılan: eksiz": 1,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Genel araştırma ve istatistik": {
+      "tp": 72,
+      "fp": 2,
+      "fn": 0,
+      "kesinlik": 0.973,
+      "duyarlilik": 1.0,
+      "f1": 0.9863
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 478,
+      "fp": 0,
+      "fn": 2,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9958,
+      "f1": 0.9979
+     }
+    },
+    "hatalar": [
+     {
+      "kimlik": "D0143",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     }
+    ]
+   },
+   "kavram": {
+    "genel": {
+     "tp": 549,
+     "fp": 3,
+     "fn": 2,
+     "kesinlik": 0.9946,
+     "duyarlilik": 0.9964,
+     "f1": 0.9955
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 23,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 350,
+      "fp": 3,
+      "kesinlik": 0.9915
+     },
+     "çekim": {
+      "tp": 173,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kacirilan_ek_durumu": {
+     "ekli": 1,
+     "eksiz": 1
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 1,
+     "kaçırılan: eksiz": 1,
+     "yanlış pozitif: etiket N": 2,
+     "yanlış pozitif: anlam/alan farkı (A)": 1
+    },
+    "alanlar": {
+     "Genel araştırma ve istatistik": {
+      "tp": 71,
+      "fp": 3,
+      "fn": 0,
+      "kesinlik": 0.9595,
+      "duyarlilik": 1.0,
+      "f1": 0.9793
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 478,
+      "fp": 0,
+      "fn": 2,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9958,
+      "f1": 0.9979
+     }
+    },
+    "hatalar": [
+     {
+      "kimlik": "D0143",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     },
+     {
+      "kimlik": "D0205",
+      "yuzey": "Faktör Analizi",
+      "standart": "faktör analizi",
+      "ek": "yok",
+      "neden": "anlam/alan farkı (A)"
+     },
+     {
+      "kimlik": "D0215",
+      "yuzey": "açık veri",
+      "standart": "açık veri",
+      "ek": "yok",
+      "neden": "etiket N"
+     }
+    ]
+   },
+   "altin_ozet": {
+    "T": 662,
+    "D": 5,
+    "A": 69,
+    "N": 11,
+    "V": 4
+   },
+   "belge_sayisi": 699
+  }
+ },
+ "gercek_dergipark_dondurulmus_surum": {
+  "aciklama": "Test etiketlemesinden önce dondurulan eşleştirici (commit ab6b3dd). Asıl bağımsız sonuç budur.",
+  "varsayilan": {
+   "yuzey": {
+    "genel": {
+     "tp": 715,
+     "fp": 2,
+     "fn": 6,
+     "kesinlik": 0.9972,
+     "duyarlilik": 0.9917,
+     "f1": 0.9944
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 23,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 471,
+      "fp": 2,
+      "kesinlik": 0.9958
+     },
+     "çekim": {
+      "tp": 218,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 4,
+     "kaçırılan: eksiz": 2,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 87,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 72,
+      "fp": 2,
+      "fn": 0,
+      "kesinlik": 0.973,
+      "duyarlilik": 1.0,
+      "f1": 0.9863
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 475,
+      "fp": 0,
+      "fn": 5,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9896,
+      "f1": 0.9948
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 20,
+      "fp": 0,
+      "fn": 1,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9524,
+      "f1": 0.9756
+     }
+    }
+   },
+   "kavram": {
+    "genel": {
+     "tp": 646,
+     "fp": 71,
+     "fn": 6,
+     "kesinlik": 0.901,
+     "duyarlilik": 0.9908,
+     "f1": 0.9438
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 22,
+      "fp": 1,
+      "kesinlik": 0.9565
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 407,
+      "fp": 66,
+      "kesinlik": 0.8605
+     },
+     "çekim": {
+      "tp": 214,
+      "fp": 4,
+      "kesinlik": 0.9817
+     }
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 4,
+     "kaçırılan: eksiz": 2,
+     "yanlış pozitif: anlam/alan farkı (A)": 69,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 19,
+      "fp": 68,
+      "fn": 0,
+      "kesinlik": 0.2184,
+      "duyarlilik": 1.0,
+      "f1": 0.3585
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 71,
+      "fp": 3,
+      "fn": 0,
+      "kesinlik": 0.9595,
+      "duyarlilik": 1.0,
+      "f1": 0.9793
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 475,
+      "fp": 0,
+      "fn": 5,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9896,
+      "f1": 0.9948
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 20,
+      "fp": 0,
+      "fn": 1,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9524,
+      "f1": 0.9756
+     }
+    }
+   }
+  },
+  "kisaltmali": {
+   "yuzey": {
+    "genel": {
+     "tp": 725,
+     "fp": 2,
+     "fn": 6,
+     "kesinlik": 0.9972,
+     "duyarlilik": 0.9918,
+     "f1": 0.9945
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 23,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 481,
+      "fp": 2,
+      "kesinlik": 0.9959
+     },
+     "çekim": {
+      "tp": 218,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 4,
+     "kaçırılan: eksiz": 2,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 87,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 72,
+      "fp": 2,
+      "fn": 0,
+      "kesinlik": 0.973,
+      "duyarlilik": 1.0,
+      "f1": 0.9863
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 485,
+      "fp": 0,
+      "fn": 5,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9898,
+      "f1": 0.9949
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 20,
+      "fp": 0,
+      "fn": 1,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9524,
+      "f1": 0.9756
+     }
+    }
+   },
+   "kavram": {
+    "genel": {
+     "tp": 656,
+     "fp": 71,
+     "fn": 6,
+     "kesinlik": 0.9023,
+     "duyarlilik": 0.9909,
+     "f1": 0.9446
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 22,
+      "fp": 1,
+      "kesinlik": 0.9565
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 417,
+      "fp": 66,
+      "kesinlik": 0.8634
+     },
+     "çekim": {
+      "tp": 214,
+      "fp": 4,
+      "kesinlik": 0.9817
+     }
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 4,
+     "kaçırılan: eksiz": 2,
+     "yanlış pozitif: anlam/alan farkı (A)": 69,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Ekonomi, işletme ve yönetim": {
+      "tp": 30,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Eğitim bilimleri ve psikometri": {
+      "tp": 19,
+      "fp": 68,
+      "fn": 0,
+      "kesinlik": 0.2184,
+      "duyarlilik": 1.0,
+      "f1": 0.3585
+     },
+     "Genel araştırma ve istatistik": {
+      "tp": 71,
+      "fp": 3,
+      "fn": 0,
+      "kesinlik": 0.9595,
+      "duyarlilik": 1.0,
+      "f1": 0.9793
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 485,
+      "fp": 0,
+      "fn": 5,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9898,
+      "f1": 0.9949
+     },
+     "Psikoloji ve sosyal bilimler": {
+      "tp": 31,
+      "fp": 0,
+      "fn": 0,
+      "kesinlik": 1.0,
+      "duyarlilik": 1.0,
+      "f1": 1.0
+     },
+     "Sağlık bilimleri": {
+      "tp": 20,
+      "fp": 0,
+      "fn": 1,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9524,
+      "f1": 0.9756
+     }
+    }
+   }
+  },
+  "alan_secimi_muhendislik_genel": {
+   "yuzey": {
+    "genel": {
+     "tp": 547,
+     "fp": 2,
+     "fn": 5,
+     "kesinlik": 0.9964,
+     "duyarlilik": 0.9909,
+     "f1": 0.9936
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 22,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 350,
+      "fp": 2,
+      "kesinlik": 0.9943
+     },
+     "çekim": {
+      "tp": 172,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 3,
+     "kaçırılan: eksiz": 2,
+     "yanlış pozitif: etiket N": 2
+    },
+    "alanlar": {
+     "Genel araştırma ve istatistik": {
+      "tp": 72,
+      "fp": 2,
+      "fn": 0,
+      "kesinlik": 0.973,
+      "duyarlilik": 1.0,
+      "f1": 0.9863
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 475,
+      "fp": 0,
+      "fn": 5,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9896,
+      "f1": 0.9948
+     }
+    }
+   },
+   "kavram": {
+    "genel": {
+     "tp": 546,
+     "fp": 3,
+     "fn": 5,
+     "kesinlik": 0.9945,
+     "duyarlilik": 0.9909,
+     "f1": 0.9927
+    },
+    "eslesme_turune_gore_kesinlik": {
+     "iyeliksiz": {
+      "tp": 22,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "kesme": {
+      "tp": 3,
+      "fp": 0,
+      "kesinlik": 1.0
+     },
+     "yok": {
+      "tp": 349,
+      "fp": 3,
+      "kesinlik": 0.9915
+     },
+     "çekim": {
+      "tp": 172,
+      "fp": 0,
+      "kesinlik": 1.0
+     }
+    },
+    "kategoriler": {
+     "kaçırılan: ekli": 3,
+     "kaçırılan: eksiz": 2,
+     "yanlış pozitif: etiket N": 2,
+     "yanlış pozitif: anlam/alan farkı (A)": 1
+    },
+    "alanlar": {
+     "Genel araştırma ve istatistik": {
+      "tp": 71,
+      "fp": 3,
+      "fn": 0,
+      "kesinlik": 0.9595,
+      "duyarlilik": 1.0,
+      "f1": 0.9793
+     },
+     "Mühendislik, bilgisayar ve teknoloji": {
+      "tp": 475,
+      "fp": 0,
+      "fn": 5,
+      "kesinlik": 1.0,
+      "duyarlilik": 0.9896,
+      "f1": 0.9948
+     }
+    }
+   }
+  }
+ },
+ "onisleme_etkisi": {
+  "terim_gecisi": 652,
+  "hiçbiri": {
+   "sözlük kapalı: içine boşluk giren (bölünen)": 0.0,
+   "sözlük kapalı: standart biçimde kalan": 0.6258,
+   "sözlük kapalı: tutarlı temsil (tek n-gramda toplanabilir)": 0.592,
+   "sözlük açık: tek birim olarak korunan": 0.9985
+  },
+  "durak sözcük (varsayılan)": {
+   "sözlük kapalı: içine boşluk giren (bölünen)": 0.0015,
+   "sözlük kapalı: standart biçimde kalan": 0.6227,
+   "sözlük kapalı: tutarlı temsil (tek n-gramda toplanabilir)": 0.5905,
+   "sözlük açık: tek birim olarak korunan": 0.9985
+  },
+  "durak + akademik kalıp": {
+   "sözlük kapalı: içine boşluk giren (bölünen)": 0.0015,
+   "sözlük kapalı: standart biçimde kalan": 0.6074,
+   "sözlük kapalı: tutarlı temsil (tek n-gramda toplanabilir)": 0.5905,
+   "sözlük açık: tek birim olarak korunan": 0.9985
+  },
+  "lemmatizasyon": {
+   "sözlük kapalı: içine boşluk giren (bölünen)": 0.0,
+   "sözlük kapalı: standart biçimde kalan": 0.2178,
+   "sözlük kapalı: tutarlı temsil (tek n-gramda toplanabilir)": 0.9494,
+   "sözlük açık: tek birim olarak korunan": 0.9985
+  },
+  "lemma + durak": {
+   "sözlük kapalı: içine boşluk giren (bölünen)": 0.0015,
+   "sözlük kapalı: standart biçimde kalan": 0.2178,
+   "sözlük kapalı: tutarlı temsil (tek n-gramda toplanabilir)": 0.9479,
+   "sözlük açık: tek birim olarak korunan": 0.9985
+  }
+ },
+ "analiz_etkisi": {
+  "belge": 1397,
+  "ayarlar": "durak sözcük (Türkçe + İngilizce), lemma kapalı; sözlük: 6 alan, birim",
+  "kapali": {
+   "on_isleme_sn": 0.98,
+   "sozcuk": 158641,
+   "farkli_sozcuk": 30809,
+   "benzerlik_auc_ortak_anahtar": 0.8711,
+   "nmf": {
+    "Modele giren belge": 1397,
+    "Modeldışı kalan (boş) belge": 0,
+    "Sözlük büyüklüğü": 5000,
+    "Ortalama NPMI tutarlılığı": 0.2505,
+    "Ortalama UMass tutarlılığı": -1.6999,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.876,
+    "Yeniden oluşturma hatası": 36.2472,
+    "NMF yakınsadı mı": "evet",
+    "Ortalama kararlılık (AJ)": 0.6833,
+    "anahtar_ortusme": 0.4302,
+    "anahtar_ortusme_rastgele": 0.0947,
+    "sure_sn": 1.8,
+    "ornek_konular": [
+     "elde yüzey farklı edilmiştir malzeme yüksek çalışmada belirlenmiştir",
+     "enerji enerjisi güneş elektrik yenilenebilir rüzgâr hidroelektrik kaynakları",
+     "mobil güvenlik akıllı android yazılım uygulama sistem iletişim",
+     "sinir yapay öğrenme derin görüntü ağları sınıflandırma elde"
+    ]
+   },
+   "lda": {
+    "Modele giren belge": 1397,
+    "Modeldışı kalan (boş) belge": 0,
+    "Sözlük büyüklüğü": 5000,
+    "Ortalama NPMI tutarlılığı": 0.0425,
+    "Ortalama UMass tutarlılığı": -1.9693,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.672,
+    "Şaşkınlık (perplexity)": 2481.9868,
+    "Ortalama kararlılık (AJ)": 0.457,
+    "anahtar_ortusme": 0.3236,
+    "anahtar_ortusme_rastgele": 0.0976,
+    "sure_sn": 30.7,
+    "ornek_konular": [
+     "enerji su elektrik türkiye enerjisi çalışmada güneş önemli",
+     "elde güç çalışmada kullanılarak kontrol sahip önerilen sonuçlar",
+     "veri elde çalışmada farklı sinir kullanılarak sınıflandırma edilmiştir",
+     "ısı elde yüksek basınç sıcaklık çalışmada kullanılarak farklı"
+    ]
+   }
+  },
+  "acik": {
+   "on_isleme_sn": 1.5,
+   "sozcuk": 157380,
+   "farkli_sozcuk": 30902,
+   "benzerlik_auc_ortak_anahtar": 0.8512,
+   "nmf": {
+    "Modele giren belge": 1397,
+    "Modeldışı kalan (boş) belge": 0,
+    "Sözlük büyüklüğü": 5000,
+    "Ortalama NPMI tutarlılığı": 0.2536,
+    "Ortalama UMass tutarlılığı": -1.7361,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.872,
+    "Yeniden oluşturma hatası": 36.2817,
+    "NMF yakınsadı mı": "evet",
+    "Ortalama kararlılık (AJ)": 0.5977,
+    "anahtar_ortusme": 0.3737,
+    "anahtar_ortusme_rastgele": 0.0745,
+    "sure_sn": 1.5,
+    "ornek_konular": [
+     "veri sınıflandırma elde farklı görüntü kullanılarak derin_öğrenme önerilen",
+     "enerji enerjisi güneş elektrik yenilenebilir rüzgâr hidroelektrik su",
+     "akıllı bilgi mobil güvenlik yazılım yeni çalışma karar",
+     "elde yüzey farklı edilmiştir yüksek su malzeme belirlenmiştir"
+    ]
+   },
+   "lda": {
+    "Modele giren belge": 1397,
+    "Modeldışı kalan (boş) belge": 0,
+    "Sözlük büyüklüğü": 5000,
+    "Ortalama NPMI tutarlılığı": 0.127,
+    "Ortalama UMass tutarlılığı": -1.6998,
+    "Konu çeşitliliği (ilk 25 sözcük)": 0.66,
+    "Şaşkınlık (perplexity)": 2462.9739,
+    "Ortalama kararlılık (AJ)": 0.4417,
+    "anahtar_ortusme": 0.2269,
+    "anahtar_ortusme_rastgele": 0.0635,
+    "sure_sn": 30.1,
+    "ornek_konular": [
+     "çalışmada farklı elde edilmiştir yüksek yüzey kullanılarak malzeme",
+     "çalışmada güç elde kontrol sahip optimizasyon farklı çalışma",
+     "elde çalışmada kullanılarak edilmiştir çalışma veriler düşük veri_madenciliği",
+     "çalışmada elde güç sistemi kullanılarak anten yüksek iletim"
+    ]
+   }
+  },
+  "tfidf_ilk30": {
+   "ilk_n": 30,
+   "ortak": 29,
+   "jaccard": 0.935,
+   "acik_listede_terim_birimi": 0,
+   "acik_ilk10": [
+    "elde",
+    "çalışmada",
+    "farklı",
+    "enerji",
+    "veri",
+    "edilmiştir",
+    "kullanılarak",
+    "çalışma",
+    "yüksek",
+    "önemli"
+   ],
+   "kapali_ilk10": [
+    "elde",
+    "çalışmada",
+    "farklı",
+    "veri",
+    "enerji",
+    "edilmiştir",
+    "kullanılarak",
+    "çalışma",
+    "yüksek",
+    "önemli"
+   ]
+  },
+  "bigram_ilk30": {
+   "ilk_n": 30,
+   "ortak": 23,
+   "jaccard": 0.622,
+   "acik_listede_terim_birimi": 0,
+   "acik_ilk10": [
+    "elde edilmiştir",
+    "tespit edilmiştir",
+    "yer alan",
+    "son yıllarda",
+    "çalışma kapsamında",
+    "veri seti",
+    "çalışmanın amacı",
+    "analiz edilmiştir",
+    "meydana gelen",
+    "yenilenebilir enerji"
+   ],
+   "kapali_ilk10": [
+    "elde edilmiştir",
+    "tespit edilmiştir",
+    "yapay sinir",
+    "yer alan",
+    "sinir ağları",
+    "son yıllarda",
+    "çalışma kapsamında",
+    "derin öğrenme",
+    "veri seti",
+    "çalışmanın amacı"
+   ]
+  }
+ },
+ "ud_genel_metin": {
+  "cumle": 400,
+  "sozcuk": 4033,
+  "eslesme": [
+   {
+    "cumle_baglami": " ve esnaf odaları başkanları, bölgenin önde gelen sivil toplum kuruluşları katılacak.",
+    "yuzey": "sivil toplum kuruluşları",
+    "standart": "sivil toplum kuruluşu"
+   }
+  ],
+  "elle_degerlendirme": "Tek eşleşme ('sivil toplum kuruluşları') gerçek terimdir; yanlış alarm 0 (15 Ekim 2026 ölçümü, kısaltmalar açık)."
+ },
+ "gercek_dergipark_kirilim": {
+  "dondurulmus": {
+   "eksiz": {
+    "n": 409,
+    "bulunan": 407,
+    "duyarlilik": 0.9951
+   },
+   "ekli": {
+    "n": 243,
+    "bulunan": 239,
+    "duyarlilik": 0.9835
+   },
+   "iç içe terim": {
+    "n": 83,
+    "bulunan": 81,
+    "duyarlilik": 0.9759
+   }
+  },
+  "duzeltilmis": {
+   "eksiz": {
+    "n": 409,
+    "bulunan": 408,
+    "duyarlilik": 0.9976
+   },
+   "ekli": {
+    "n": 243,
+    "bulunan": 242,
+    "duyarlilik": 0.9959
+   },
+   "iç içe terim": {
+    "n": 83,
+    "bulunan": 82,
+    "duyarlilik": 0.988
+   }
+  }
+ }
+}

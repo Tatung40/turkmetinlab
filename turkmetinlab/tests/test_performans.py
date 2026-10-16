@@ -152,3 +152,29 @@ def test_modullerin_orta_veride_suresi_ve_bellegi():
 def test_modullerin_buyuk_veride_bellegi():
     r = _modul_olc("buyuk_genis")
     assert r["tepe RSS MB"] < 1200, r
+
+
+# --- 2.1 terim sözlüğü ---------------------------------------------------------
+
+def _terim_olc(boyut: str, sozluk: str) -> dict:
+    cikti = subprocess.run([sys.executable, OLCUM, "--terim", boyut, sozluk], capture_output=True, text=True,
+                           check=True, cwd=KOK, timeout=1800).stdout
+    return json.loads(cikti.strip().splitlines()[-1])
+
+
+def test_terim_sozlugu_orta_veride_suresi_ve_bellegi():
+    """~295 bin sözcük, her ~50 sözcükte bir terim (gerçek özetlerdekinin ~2 katı yoğunluk)."""
+    yok = _terim_olc("orta_genis", "yok")
+    var = _terim_olc("orta_genis", "birim")
+    assert var["eslesme"] > 3000
+    assert var["derleme_sn"] < 1
+    assert var["on_isleme_sn"] < 60, var  # ölçüm makinesinde ~2,4 sn
+    assert var["on_isleme_sn"] < 4 * yok["on_isleme_sn"] + 2, (yok, var)  # ölçümde ~1,7 kat
+    assert var["tepe RSS MB"] < 690, var
+    assert var["tepe RSS MB"] - yok["tepe RSS MB"] < 100, (yok, var)  # ölçümde ~14 MB
+
+
+@pytest.mark.skipif(os.environ.get("TML_BUYUK_TEST") != "1", reason="Büyük ölçüm için TML_BUYUK_TEST=1")
+def test_terim_sozlugu_buyuk_veride_bellegi():
+    var = _terim_olc("buyuk_genis", "birim")
+    assert var["tepe RSS MB"] < 1200, var
