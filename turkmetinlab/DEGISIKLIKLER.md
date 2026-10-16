@@ -1,5 +1,73 @@
 # Değişiklikler
 
+## 2.1.0 — Akademik terim sözlüğü ve çok sözcüklü terim tanıma
+
+Ayrıntılı validasyon ve performans raporu: [`docs/bilimsel_degerlendirme_2.1.md`](docs/bilimsel_degerlendirme_2.1.md).
+Sözlük denetimi: [`docs/sozluk_denetimi_2.1.md`](docs/sozluk_denetimi_2.1.md). 2.0'ın bütün özellikleri ve 314 testi
+(2'si isteğe bağlı) değiştirilmeden korunmuştur.
+
+### Yeni: akademik terim sözlüğü (isteğe bağlı, varsayılan olarak kapalı)
+- **Sözlük:** 637 aday terimlik çekirdek sözlük, 6 alan ayrı ayrı seçilebilir. Terimler uzman doğrulaması
+  bekleyen **aday terimler** olarak sunulur.
+- **Ek tanıma:** "uzaktan eğitime → uzaktan eğitim", "yapay zekânın → yapay zekâ", "ölçme ve değerlendirmede",
+  "yapısal eşitlik modellemesinin", "madde tepki kuramına" gibi ek almış biçimler tanınır.
+  - Ünlü uyumu ve kaynaştırma denetlenir; ünsüz yumuşaması ve çoğul iyelik biçimleri (kuramları) kabul edilir.
+  - Zincirleme tamlamada iyelik düşmesi (makine öğrenme yöntemleri) daha düşük güvenle kabul edilir.
+  - Kesme işareti, tire ve şapka (â/a) yazım farkları tanınır.
+- **Yanlış pozitif önlemleri:**
+  - Türetim ekli biçimler (eğitimci, zekâsız, değerlendirmeci) eşleşmez ve ayrı tabloda gösterilir.
+  - Noktalama terimi böler; tireli bileşiğin parçası eşleşmez (log-normal dağılım).
+  - Kısaltmalar isteğe bağlıdır, büyük/küçük harfe duyarlıdır ve başlık satırlarında reddedilir.
+- **Çakışmalar:** En uzun terim önceliklidir. Ardından kullanıcı terimi > alan sözlüğü > genel liste.
+  İç içe ve kesişen adaylar çakışma tablosuna yazılır.
+- **Özgün metin değişmez:** Her eşleşme terim kimliği, alan, metindeki biçim, standart terim, eşleşme türü,
+  güven düzeyi ve özgün metindeki karakter konumlarıyla saklanır.
+- **Temsil:**
+  - "Tek birim" (`uzaktan_eğitim`): sıklık, n-gram, TF-IDF, ağ, konu ve benzerlik analizlerinde tek öğe; lemma
+    ve durak sözcük süzgeçlerinden geçmez.
+  - "Yalnızca işaretle": analizler değişmez.
+- **Kullanıcı sözlüğü:** terim ekleme ve silme, çekirdek terimi devre dışı bırakma, CSV/Excel sözlük
+  yükleme, etkin sözlüğü indirme. Hepsi yalnızca oturumda tutulur; "Verilerimi temizle" bunları da siler.
+- **Yeni "📚 Terimler" sekmesi:**
+  - bulunan terimler, metin üzerinde vurgulama;
+  - özgün metin, temizlenmiş metin ve normalize terimler yan yana;
+  - eşleşme, çakışma ve eşleşmeyen biçim tabloları;
+  - alanlar arası belirsiz terim uyarısı;
+  - sözlük açık/kapalı karşılaştırması (sıklık, n-gram, TF-IDF, NMF);
+  - yöntem ve ölçülen doğruluk.
+
+### Dışa aktarım
+- Temizlenmiş metinler TXT olarak (yeni) ve CSV/Excel olarak ("Normalize terimler" sütunuyla) indirilebilir.
+- Excel'e yeni sayfalar: Terim özeti, Terim eşleşmeleri, Terim çakışmaları, Eşleşmeyen biçimler, Etkin sözlük.
+- *Ayarlar* sayfasına eklenenler:
+  - sözlük sürümü (SHA-256) ve seçilen alanlar;
+  - temsil ve kısaltma seçenekleri;
+  - eklenen, yüklenen ve devre dışı bırakılan terimler;
+  - eşleştiricinin parmak izi.
+
+### Validasyon (özet)
+- **Gerçek akademik metin** (699 DergiPark özeti, test yarısı, eşleştirici etiketlemeden önce donduruldu):
+  - Sözlük dizisinin bulunması: kesinlik %99,7, duyarlılık %99,2.
+  - Terimin sözlükteki anlamıyla geçmesi: kesinlik %90,1. Alan seçimiyle %99,5.
+- Genel Türkçe metinde (400 cümle) yanlış alarm yok.
+- Sözlük analizleri kendiliğinden iyileştirmedi: LDA tutarlılığı arttı; NMF kararlılığı ve benzerlik AUC
+  değeri biraz düştü.
+
+### Testler
+- Yeni: `test_terimler.py` (135), `test_terimler_arayuz.py` (10), performans testine 2 ek (1'i isteğe bağlı).
+- Eşleştirici yazılmadan önce dondurulmuş yapay test kümesi: `degerlendirme/veri/terim_test_yapay.tsv`.
+- DergiPark altın standardı (yalnızca konum ve etiket): `degerlendirme/veri/terim_altin_dergipark.tsv`.
+- Validasyon betiği: `degerlendirme/v21_terim_dogrulama.py`.
+
+### Düzeltmeler ve notlar
+- DergiPark verisindeki kimlik sütunu benzersiz değil (414 kimlik 929 özette tekrar ediyor) ve 20 özet
+  yineleniyor. 2.1 değerlendirmesi satır sırasını kimlik olarak kullanır ve yinelenen metinleri çıkarır. 2.0
+  benzerlik sonuçları yinelenenler çıkarılarak yeniden hesaplandı; fark önemsiz çıktı (AUC 0,865 → 0,869).
+- `.gitignore`: sözlük CSV'si, kullanıcı verisini dışlayan `*.csv` kuralının istisnasına alındı.
+
+### Bağımlılıklar
+- Yeni bağımlılık yok.
+
 ## 2.0.0 — Analiz modülleri
 
 Ayrıntılı validasyon ve performans raporu: [`docs/bilimsel_degerlendirme_2.0.md`](docs/bilimsel_degerlendirme_2.0.md).

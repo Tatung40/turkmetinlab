@@ -23,6 +23,11 @@ Bilimsel tasarım kararları
    nokta cümle sonu sayılmaz. Paragraf (boş satır) her zaman sınırdır; tek
    satır sonu isteğe bağlıdır (PDF'ten kopyalanan metinlerde satır sonları
    cümle içinde olabilir).
+6. (2.1) İsteğe bağlı terim sözlüğü: tmlab.terimler.TerimEslestirici verilirse terimler ÖZGÜN metinde
+   bulunur. "birim" temsilinde her eşleşme tek bir belirteç olur (uzaktan eğitime → uzaktan_eğitim); bu
+   belirteç lemmatizasyon, durak sözcük, sayı ve en kısa uzunluk süzgeçlerinden geçmez (yalnızca kullanıcı
+   kendi durak listesine "uzaktan_eğitim" yazarsa çıkarılır). Eşleştirici verilmezse davranış 2.0 ile
+   birebir aynıdır.
 5. Çıkarılan sözcükler (durak sözcük, sayı, çok kısa sözcük) bölüt içinde
    "boşluk" (None) olarak bırakılır. Böylece n-gram hesaplanırken, aralarında
    çıkarılmış bir sözcük bulunan iki sözcük yapay olarak yan yana
@@ -133,6 +138,8 @@ _DOI_RE = re.compile(r"\b(?:doi:\s*)?10\.\d{4,9}/\S+", re.IGNORECASE)
 
 # Kesin sınır (paragraf, çıkarılan web adresi vb.) için kullanılan iç işaret
 _SINIR = "\u2029"
+# Terim yer tutucusu (U+01C2, Unicode'da harf sınıfındadır; belirteç deseni onu sözcük sayar)
+_TERIM_ISARETI = "\u01c2"
 # Sınır sayılmayacak noktaların yerine konan görünmez işaret (sözcük karakteri değildir)
 _KORUMA = "\u2063"
 
@@ -199,6 +206,11 @@ class IslenmisBelge:
     """
 
     bolutler: List[Bolut]
+    terim_sonucu: Optional[object] = None  # tmlab.terimler.BelgeTerimleri (sözlük kullanıldıysa)
+
+    @property
+    def terimler(self):
+        return self.terim_sonucu.eslesmeler if self.terim_sonucu is not None else []
 
     @property
     def sozcukler(self) -> List[str]:
@@ -238,7 +250,8 @@ def bolutle(metin: str, bolutleme: str = "kati", satir_sonu_sinir: bool = False)
 
 def on_isle(metin, ayarlar: OnIslemeAyarlari = OnIslemeAyarlari(),
             durak_kumesi: Optional[frozenset] = None, lemmatizer=None,
-            lemma_kaydi: Optional[Counter] = None, _kucuk: Optional[dict] = None) -> IslenmisBelge:
+            lemma_kaydi: Optional[Counter] = None, _kucuk: Optional[dict] = None,
+            terimci=None) -> IslenmisBelge:
     """Tek bir metni ön işler.
 
     lemma_kaydi verilirse, lemmatizasyonla değişen her (sözcük, lemma) çifti
@@ -246,7 +259,18 @@ def on_isle(metin, ayarlar: OnIslemeAyarlari = OnIslemeAyarlari(),
     """
     if metin is None or (isinstance(metin, float) and metin != metin):  # NaN
         return IslenmisBelge([])
-    metin = unicode_normallestir(str(metin))
+    metin = str(metin)
+    terim_sonucu, terim_belirtecleri = None, None
+    if terimci is not None:
+        if _TERIM_ISARETI in metin:  # yer tutucu karakteri metinde varsa (çok olası değil) boşluk yapılır
+            metin = metin.replace(_TERIM_ISARETI, " ")
+        terim_sonucu = terimci.eslestir(metin, ayarlar.satir_sonu_sinir)
+        if terimci.temsil == "birim" and terim_sonucu.eslesmeler:
+            from .terimler import yer_degistir
+            terim_belirtecleri = [terimci.belirtec(e, ayarlar.kucuk_harf, ayarlar.sapkali_harf_normallestir)
+                                  for e in terim_sonucu.eslesmeler]
+            metin = yer_degistir(metin, terim_sonucu.eslesmeler, _TERIM_ISARETI)
+    metin = unicode_normallestir(metin)
 
     if ayarlar.url_eposta_kaldir:
         sinir = f" {_SINIR} "
@@ -270,6 +294,10 @@ def on_isle(metin, ayarlar: OnIslemeAyarlari = OnIslemeAyarlari(),
     for parca in bolutle(metin, ayarlar.bolutleme, ayarlar.satir_sonu_sinir):
         bolut: Bolut = []
         for ham in desen.findall(parca):
+            if terim_belirtecleri is not None and ham[0] == _TERIM_ISARETI and ham[-1] == _TERIM_ISARETI:
+                belirtec = terim_belirtecleri[int(ham[1:-1])]
+                bolut.append(None if belirtec in durak_kumesi else sys.intern(belirtec))
+                continue
             for tok in _kesme_isle(ham, ayarlar.kesme_isareti):
                 tok = tok.strip("-")
                 if not tok:
@@ -301,14 +329,14 @@ def on_isle(metin, ayarlar: OnIslemeAyarlari = OnIslemeAyarlari(),
                 bolut.append(sys.intern(tok))
         if bolut:
             bolutler.append(bolut)
-    return IslenmisBelge(bolutler)
+    return IslenmisBelge(bolutler, terim_sonucu)
 
 
 def derlem_on_isle(metinler: Iterable, ayarlar: OnIslemeAyarlari = OnIslemeAyarlari(),
-                   lemma_kaydi: Optional[Counter] = None) -> List[IslenmisBelge]:
-    """Bir metin listesini (derlemi) ön işler."""
+                   lemma_kaydi: Optional[Counter] = None, terimci=None) -> List[IslenmisBelge]:
+    """Bir metin listesini (derlemi) ön işler. terimci: isteğe bağlı tmlab.terimler.TerimEslestirici."""
     durak = stopword_set(ayarlar.durak_sozcuk_genel, ayarlar.durak_sozcuk_akademik,
                          ayarlar.ozel_durak_sozcukler, ayarlar.durak_sozcuk_ingilizce)
     lem = Lemmatizer() if ayarlar.lemmatizasyon else None
     kucuk: dict = {}  # yalnızca bu çağrı süresince yaşar
-    return [on_isle(m, ayarlar, durak, lem, lemma_kaydi, kucuk) for m in metinler]
+    return [on_isle(m, ayarlar, durak, lem, lemma_kaydi, kucuk, terimci) for m in metinler]

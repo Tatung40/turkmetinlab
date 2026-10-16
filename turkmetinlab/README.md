@@ -1,12 +1,14 @@
 # 📚 TürkMetinLab
 
 **Türkçe akademik metinler için ücretsiz, kod bilgisi gerektirmeyen metin madenciliği uygulaması.**
-Sürüm 2.0.0 · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
-[2.0](docs/bilimsel_degerlendirme_2.0.md) · [1.1](docs/bilimsel_degerlendirme_1.1.md)
+Sürüm 2.1.0 · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
+[2.1](docs/bilimsel_degerlendirme_2.1.md) · [2.0](docs/bilimsel_degerlendirme_2.0.md) ·
+[1.1](docs/bilimsel_degerlendirme_1.1.md)
 
 TürkMetinLab; makale özetleri, görüşme dökümleri, açık uçlu anket yanıtları gibi Türkçe metinlerde
 sözcük sıklığı, n-gram ve TF-IDF analizleri; belge benzerliği, sözcük birliktelik ağları, konu
-modellemesi ve grup karşılaştırması yapar. Sonuçları etkileşimli grafikler, kelime bulutu ve
+modellemesi ve grup karşılaştırması yapar. İsteğe bağlı akademik terim sözlüğüyle "uzaktan eğitime",
+"yapay zekânın" gibi ek almış çok sözcüklü terimleri tanır ve tek kavram olarak sayar. Sonuçları etkileşimli grafikler, kelime bulutu ve
 indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kaynak araçlarla
 çalışır; ücretli hizmet, veritabanı veya abonelik gerektirmez.
 
@@ -19,6 +21,7 @@ indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kay
 | Dosya yükleme | CSV, Excel (.xlsx) ve TXT. Türkçe karakter kodlaması (UTF-8, Windows-1254, ISO-8859-9) otomatik tanınır. |
 | Türkçe ön işleme | Türkçeye uygun küçük harf dönüşümü (I→ı, İ→i), kesme işareti, durak sözcükler, sayılar, web adresleri |
 | Lemmatizasyon (isteğe bağlı) | Sözlük tabanlı (simplemma); Türkçe altın standart verilerde ölçülen doğruluk %94,4–94,5; dönüşüm tablosu |
+| **Akademik terim sözlüğü** (2.1) | İsteğe bağlı, 637 aday terim, 6 alan. Ek almış çok sözcüklü terimleri tanır (uzaktan eğitime → uzaktan eğitim), türetilmiş biçimleri ayırır, en uzun terimi seçer, terimi analizlerde tek birim yapar ya da yalnızca işaretler. Kendi terimlerinizi ekleyebilir, sözlük yükleyebilir, terimleri devre dışı bırakabilirsiniz. Sözlük açık/kapalı karşılaştırması |
 | Veri denetimi | Boş/yer tutucu hücreler, yinelenen kimlik ve metinler, formüller, bozuk veya yanlış türde dosyalar, İngilizce içeren belgeler (2.0) bildirilir |
 | Sözcük sıklığı | Ham sıklık, göreli sıklık (%), bin sözcükteki sıklık, belge sıklığı |
 | N-gram | 2, 3 ve 4 sözcüklü öbekler; seçilebilir bölütleme (varsayılan: cümle sonu, virgül, ; ve : aşılmaz) |
@@ -28,7 +31,7 @@ indirilebilir Excel/CSV tabloları olarak sunar. Tamamen ücretsiz ve açık kay
 | **Konu modellemesi** (2.0) | NMF (önerilen) ve LDA, sabit tohum, NPMI/UMass tutarlılığı, konu çeşitliliği, alt örneklem kararlılığı, konu sayısı karşılaştırması, araştırmacının konu adlandırması, tipik belgeler |
 | **Grup karşılaştırması** (2.0) | Kategorik sütuna göre ham ve bin sözcükte sıklıklar, Dirichlet önselli log-odds (Monroe vd., 2008), belge düzeyinde permütasyon eşiği, küçük/dengesiz grup uyarıları |
 | Görselleştirme | Etkileşimli Plotly grafikleri, Türkçe karakterli kelime bulutu |
-| Dışa aktarım | Tüm tablolar (yeni modüller dahil) + tüm yöntemsel ayarlar tek Excel dosyasında; ayrı CSV dosyaları |
+| Dışa aktarım | Tüm tablolar (yeni modüller dahil) + tüm yöntemsel ayarlar ve sözlük sürümü tek Excel dosyasında; ayrı CSV dosyaları; temizlenmiş metinler TXT/CSV/Excel |
 | Örnek veri | 16 kurgusal Türkçe akademik özet (yalnızca deneme amaçlıdır) |
 
 ## Gizlilik
@@ -99,12 +102,12 @@ uygulama ancak siz onayladıktan sonra güncellenir.
 1. **Yeni dala yükleyin.** GitHub'da deponuzu açın, ardından **Add file → Upload files**'a tıklayın.
    Yeni sürüm klasörünün içindeki her şeyi sürükleyin (Mac'te gizli dosyalar için **Cmd + Shift + .**).
    Sayfanın altında **"Create a new branch for this commit and start a pull request"** seçeneğini
-   işaretleyin. Dal adı olarak `gelistirme-2.0` yazın, **Propose changes**'a, sonra **Create pull
+   işaretleyin. Dal adı olarak yeni sürümün adını yazın (ör. `gelistirme-2.1`), **Propose changes**'a, sonra **Create pull
    request**'e tıklayın. **Henüz birleştirmeyin.**
 2. **Testleri bekleyin.** Pull request sayfasında **Testler** kontrolleri (Python 3.12 ve 3.13) birkaç
    dakika içinde tamamlanır. İkisinde de yeşil ✓ görmelisiniz. Kırmızı ✗ varsa birleştirmeyin.
 3. **Deneme uygulaması kurun.** <https://share.streamlit.io>'da **Create app → Deploy a public app from
-   GitHub**'ı seçin. Aynı depoyu seçin, **Branch** alanına `gelistirme-2.0`, **Main file path** alanına
+   GitHub**'ı seçin. Aynı depoyu seçin, **Branch** alanına dal adını (ör. `gelistirme-2.1`), **Main file path** alanına
    `app.py` yazın. **App URL** alanına farklı bir ad verin (ör. `turkmetinlab-deneme`). **Advanced
    settings**'te Python **3.12**'yi seçip **Deploy**'a tıklayın. Canlı uygulamanız bu adımdan etkilenmez.
 4. **Deneyin.** Deneme uygulamasında örnek veriyle ve kendi (anonimleştirilmiş) verinizle yeni
@@ -128,12 +131,37 @@ uygulama ancak siz onayladıktan sonra güncellenir.
 4. **İndir** sekmesinden sonuçları alın. Excel dosyasının *Ayarlar* sayfası, analizin hangi
    ayarlarla yapıldığını kaydeder (yöntem bölümünüzü yazarken ve tekrarlanabilirlik için).
 
+### Akademik terim sözlüğü (2.1, isteğe bağlı)
+
+1. Sol menüde **📚 Akademik terim sözlüğü** bölümünü açın ve **Çok sözcüklü akademik terimleri tanı ve
+   koru** kutusunu işaretleyin.
+2. **Yalnızca çalışmanızla ilgili alanları seçin.** Gerçek mühendislik özetlerinde, eğitim alanındaki
+   "derin öğrenme" terimi hep makine öğrenmesi anlamında geçti; ilgisiz alanları kaldırmak bu tür anlam
+   hatalarını belirgin biçimde azalttı (kesinlik %90 → %99,5).
+3. **Temsili seçin:**
+   - *Tek birim*: terim analizlerde `uzaktan_eğitim` olarak sayılır.
+   - *Yalnızca işaretle*: analizler değişmez, terimler yalnızca listelenir.
+4. **Terimler** sekmesinde şunları denetleyin:
+   - bulunan terimler;
+   - metin üzerindeki eşleşmeler;
+   - çakışmalar ve standartlaştırılmayan biçimler (ör. *uzaktan eğitimci*).
+
+   Aynı sekmede kendi terimlerinizi ekleyebilir, CSV/Excel sözlüğü yükleyebilir ya da bir terimi devre dışı
+   bırakabilirsiniz.
+5. **Sözlük açık / kapalı** sekmesinde iki durumun sonuçlarını karşılaştırın. Raporunuzda hangi temsili
+   kullandığınızı belirtin; sözlük sürümü Excel'in *Ayarlar* sayfasına yazılır.
+
+Sözlük dosyası biçimi: ilk sütun ya da `standart_terim` sütunu terimleri içerir. `yazim_varyantlari`
+(birden çoksa `;` ile ayrılır), `alan` ve `terim_id` sütunları isteğe bağlıdır. Etkin sözlüğü *Terimler →
+Sözlüğü düzenle* bölümünden indirip düzenleyerek yeniden yükleyebilirsiniz. Eklediğiniz terimler yalnızca
+oturumunuzda tutulur.
+
 ### Dosya hazırlama ipuçları
 
 - Excel'den CSV kaydederken **CSV UTF-8** biçimini seçin (Windows-1254 de desteklenir).
 - Metin içinde virgül/noktalı virgül varsa hücre tırnak içinde olmalıdır (Excel bunu kendiliğinden yapar).
 - Eski `.xls` dosyalarını Excel'de **Farklı Kaydet → Excel Çalışma Kitabı (.xlsx)** ile dönüştürün.
-- En büyük dosya boyutu: 50 MB.
+- En büyük dosya boyutu: 30 MB.
 
 ---
 
@@ -176,6 +204,18 @@ scipy, networkx, jmhessel/FightingWords) ve 1.417 gerçek DergiPark makale özet
 
 Ayrıntı: `docs/bilimsel_degerlendirme_2.0.md`.
 
+**2.1 terim tanıma.** Kurallar Türkçe çekim eklerini (ünlü uyumu ve kaynaştırma denetimiyle) kabul eder,
+türetim eklerini reddeder; en uzun terim seçilir; özgün metin değişmez. Sonuçlar:
+- **Gerçek akademik metin** (699 DergiPark özeti, eşleştirici etiketlemeden önce donduruldu): sözlük dizisini
+  bulmada kesinlik %99,7, duyarlılık %99,2. Terimin sözlükteki anlamıyla geçmesi açısından kesinlik %90,1;
+  ilgisiz alanlar kaldırılınca %99,5.
+- **Genel Türkçe metin** (400 cümle): yanlış alarm yok.
+- **Analizlere etkisi:** Sözlük terimleri tutarlı kılar: geçişlerin tek n-gramda toplanma oranı %59'dan
+  %99,8'e çıktı. Ama analizleri kendiliğinden iyileştirmez: LDA tutarlılığı arttı, NMF kararlılığı ve
+  benzerlik uyumu biraz düştü.
+
+Ayrıntı: `docs/bilimsel_degerlendirme_2.1.md`.
+
 ### Sınırlılıklar
 
 - Benzerlik konuyu ölçer; anlamsal eşdeğerlik, intihal ya da metin kökeni tespiti değildir.
@@ -190,6 +230,13 @@ Ayrıntı: `docs/bilimsel_degerlendirme_2.0.md`.
   seçeneğini kullanın (bu durumda büyük harfle yazılmış başlıklar da ayrı sayılır).
 - Durak sözcük listesi genel amaçlıdır; alanınıza özgü sözcükleri arayüzden ekleyebilirsiniz.
 - Örnek veri seti kurgusaldır; bilimsel kaynak olarak kullanılmamalıdır.
+- **Terim sözlüğü (2.1):**
+  - Sözlük uzman doğrulamasından geçmemiş aday terimlerden oluşur.
+  - Anlam ayrımı yapılmaz: aynı dizi başka anlamda geçebilir.
+  - Gerçek veri sınaması ağırlıklı olarak mühendislik özetleriyle yapılmıştır. Diğer alanlarda öğe sayısı
+    azdır; etiketleme uzman etiketlemesi değildir.
+  - Yazım hataları ve türetilmiş biçimler (*tip 2 diyabetli*) tanınmaz.
+  - Terimleri tek birim yapmak belgeler arasındaki kısmi sözcük örtüşmesini azaltabilir.
 
 ---
 
@@ -216,7 +263,7 @@ TML_EN_FAZLA_SOZCUK=5000000 TML_LDA_SOZCUK=3000000 streamlit run app.py
 python -m pytest -q
 ```
 
-314 otomatik test (1.1'in 232 testi değiştirilmeden korunmuştur; 2 büyük veri testi isteğe bağlıdır). Kapsadıkları konular:
+461 otomatik test (2.0'ın 314 testi ve 1.1'in 232 testi değiştirilmeden korunmuştur; 3 büyük veri testi isteğe bağlıdır). Kapsadıkları konular:
 
 - Türkçe harf dönüşümü, kodlama tanıma, CSV/Excel/TXT okuma
 - Bölütleme ve lemmatizasyon (UD Turkish-BOUN altın standart verisiyle)
@@ -225,12 +272,16 @@ python -m pytest -q
 - TF-IDF'in bağımsız bir uygulama ve Türkçe referans veriyle karşılaştırılması
 - Benzerlik, birliktelik ağı, konu modeli ve grup karşılaştırması: elle hesaplanmış örnekler, bağımsız
   uygulamalar, ekilmiş konular, permütasyon kalibrasyonu
+- Terim tanıma (2.1): elle yazılmış çekim/türetim listeleri, konumların özgün metne geri eşlenmesi,
+  iç içe ve kesişen terimler, kısaltmalar, kullanıcı sözlüğü, oturum yalıtımı, dondurulmuş yapay test
+  kümesinde alt sınır
 - Performans ve bellek
 - Uygulamanın uçtan uca çalışması
 
 Testler GitHub'a her yüklemede **Actions** sekmesinde Python 3.12 ve 3.13 ile otomatik çalışır.
 Uzun süren büyük veri ölçümü için: `TML_BUYUK_TEST=1 python -m pytest tests/test_performans.py`.
-Gerçek akademik veriyle validasyon (internet gerekir): `python degerlendirme/v2_dogrulama.py`.
+Gerçek akademik veriyle validasyon (internet gerekir): `python degerlendirme/v2_dogrulama.py`,
+`python degerlendirme/v21_terim_dogrulama.py hepsi`.
 
 ### Proje yapısı
 
@@ -248,14 +299,17 @@ turkmetinlab/
 │   ├── birliktelik.py        # 2.0: sözcük birliktelik ağları
 │   ├── konu.py               # 2.0: konu modellemesi (NMF, LDA)
 │   ├── grup.py               # 2.0: grup karşılaştırması
+│   ├── terimler.py           # 2.1: akademik terim sözlüğü ve çok sözcüklü terim tanıma
+│   ├── sozluk/               # 2.1: çekirdek terim sözlüğü (637 aday terim) ve entegrasyon notları
 │   ├── visualize.py          # Grafikler ve kelime bulutu
 │   ├── export.py             # CSV / Excel dışa aktarım (formül enjeksiyonu koruması)
 │   ├── oturum.py             # Oturuma özel bellek, veri temizliği, güvenli hata kaydı
 │   └── performans.py         # Veri boyutu sınırları
 ├── tests/                    # Otomatik testler (pytest)
 │   └── veri/                 # UD Turkish-BOUN örneği (CC BY-SA 4.0) ve beklenen sonuçlar
-├── degerlendirme/            # Lemmatizasyon, bölütleme, performans ve 2.0 validasyon betikleri
-├── docs/                     # Bilimsel değerlendirme raporu
+├── degerlendirme/            # Lemmatizasyon, bölütleme, performans, 2.0 ve 2.1 validasyon betikleri
+│   └── veri/                 # 2.1: yapay terim test kümesi, DergiPark altın standardı (yalnızca konumlar)
+├── docs/                     # Bilimsel değerlendirme, sözlük denetimi ve test raporları
 ├── ornek_veri/               # Örnek veri seti
 ├── .streamlit/config.toml    # Uygulama ayarları
 ├── requirements.txt          # Uygulama bağımlılıkları (sürümleri sabit)

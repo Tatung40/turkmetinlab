@@ -195,7 +195,60 @@ def modul_olcumu(ad: str) -> dict:
             "toplam_sn": round(sum(sure.values()), 2), "bellek_once_MB": round(rss0, 1), "tepe RSS MB": round(tepe_mb(), 1)}
 
 
+def terimli_derlem(belge: int, cumle: int, tohum: int = 42, siklik: int = 50):
+    """Zipf derlemine her ~siklik sözcükte bir sözlük terimi (çoğu ekli) yerleştirir.
+
+    Gerçek DergiPark özetlerinde ~110 sözcükte bir terim bulundu; burada yoğunluk bunun yaklaşık iki katıdır.
+    """
+    from tmlab.terimler import cekirdek_sozluk
+
+    r = random.Random(tohum + 1)
+    terimler = [t.standart for t in cekirdek_sozluk()]
+    ekler = ["", "", "de", "nin", "ye", "leri", "sinde", "'in"]
+    sonuc = []
+    for m in zipf_derlem(belge, cumle, tohum):
+        s = m.split(" ")
+        for i in range(r.randrange(siklik), len(s), siklik):
+            s[i] = r.choice(terimler) + r.choice(ekler)
+        sonuc.append(" ".join(s))
+    return sonuc
+
+
+def terim_olcumu(ad: str, sozluk: str) -> dict:
+    """Ön işleme süresi ve tepe bellek: sözlük "yok" | "birim" | "birim_kisaltma" | "isaretle"."""
+    import pandas  # noqa: F401  (uygulamada her zaman yüklü; tablolar pandas kullanır, adil karşılaştırma için)
+    from tmlab.preprocess import OnIslemeAyarlari, derlem_on_isle
+    from tmlab.terimler import TerimEslestirici, cekirdek_sozluk, eslesme_tablosu, terim_ozeti
+
+    belge, cumle = BOYUTLAR[ad]
+    metinler = terimli_derlem(belge, cumle)
+    rss0 = rss_mb()
+    t = time.perf_counter()
+    terimci = None
+    if sozluk != "yok":
+        terimci = TerimEslestirici(cekirdek_sozluk(), kisaltmalar=sozluk.endswith("kisaltma"),
+                                   temsil="isaretle" if sozluk == "isaretle" else "birim")
+    derleme = time.perf_counter() - t
+    t = time.perf_counter()
+    belgeler = derlem_on_isle(metinler, OnIslemeAyarlari(), terimci=terimci)
+    on_isleme = time.perf_counter() - t
+    sonuc = {"boyut": ad, "sozluk": sozluk, "belge": belge, "sözcük": sum(len(m.split()) for m in metinler),
+             "derleme_sn": round(derleme, 3), "on_isleme_sn": round(on_isleme, 2)}
+    if terimci is not None:
+        t = time.perf_counter()
+        sonuc["eslesme"] = sum(len(b.terimler) for b in belgeler)
+        terim_ozeti(belgeler)
+        eslesme_tablosu(belgeler)
+        sonuc["tablolar_sn"] = round(time.perf_counter() - t, 2)
+    sonuc["bellek_once_MB"] = round(rss0, 1)
+    sonuc["tepe RSS MB"] = round(tepe_mb(), 1)
+    return sonuc
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--terim":
+        print(json.dumps(terim_olcumu(sys.argv[2], sys.argv[3]), ensure_ascii=False))
+        sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1] == "--modul":
         print(json.dumps(modul_olcumu(sys.argv[2]), ensure_ascii=False))
         sys.exit(0)

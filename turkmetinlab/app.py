@@ -27,6 +27,7 @@ from tmlab import benzerlik as bz
 from tmlab import birliktelik as ba
 from tmlab import grup as gr
 from tmlab import konu as km
+from tmlab import terimler as tm
 from tmlab.analysis import (TfidfHatasi, derlem_ozeti, ngram_sikligi, sozcuk_sikligi,
                             tfidf_hesapla, turkce_sirala_anahtari)
 from tmlab.export import EXCEL_SATIR_SINIRI, csv_bayt, excel_bayt_ve_uyarilar, sozluk_tablosu
@@ -90,7 +91,7 @@ def verilerimi_temizle():
     yuklenen_dosyalari_sil()
     oturum_verilerini_sil(st.session_state)
     st.session_state["yukleme_surumu"] = st.session_state.get("yukleme_surumu", 0) + 1
-    for anahtar in ("ozel_durak", "ara_sozcuk"):
+    for anahtar in ("ozel_durak", "ara_sozcuk", "terim_yeni", "terim_yeni_var"):
         if anahtar in st.session_state:
             st.session_state[anahtar] = ""
     st.session_state["_tml_temizlendi"] = True
@@ -109,7 +110,8 @@ GIZLILIK = """
   kullanan başka kişiler verilerinize erişemez.
 - Uygulama hiçbir veriyi **diske, veritabanına veya GitHub'a yazmaz**. Excel dosyaları da tamamen bellekte
   oluşturulur.
-- **🗑️ Verilerimi şimdi temizle** düğmesi yüklenen dosyaları ve tüm sonuçları hemen siler.
+- **🗑️ Verilerimi şimdi temizle** düğmesi yüklenen dosyaları ve tüm sonuçları hemen siler; terim sözlüğüne
+  eklediğiniz ya da yüklediğiniz terimler de silinir (bunlar da yalnızca oturumunuzda tutulur).
 - Düğmeyi kullanmadan sekmeyi kapatırsanız veriler, bağlantı koptuktan yaklaşık **2 dakika** sonra
   Streamlit tarafından sunucu belleğinden silinir.
 - Beklenmeyen bir hata olursa sunucu günlüğüne yalnızca hata türü ve kod konumu yazılır; metinleriniz yazılmaz.
@@ -138,6 +140,9 @@ KILAVUZ = """
   değiştirilebilir.
 - **TF-IDF:** Bir terimin bir belgede sık, diğer belgelerde seyrek geçmesiyle yükselen ağırlık. Belgeleri
   birbirinden ayıran terimleri bulmaya yarar. En az iki belge gerekir.
+- **Akademik terim sözlüğü (isteğe bağlı):** "uzaktan eğitime", "yapay zekânın" gibi ek almış çok sözcüklü
+  terimleri tanır ve analizlerde tek kavram olarak sayar (`uzaktan_eğitim`). Sözlükteki 637 terim **uzman
+  doğrulaması bekleyen aday terimlerdir**. Ayrıntılar *Terimler* sekmesinde.
 - **Kelime bulutu:** Görsel bir özettir; sözcük boyutu sıklıkla ilişkilidir ama kesin karşılaştırma için
   tabloları kullanın. Sözcüklerin konum ve renklerinin bir anlamı yoktur.
 
@@ -295,7 +300,8 @@ def ana():
         if lemma:
             st.caption("⚠️ Lemmatizasyon her sözcüğü doğru köke indirmez (yaklaşık 20 sözcükte 1 hata) ve kalıp "
                        "terimleri de değiştirir: *uzaktan eğitim → uzak eğitim*. Dönüşümleri *Ön İşleme* "
-                       "sekmesindeki tablodan denetleyin.")
+                       "sekmesindeki tablodan denetleyin. Çok sözcüklü terimleri korumak için aşağıdaki "
+                       "*Akademik terim sözlüğü*nü açabilirsiniz.")
         with st.expander("Diğer ön işleme ayarları"):
             bolutleme = st.selectbox(
                 "N-gram sınırları (bölütleme)", list(BOLUTLEME_SECENEKLERI),
@@ -324,6 +330,8 @@ def ana():
             durak_sozcuk_ingilizce=durak_ingilizce,
         )
 
+        terim_ayar = _terim_kenar_cubugu()
+
         # -------------------------------------------------------------------
         # 3) Analiz ayarları
         # -------------------------------------------------------------------
@@ -349,8 +357,9 @@ def ana():
     # -----------------------------------------------------------------------
     # Ana alan
     # -----------------------------------------------------------------------
-    sekmeler = st.tabs(["🏠 Başlarken", "📄 Veri", "🧹 Ön İşleme", "📊 Sözcük Sıklığı", "🔗 N-gram", "⚖️ TF-IDF",
-                        "🧭 Benzerlik", "🕸️ Sözcük Ağı", "🧩 Konular", "👥 Gruplar", "☁️ Kelime Bulutu", "⬇️ İndir"])
+    sekmeler = st.tabs(["🏠 Başlarken", "📄 Veri", "🧹 Ön İşleme", "📚 Terimler", "📊 Sözcük Sıklığı", "🔗 N-gram",
+                        "⚖️ TF-IDF", "🧭 Benzerlik", "🕸️ Sözcük Ağı", "🧩 Konular", "👥 Gruplar", "☁️ Kelime Bulutu",
+                        "⬇️ İndir"])
 
     def bos_sekmeler(mesaj: str, hata_metni=None, veri_goster: bool = False):
         with sekmeler[0]:
@@ -391,11 +400,12 @@ def ana():
     if boyut.duzey == "engel":
         bos_sekmeler("", boyut.mesaj, veri_goster=True)
 
-    on_isleme_anahtari = ozet(hazirlik_anahtari, repr(ayarlar))
+    terimci = _terim_eslestirici(terim_ayar)
+    on_isleme_anahtari = ozet(hazirlik_anahtari, repr(ayarlar), terimci.parmak_izi if terimci else None)
     with st.spinner("Metinler ön işleniyor…"):
         def _on_isle():
             kayit = Counter()
-            return derlem_on_isle(metinler, ayarlar, kayit if ayarlar.lemmatizasyon else None), kayit
+            return derlem_on_isle(metinler, ayarlar, kayit if ayarlar.lemmatizasyon else None, terimci), kayit
         belgeler, lemma_kaydi = _hesapla("onisleme", on_isleme_anahtari, _on_isle)
     ozet_tablo = _hesapla("ozet", on_isleme_anahtari, lambda: derlem_ozeti(belgeler))
     frekans = _hesapla("frekans", on_isleme_anahtari, lambda: sozcuk_sikligi(belgeler))
@@ -420,6 +430,8 @@ def ana():
             "İşlenmiş sözcükler": [" ".join(b.sozcukler) for b in belgeler[:n]],
             "Sözcük (önce)": [b.ham_sozcuk_sayisi for b in belgeler[:n]],
             "Sözcük (sonra)": [len(b.sozcukler) for b in belgeler[:n]],
+            **({"Normalize terimler": ["; ".join(e.standart for e in b.terimler) for b in belgeler[:n]]}
+               if terimci is not None else {}),
         })
 
     lemma_tablosu = None
@@ -515,10 +527,14 @@ def ana():
             adimlar.append(f"{ayarlar.min_uzunluk} harften kısa sözcüklerin çıkarılması")
             if ayarlar.lemmatizasyon:
                 adimlar.append(f"Lemmatizasyon ({LEMMA_YONTEMI}); lemması durak sözcük olanlar (ör. ol, et) çıkarılır")
+            if terimci is not None:
+                adimlar.insert(0, "Akademik terim sözlüğü: terimler özgün metinde bulunur ("
+                               + ("tek birim olarak korunur; bu birimler küçük harf ve şapka ayarı dışındaki adımlardan "
+                                  "geçmez" if terimci.temsil == "birim" else "yalnızca işaretlenir") + ")")
             st.markdown("\n".join(f"{i}. {a}" for i, a in enumerate(adimlar, 1)))
 
     # --- Sözcük sıklığı -----------------------------------------------------
-    with sekmeler[3]:
+    with sekmeler[4]:
         st.subheader("Sözcük sıklığı" + (" (lemma)" if ayarlar.lemmatizasyon else ""))
         if frekans.empty:
             st.warning("Gösterilecek sözcük yok.")
@@ -536,7 +552,7 @@ def ana():
                        f"({_sayi(ozet_tablo['Analiz edilen sözcük (ön işleme sonrası)'])}) göre hesaplanmıştır.")
 
     # --- N-gram -------------------------------------------------------------
-    with sekmeler[4]:
+    with sekmeler[5]:
         st.subheader(f"{n_deger}-gram sıklığı")
         if ngram.empty:
             st.warning(f"En az {min_siklik} kez geçen {n_deger}-gram bulunamadı. Sol menüden 'N-gram en düşük "
@@ -549,7 +565,7 @@ def ana():
                        f"süzgecinden önce). Bölütleme: {BOLUTLEME_SECENEKLERI[bolutleme]}.")
 
     # --- TF-IDF -------------------------------------------------------------
-    with sekmeler[5]:
+    with sekmeler[6]:
         st.subheader("TF-IDF analizi")
         if tfidf_hata:
             st.warning(tfidf_hata)
@@ -591,18 +607,23 @@ def ana():
                   tfidf_anahtari=tfidf_anahtari, on_isleme_anahtari=on_isleme_anahtari, ayarlar=ayarlar,
                   tablo=tablo, satir_nolari=satir_nolari, metin_sutunu=metin_sutunu, ad_sutunu=ad_sutunu,
                   ilk_n=ilk_n, ek_tablolar=ek_tablolar, ek_ayarlar=ek_ayarlar, kaynak=kaynak,
-                  toplam_sozcuk=int(ozet_tablo["Analiz edilen sözcük (ön işleme sonrası)"]))
-    with sekmeler[6]:
-        _benzerlik_sekmesi(baglam)
+                  toplam_sozcuk=int(ozet_tablo["Analiz edilen sözcük (ön işleme sonrası)"]),
+                  terimci=terimci, terim_ayar=terim_ayar, hazirlik_anahtari=hazirlik_anahtari, n_deger=n_deger,
+                  min_siklik=int(min_siklik), tf_ayar=(tf_ngram, tf_smooth, tf_sublinear, int(tf_min_belge),
+                                                      int(tf_belge_basina)))
+    with sekmeler[3]:
+        _terim_sekmesi(baglam)
     with sekmeler[7]:
-        _ag_sekmesi(baglam)
+        _benzerlik_sekmesi(baglam)
     with sekmeler[8]:
-        _konu_sekmesi(baglam)
+        _ag_sekmesi(baglam)
     with sekmeler[9]:
+        _konu_sekmesi(baglam)
+    with sekmeler[10]:
         _grup_sekmesi(baglam)
 
     # --- Kelime bulutu ------------------------------------------------------
-    with sekmeler[10]:
+    with sekmeler[11]:
         st.subheader("Kelime bulutu")
         c1, c2, c3 = st.columns(3)
         kaynaklar = ["Sözcük sıklığı", f"{n_deger}-gram sıklığı"] + ([] if tfidf_hata else ["TF-IDF (toplam)"])
@@ -631,7 +652,7 @@ def ana():
                        "seferinde aynıdır (sabit tohum değeri).")
 
     # --- İndir --------------------------------------------------------------
-    with sekmeler[11]:
+    with sekmeler[12]:
         st.subheader("Sonuçları indir")
         zaman = datetime.now().strftime("%Y-%m-%d_%H-%M")
         ayar_tablosu = sozluk_tablosu({
@@ -650,6 +671,7 @@ def ana():
             "TF-IDF en az belge": tf_min_belge,
             "TF-IDF yumuşatılmış IDF": tf_smooth,
             "TF-IDF logaritmik TF": tf_sublinear,
+            **_terim_ayar_sozlugu(terim_ayar, terimci),
             **ek_ayarlar,
         })
         tablolar = {
@@ -672,6 +694,12 @@ def ana():
             satir_sayilari[ad_] = n_
         tablolar["Ön işlenmiş metinler"] = onizleme_tablosu
         satir_sayilari["Ön işlenmiş metinler"] = len(belgeler)
+        st.download_button("📄 Temizlenmiş metinleri indir (.txt)",
+                           lambda: tm.temizlenmis_txt(belgeler, adlar), f"temizlenmis_metinler_{zaman}.txt",
+                           "text/plain", key="indir_txt", on_click="ignore",
+                           help="Her belge için bir başlık satırı (### belge adı) ve ön işlenmiş metin. Terim "
+                                "sözlüğü açıksa terimler alt çizgiyle birleşik yazılır (uzaktan_eğitim). Aynı metinler "
+                                "özgün metinle yan yana 'Ön işlenmiş metinler' tablosunda (Excel/CSV) da var.")
 
         def excel_uret():
             return excel_bayt_ve_uyarilar({ad_: fn_() for ad_, fn_ in tablolar.items()})[0]
@@ -1189,6 +1217,392 @@ def _veri_sekmesi(tablo: pd.DataFrame, okuma):
     _tablo_goster(gosterim, sira_goster=True)
     if len(tablo) > 200:
         st.caption("İlk 200 satır gösteriliyor. Satır numaraları uyarılardaki numaralarla aynıdır.")
+
+
+# ---------------------------------------------------------------------------
+# 2.1 — Akademik terim sözlüğü
+# ---------------------------------------------------------------------------
+# Kullanıcının eklediği/yüklediği terimler ve devre dışı bıraktığı terimler YALNIZCA bu oturumun
+# st.session_state alanında ("_tml_" önekiyle) tutulur; "Verilerimi temizle" bunları da siler.
+
+T_KULLANICI = "_tml_kullanici_terimleri"
+T_YUKLENEN = "_tml_yuklenen_sozluk"
+T_KAPALI = "_tml_kapali_terimler"
+T_MESAJ = "_tml_terim_mesaj"
+T_SAYAC = "_tml_terim_sayac"
+EN_FAZLA_ELLE_TERIM = 500
+
+TERIM_DOGRULUK = """
+**Nasıl çalışır?** Terimler özgün metinde aranır; özgün metin değiştirilmez. Terimin son sözcüğü dışındaki
+sözcükler birebir eşleşmelidir; son sözcükte yalnızca **çekim ekleri** kabul edilir (uzaktan eğitim**e**, yapay
+zekâ**nın**, risk faktör**leri**). Türetim ekleri eşleşmez (*uzaktan eğitimci*, *yapay zekâsız*) ve ayrı tabloda
+gösterilir. En uzun terim önceliklidir (*üretken yapay zekâ* ⊃ *yapay zekâ*). Zincirleme tamlamada iyeliği
+düşmüş biçimler (*makine öğrenme yöntemleri*) daha düşük güven düzeyiyle kabul edilir. "Güven düzeyi" kurala
+dayalı sıralı bir değerdir, olasılık değildir.
+
+**Ne kadar doğru?** (ayrıntı: `docs/bilimsel_degerlendirme_2.1.md`)
+
+| Değerlendirme | Kesinlik | Duyarlılık |
+|---|---|---|
+| Gerçek akademik metin: 699 DergiPark özeti (mühendislik ağırlıklı), 652 terim geçişi, sözlük dizisinin doğru bulunması | %99,7 | %99,2 |
+| Aynı veri, terimin **sözlükteki anlamıyla** geçmesi (6 alan seçili) | %90,1 | %99,1 |
+| Aynı veri, yalnızca mühendislik + genel araştırma alanları seçili | %99,5 | %99,1 |
+| Akademik olmayan genel Türkçe metin (400 cümle) | 0 yanlış alarm | — |
+
+Gerçek veri etiketlemesini geliştirici yapmıştır (uzman etiketlemesi değildir); veri büyük ölçüde mühendislik
+özetleridir, diğer alanlarda doğruluk farklı olabilir. Anlam hatalarının çoğu, eğitim alanındaki "derin
+öğrenme" teriminin makine öğrenmesi anlamında geçmesinden kaynaklandı: **alanınızla ilgisi olmayan alanları
+seçmeyin.**
+"""
+
+
+def _terim_kenar_cubugu() -> dict:
+    with st.expander("📚 Akademik terim sözlüğü (isteğe bağlı)", expanded=bool(st.session_state.get("terim_acik"))):
+        acik = st.checkbox(
+            "Çok sözcüklü akademik terimleri tanı ve koru", False, key="terim_acik",
+            help="637 aday terimlik sözlük. 'uzaktan eğitime', 'yapay zekânın' gibi ek almış biçimler standart terime "
+                 "bağlanır ve analizlerde tek birim sayılır (uzaktan_eğitim). Varsayılan olarak kapalıdır.")
+        if not acik:
+            st.caption("Kapalı. Açınca ayrıntılar ve sözlük düzenleme *Terimler* sekmesinde.")
+            return {"acik": False}
+        tum = tm.alanlar()
+        secili = st.multiselect("Alanlar", tum, default=tum, key="terim_alanlar",
+                                help="Yalnızca çalışmanızla ilgili alanları seçin. Gerçek veride, ilgisiz alanların "
+                                     "terimleri (ör. eğitimdeki 'derin öğrenme') başka anlamda eşleşebildi.")
+        temsil = st.radio("Terimler analizlerde nasıl yer alsın?", list(tm.TEMSILLER), format_func=tm.TEMSILLER.get,
+                          key="terim_temsil",
+                          help="'Tek birim': sıklık, n-gram, TF-IDF, ağ, konu ve benzerlik analizlerinde terim tek "
+                               "öğe olur. 'Yalnızca işaretle': analizler sözlük kapalıyken olduğu gibi kalır; "
+                               "terimler yalnızca Terimler sekmesinde listelenir.")
+        kisaltma = st.checkbox("Kısaltmaları da tanı (YEM, NLP, IoT…)", False, key="terim_kisaltma",
+                               help="Büyük/küçük harfe duyarlıdır ('yem' eşleşmez). Tamamı büyük harfli başlık "
+                                    "satırlarında kısaltma eşleştirilmez.")
+        st.caption("⚠️ Sözlükteki terimler uzman doğrulaması bekleyen **aday terimlerdir**.")
+    return {"acik": True, "alanlar": tuple(secili), "temsil": temsil, "kisaltma": bool(kisaltma)}
+
+
+def _kullanici_terimleri() -> list:
+    yuklenen = st.session_state.get(T_YUKLENEN) or {}
+    return list(st.session_state.get(T_KULLANICI, [])) + list(yuklenen.get("terimler", []))
+
+
+def _etkin_sozluk(ayar: dict) -> list:
+    return tm.sozluk_olustur(ayar.get("alanlar", ()), st.session_state.get(T_KAPALI, []), _kullanici_terimleri())
+
+
+def _terim_eslestirici(ayar: dict):
+    if not ayar.get("acik"):
+        return None
+    sozluk = _etkin_sozluk(ayar)
+    anahtar = ozet(tuple(repr(t) for t in sozluk), ayar["kisaltma"], ayar["temsil"])
+    return _hesapla("terimci", anahtar, lambda: tm.TerimEslestirici(sozluk, ayar["kisaltma"], ayar["temsil"]), 2)
+
+
+def _terim_ayar_sozlugu(ayar: dict, terimci) -> dict:
+    if terimci is None:
+        return {"Akademik terim sözlüğü": "kullanılmadı"}
+    yuklenen = st.session_state.get(T_YUKLENEN) or {}
+    return {
+        "Akademik terim sözlüğü": "kullanıldı (aday terimler; uzman doğrulaması yok)",
+        "Sözlük sürümü": tm.sozluk_surumu(),
+        "Seçilen alanlar": "; ".join(ayar["alanlar"]) or "(yok)",
+        "Terim temsili": tm.TEMSILLER[ayar["temsil"]],
+        "Kısaltmalar tanındı mı": ayar["kisaltma"],
+        "Elle eklenen terim sayısı": len(st.session_state.get(T_KULLANICI, [])),
+        "Yüklenen kullanıcı sözlüğü": (f"{yuklenen.get('ad')} ({len(yuklenen.get('terimler', []))} terim)"
+                                       if yuklenen else "yok"),
+        "Devre dışı bırakılan terimler": ", ".join(st.session_state.get(T_KAPALI, [])) or "yok",
+        "Etkin terim sayısı": len(terimci),
+        "Terim eşleştirici parmak izi": terimci.parmak_izi[:16],
+    }
+
+
+def _terim_mesaj(tur: str, metin: str):
+    st.session_state[T_MESAJ] = (tur, metin)
+
+
+def _terim_ekle():
+    try:
+        liste = st.session_state.setdefault(T_KULLANICI, [])
+        if len(liste) >= EN_FAZLA_ELLE_TERIM:
+            raise tm.SozlukHatasi(f"En fazla {EN_FAZLA_ELLE_TERIM} terim elle eklenebilir; daha fazlası için sözlük "
+                                  "dosyası yükleyin.")
+        n = st.session_state.get(T_SAYAC, 0) + 1
+        t = tm.kullanici_terimi(st.session_state.get("terim_yeni", ""), st.session_state.get("terim_yeni_var", ""),
+                                terim_id=f"K{n:04d}")
+        if any(tm.katla(x.standart) == tm.katla(t.standart) for x in liste):
+            raise tm.SozlukHatasi(f"“{t.standart}” zaten eklenmiş.")
+        liste.append(t)
+        st.session_state[T_SAYAC] = n
+        st.session_state["terim_yeni"] = ""
+        st.session_state["terim_yeni_var"] = ""
+        _terim_mesaj("success", f"“{t.standart}” eklendi (kimlik {t.terim_id}).")
+    except tm.SozlukHatasi as e:
+        _terim_mesaj("error", str(e))
+
+
+def _terim_sil():
+    sil = set(st.session_state.get("terim_sil_sec", []))
+    st.session_state[T_KULLANICI] = [t for t in st.session_state.get(T_KULLANICI, []) if t.terim_id not in sil]
+    st.session_state["terim_sil_sec"] = []
+    _terim_mesaj("success", f"{len(sil)} terim silindi.")
+
+
+def _terim_kapat():
+    sec = st.session_state.get("terim_kapat_sec", [])
+    kapali = list(dict.fromkeys(list(st.session_state.get(T_KAPALI, [])) + list(sec)))
+    st.session_state[T_KAPALI] = kapali
+    st.session_state["terim_kapat_sec"] = []
+    _terim_mesaj("success", f"{len(sec)} terim devre dışı bırakıldı.")
+
+
+def _terim_ac():
+    ac = set(st.session_state.get("terim_ac_sec", []))
+    st.session_state[T_KAPALI] = [t for t in st.session_state.get(T_KAPALI, []) if t not in ac]
+    st.session_state["terim_ac_sec"] = []
+    _terim_mesaj("success", f"{len(ac)} terim yeniden etkinleştirildi.")
+
+
+def _terim_dosyasi_degisti():
+    anahtar = f"terim_dosya_{st.session_state.get('yukleme_surumu', 0)}"
+    dosya = st.session_state.get(anahtar)
+    if dosya is None:
+        st.session_state.pop(T_YUKLENEN, None)
+        return
+    try:
+        okuma = dosya_oku(dosya.name, dosya.getvalue())
+        terimler, uyarilar = tm.sozluk_tablosundan(okuma.tablo)
+        st.session_state[T_YUKLENEN] = {"ad": dosya.name, "terimler": terimler,
+                                        "uyarilar": list(okuma.uyarilar) + uyarilar}
+        _terim_mesaj("success", f"{dosya.name}: {len(terimler)} terim yüklendi.")
+    except (VeriOkumaHatasi, tm.SozlukHatasi) as e:
+        st.session_state.pop(T_YUKLENEN, None)
+        _terim_mesaj("error", f"Sözlük dosyası okunamadı: {e}")
+
+
+def _terim_yonetimi(ayar: dict):
+    st.markdown("##### Sözlüğü düzenle")
+    st.caption("Değişiklikler yalnızca bu oturumda geçerlidir; kalıcı olarak saklamak için etkin sözlüğü indirip "
+               "sonra yeniden yükleyebilirsiniz. Sizin terimleriniz çekirdek sözlüğe göre önceliklidir.")
+    k1, k2 = st.columns(2)
+    with k1:
+        st.markdown("**Terim ekle**")
+        st.text_input("Standart biçim", key="terim_yeni", placeholder="örnek: makine öğrenimi")
+        st.text_input("Yazım varyantları (isteğe bağlı, ; ile ayırın)", key="terim_yeni_var",
+                      placeholder="örnek: makine öğrenmesi; ML")
+        st.button("➕ Ekle", on_click=_terim_ekle, key="terim_ekle")
+        liste = st.session_state.get(T_KULLANICI, [])
+        if liste:
+            st.multiselect("Eklediğim terimlerden sil", [t.terim_id for t in liste], key="terim_sil_sec",
+                           format_func=lambda i: next((t.standart for t in liste if t.terim_id == i), i))
+            st.button("Seçilenleri sil", on_click=_terim_sil, key="terim_sil")
+    with k2:
+        st.markdown("**Kendi sözlüğünü yükle (CSV / Excel)**")
+        st.file_uploader("İlk sütun ya da 'standart_terim' sütunu terimleri içermeli; 'yazim_varyantlari', 'alan', "
+                         "'terim_id' sütunları isteğe bağlıdır.", type=["csv", "xlsx"],
+                         key=f"terim_dosya_{st.session_state.get('yukleme_surumu', 0)}",
+                         on_change=_terim_dosyasi_degisti)
+        yuklenen = st.session_state.get(T_YUKLENEN)
+        if yuklenen:
+            st.caption(f"Yüklü: {_md(yuklenen['ad'])} — {len(yuklenen['terimler'])} terim.")
+            for u in yuklenen["uyarilar"][:5]:
+                st.caption("⚠️ " + _md(u))
+    cekirdek = [t for t in tm.sozluk_olustur(ayar.get("alanlar") if ayar.get("acik") else None)]
+    kapali = st.session_state.get(T_KAPALI, [])
+    ad = {t.terim_id: f"{t.standart} ({t.alan})" for t in tm.cekirdek_sozluk()}
+    st.markdown("**Çekirdek sözlükteki bir terimi devre dışı bırak**")
+    c1, c2 = st.columns([3, 1])
+    c1.multiselect("Terim seçin", [t.terim_id for t in cekirdek if t.terim_id not in kapali], key="terim_kapat_sec",
+                   format_func=lambda i: ad.get(i, i), label_visibility="collapsed",
+                   placeholder="Devre dışı bırakılacak terimleri yazarak seçin")
+    c2.button("Devre dışı bırak", on_click=_terim_kapat, key="terim_kapat")
+    if kapali:
+        c1.multiselect(f"Devre dışı terimler ({len(kapali)}) — yeniden etkinleştirmek için seçin", kapali,
+                       key="terim_ac_sec", format_func=lambda i: ad.get(i, i))
+        c2.button("Etkinleştir", on_click=_terim_ac, key="terim_ac")
+
+
+def _vurgulu_metin(metin: str, eslesmeler) -> str:
+    parcalar, son = [], 0
+    for e in eslesmeler:
+        parcalar.append(_md(metin[son:e.bas]))
+        parcalar.append(f"**{_md(metin[e.bas:e.bit])}** ⟨{_md(e.standart)}⟩")
+        son = e.bit
+    parcalar.append(_md(metin[son:]))
+    return "".join(parcalar)
+
+
+def _terim_sekmesi(bg: dict):
+    terimci, ayar = bg["terimci"], bg["terim_ayar"]
+    st.subheader("Akademik terim sözlüğü")
+    mesaj = st.session_state.pop(T_MESAJ, None)
+    if mesaj:
+        (st.success if mesaj[0] == "success" else st.error)(mesaj[1])
+    if terimci is None:
+        st.info("Sözlük **kapalı**. Sol menüdeki *📚 Akademik terim sözlüğü* bölümünden açabilirsiniz. Açıldığında "
+                "\"uzaktan eğitime\", \"yapay zekânın\", \"ölçme ve değerlendirmede\" gibi ek almış çok sözcüklü "
+                "terimler standart biçimlerine bağlanır ve analizlerde tek kavram olarak sayılır.")
+        st.caption(tm.ADAY_UYARISI.replace("**", ""))
+        with st.expander("Yöntem ve ölçülen doğruluk"):
+            st.markdown(TERIM_DOGRULUK)
+        _terim_yonetimi(ayar)
+        return
+    belgeler, adlar, metinler = bg["belgeler"], bg["adlar"], bg["metinler"]
+    anahtar = bg["on_isleme_anahtari"]
+    st.caption(f"{tm.sozluk_surumu()} · etkin terim: {_sayi(len(terimci))} · temsil: "
+               f"{tm.TEMSILLER[terimci.temsil]} · {tm.ADAY_UYARISI.replace('**', '')}")
+    belirsiz = _hesapla("terim_belirsiz", ozet(terimci.parmak_izi), lambda: tm.alanlar_arasi_belirsiz(terimci.terimler), 1)
+    ozet_t = _hesapla("terim_ozeti", anahtar, lambda: tm.terim_ozeti(belgeler, belirsiz), 1)
+    toplam = int(ozet_t["Sıklık"].sum()) if len(ozet_t) else 0
+    kapsam = sum(bool(b.terimler) for b in belgeler)
+    k = st.columns(4)
+    k[0].metric("Bulunan terim geçişi", _sayi(toplam))
+    k[1].metric("Farklı terim", _sayi(len(ozet_t)))
+    k[2].metric("Terim içeren belge", f"{_sayi(kapsam)} / {_sayi(len(belgeler))}")
+    k[3].metric("Ekli geçiş oranı", f"%{(ozet_t['Ekli geçiş oranı'] * ozet_t['Sıklık']).sum() / toplam * 100:.0f}"
+                if toplam else "—")
+    if len(terimci) == 0:
+        st.warning("Etkin sözlük boş: hiçbir alan seçilmemiş ve kullanıcı terimi yok.")
+    elif not toplam:
+        st.warning("Seçilen sözlükteki terimlerin hiçbiri metinlerde bulunamadı.")
+    bel = ozet_t[ozet_t["Başka alanda daha uzun terimin parçası"] != ""] if len(ozet_t) else ozet_t
+    if len(bel):
+        st.warning("Şu terimler başka bir alandaki daha uzun bir terimin parçasıdır; anlamları alana göre değişebilir: "
+                   + "; ".join(f"**{_md(r['Standart terim'])}** ({_md(r['Alan'])}, {r['Sıklık']} kez)"
+                               for _, r in bel.head(6).iterrows())
+                   + ". Örneğin gerçek mühendislik özetlerinde eğitim alanındaki “derin öğrenme” terimi hep makine "
+                     "öğrenmesi anlamında geçti. Gerekirse alan seçimini daraltın ya da terimi devre dışı bırakın.")
+
+    alt = st.tabs(["Bulunan terimler", "Metin üzerinde", "Eşleşme ayrıntıları", "Sözlük açık / kapalı",
+                   "Sözlüğü düzenle", "Yöntem ve doğruluk"])
+    with alt[0]:
+        if len(ozet_t):
+            st.plotly_chart(yatay_cubuk(ozet_t, "Standart terim", "Sıklık", "En sık geçen terimler", bg["ilk_n"]),
+                            width="stretch")
+            _sinirli_tablo(ozet_t)
+            st.caption("'Ekli geçiş oranı': terimin metinde ek almış biçimde (ör. uzaktan eğitim**e**) geçme oranı.")
+    with alt[1]:
+        n = min(len(belgeler), ONIZLEME_BELGE_SINIRI)
+        _tablo_goster(tm.temizlenmis_metinler(belgeler[:n], metinler[:n], adlar[:n], bg["satir_nolari"][:n]), 420)
+        if len(belgeler) > n:
+            st.caption(f"İlk {_sayi(n)} belge gösteriliyor; tamamı İndir sekmesinde (TXT, CSV, Excel).")
+        iceren = [i for i, b in enumerate(belgeler) if b.terimler]
+        if iceren:
+            sec = st.selectbox("Terimleri metin üzerinde göster", iceren[:500], key="terim_belge",
+                               format_func=lambda i: f"{adlar[i]} ({len(belgeler[i].terimler)} terim)")
+            st.markdown(_vurgulu_metin(str(metinler[sec]), belgeler[sec].terimler))
+            st.caption("Kalın: metindeki biçim; ⟨ ⟩: bağlandığı standart terim. Özgün metin değiştirilmez.")
+    with alt[2]:
+        es = _hesapla("terim_eslesme", anahtar, lambda: tm.eslesme_tablosu(belgeler, adlar, bg["satir_nolari"]), 1)
+        st.markdown(f"**Eşleşmeler** ({_sayi(len(es))})")
+        _sinirli_tablo(es)
+        st.caption("Başlangıç/Bitiş: özgün metindeki karakter konumları (0'dan başlar). Güven düzeyi kurala dayalı "
+                   "sıralı bir değerdir: 1 = sözlükteki biçim, 0,95 = varyant, 0,9 = kesme işaretli ek, 0,85 = ek, "
+                   "0,75 = iyeliği düşmüş tamlama, 0,7 = kısaltma. Olasılık değildir.")
+        ca = _hesapla("terim_cakisma", anahtar, lambda: tm.cakisma_tablosu(belgeler, adlar), 1)
+        st.markdown(f"**Çakışmalar** ({_sayi(len(ca))}) — iç içe ya da kesişen adaylardan seçilmeyenler")
+        _sinirli_tablo(ca)
+        ey = _hesapla("terim_eslesmeyen", anahtar, lambda: tm.eslesmeyen_tablosu(belgeler, adlar), 1)
+        st.markdown(f"**Standartlaştırılmayan benzer biçimler** ({_sayi(len(ey))}) — türetim eki, tanınmayan ek, "
+                    "tireli bileşik ya da başlık satırı")
+        _sinirli_tablo(ey)
+    with alt[3]:
+        _terim_karsilastirma(bg)
+    with alt[4]:
+        _terim_yonetimi(ayar)
+        etkin = _etkin_sozluk(ayar)
+        st.download_button("Etkin sözlüğü indir (.csv)", lambda: csv_bayt(tm.sozluk_disa_aktar(etkin), ";", True),
+                           "etkin_terim_sozlugu.csv", "text/csv", key="terim_sozluk_indir", on_click="ignore",
+                           help="Bu dosyayı düzenleyip daha sonra 'Kendi sözlüğünü yükle' ile geri yükleyebilirsiniz.")
+    with alt[5]:
+        st.markdown(TERIM_DOGRULUK)
+
+    toplam_es = sum(len(b.terimler) for b in belgeler)
+    bg["ek_tablolar"].update({
+        "Terim özeti": (lambda: ozet_t, len(ozet_t)),
+        "Terim eşleşmeleri": (lambda: tm.eslesme_tablosu(belgeler, adlar, bg["satir_nolari"]), toplam_es),
+        "Terim çakışmaları": (lambda: tm.cakisma_tablosu(belgeler, adlar),
+                              sum(len(b.terim_sonucu.cakismalar) for b in belgeler if b.terim_sonucu)),
+        "Eşleşmeyen biçimler": (lambda: tm.eslesmeyen_tablosu(belgeler, adlar),
+                                sum(len(b.terim_sonucu.eslesmeyenler) for b in belgeler if b.terim_sonucu)),
+        "Etkin sözlük": (lambda: tm.sozluk_disa_aktar(terimci.terimler), len(terimci)),
+    })
+
+
+def _terim_karsilastirma(bg: dict):
+    st.markdown("Aynı ön işleme ayarlarıyla, sözlük **kapalı** ve **açık** iken elde edilen sonuçlar yan yana "
+                "gösterilir. Açık listedeki alt çizgili öğeler (ör. `uzaktan_eğitim`) korunmuş terimlerdir.")
+    ayarlar, metinler, adlar = bg["ayarlar"], bg["metinler"], bg["adlar"]
+    kapali_anahtar = ozet(bg["hazirlik_anahtari"], repr(ayarlar), None)
+
+    def kapali_hesapla():
+        return derlem_on_isle(metinler, ayarlar)
+
+    kapali = _kapili_hesapla(bg, "terim_kapali", kapali_anahtar, kapali_hesapla, "Karşılaştırmayı hesapla",
+                             "Karşılaştırma için metinler sözlüksüz olarak yeniden işlenir.")
+    if kapali is None:
+        return
+    acik = bg["belgeler"]
+    n = bg["ilk_n"]
+    tf_ayar = bg["tf_ayar"]
+    sekme = st.tabs(["Sözcük sıklığı", f"{bg['n_deger']}-gram", "TF-IDF", "Konu modeli (NMF)"])
+    ciftler = [
+        ("Sözcük sıklığı", lambda b: sozcuk_sikligi(b), "Sözcük", "Sıklık"),
+        (f"{bg['n_deger']}-gram", lambda b: ngram_sikligi(b, bg["n_deger"], bg["min_siklik"]), "N-gram", "Sıklık"),
+    ]
+    for i, (ad, fn, sutun, deger) in enumerate(ciftler):
+        with sekme[i]:
+            ka = _hesapla(f"terim_kars_kapali_{i}", kapali_anahtar + ad, lambda: fn(kapali), 1)
+            ac = _hesapla(f"terim_kars_acik_{i}", bg["on_isleme_anahtari"] + ad, lambda: fn(acik), 1)
+            tablo, olcut = tm.ilk_n_karsilastir(ka, ac, sutun, deger, n)
+            st.caption(f"İlk {n} listede ortak öğe: {olcut['ortak']} · Jaccard: {olcut['jaccard']:.2f} · açık listede "
+                       f"korunmuş terim: {olcut['acik_listede_terim_birimi']}".replace(".", ","))
+            _tablo_goster(tablo, 420)
+    with sekme[2]:
+        if bg["tfidf"] is None:
+            st.warning(bg["tfidf_hata"] or "TF-IDF hesaplanamadı.")
+        else:
+            try:
+                ka = _hesapla("terim_kars_tf", kapali_anahtar + repr(tf_ayar),
+                              lambda: tfidf_hesapla(kapali, list(adlar), *tf_ayar), 1).derlem_tablosu
+                tablo, olcut = tm.ilk_n_karsilastir(ka, bg["tfidf"].derlem_tablosu, "Terim", "Ortalama TF-IDF", n)
+                st.caption(f"İlk {n} listede ortak öğe: {olcut['ortak']} · Jaccard: {olcut['jaccard']:.2f}"
+                           .replace(".", ","))
+                _tablo_goster(tablo, 420)
+            except TfidfHatasi as e:
+                st.warning(str(e))
+    with sekme[3]:
+        kk = st.number_input("Konu sayısı", 2, 30, 8, key="terim_konu_k")
+        konu_anahtari = ozet(kapali_anahtar, bg["on_isleme_anahtari"], int(kk))
+        sonuc = _bul("terim_konu", konu_anahtari)
+        if st.button("NMF konu modelini iki durumda çalıştır", key="terim_konu_calistir"):
+            def calistir():
+                ayar_ = km.KonuAyarlari("nmf", int(kk))
+                return {d: km.konu_modeli(b, ayar_) for d, b in (("kapalı", kapali), ("açık", acik))}
+            try:
+                with st.spinner("Konu modelleri hesaplanıyor…"):
+                    sonuc = _hesapla("terim_konu", konu_anahtari, calistir, 1)
+            except ValueError as e:
+                st.warning(str(e))
+        if sonuc:
+            c = st.columns(2)
+            for (d, m), col in zip(sonuc.items(), c):
+                with col:
+                    st.markdown(f"**Sözlük {d}**")
+                    st.caption(f"NPMI tutarlılığı: {m.olcutler.get('Ortalama NPMI tutarlılığı')} · Çeşitlilik: "
+                               f"{m.olcutler.get('Konu çeşitliliği (ilk 25 sözcük)')}".replace(".", ","))
+                    for j, u in enumerate(m.ust_sozcukler(8), 1):
+                        st.markdown(f"{j}. " + _md(", ".join(u)))
+    with st.expander("Bu karşılaştırma nasıl yorumlanmalı?"):
+        st.markdown(
+            "- Sözlük, terimleri **okunabilir ve tutarlı** kılar: \"uzaktan eğitime\", \"uzaktan eğitimin\" tek öğede "
+            "toplanır. Gerçek akademik özetlerde terim geçişlerinin sözlük kapalıyken yalnızca %59'u tek bir n-gramda "
+            "toplanabildi; açıkken %99,8'i tek standart birim oldu.\n"
+            "- Sözlük analizleri **kendiliğinden iyileştirmez.** 1.397 mühendislik özetinde LDA konu tutarlılığı arttı "
+            "(NPMI 0,04 → 0,13), NMF tutarlılığı değişmedi (0,25), NMF kararlılığı (0,68 → 0,60) ve belge benzerliğinin "
+            "yazar anahtar sözcükleriyle uyumu (AUC 0,871 → 0,851) biraz düştü. Nedeni: terim tek birim olunca "
+            "\"yapay sinir ağı\" ile \"sinir ağı\" geçen belgeler ortak \"sinir\" sözcüğünü artık paylaşmaz.\n"
+            "- Bu yüzden sonuçlarınızı her iki durumda da inceleyin ve hangisini raporladığınızı yönteminizde belirtin.")
 
 
 try:
