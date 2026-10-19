@@ -187,7 +187,7 @@ def ana():
                 "CSV, Excel (.xlsx), TXT veya Word (.docx) dosyası seçin",
                 type=["csv", "xlsx", "txt", "docx"], accept_multiple_files=True,
                 key=f"yukleme_{st.session_state.get('yukleme_surumu', 0)}",
-                help="Birden fazla TXT dosyası birlikte yüklenebilir. CSV/Excel dosyalarında her seferinde tek "
+                help="Birden fazla aynı tür TXT veya Word dosyası birlikte yüklenebilir. CSV/Excel dosyalarında tek "
                      "dosya analiz edilir (son yüklenen).",
             )
             if dosyalar:
