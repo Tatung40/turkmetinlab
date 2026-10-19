@@ -33,7 +33,7 @@ from tmlab.analysis import (TfidfHatasi, derlem_ozeti, ngram_sikligi, sozcuk_sik
 from tmlab.export import EXCEL_SATIR_SINIRI, csv_bayt, excel_bayt_ve_uyarilar, sozluk_tablosu
 from tmlab.kalite import belgeleri_hazirla, ingilizce_iceren
 from tmlab.lemma import OLCULEN_DOGRULUK, YONTEM as LEMMA_YONTEMI, kullanilabilir_mi
-from tmlab.loader import (TXT_MODLARI, VeriOkumaHatasi, dosya_oku, excel_sayfalari,
+from tmlab.loader import (DOCX_MODLARI, TXT_MODLARI, docx_oku, VeriOkumaHatasi, dosya_oku, excel_sayfalari,
                           metin_sutunu_oner, txt_oku)
 from tmlab.oturum import (OturumBellegi, guvenli_hata_kaydi, oturum_verilerini_sil, ozet,
                           yuklenen_dosyalari_sil)
@@ -184,33 +184,39 @@ def ana():
                     "oluşur; gerçek yayınlara ait değildir.")
         else:
             dosyalar = st.file_uploader(
-                "CSV, Excel (.xlsx) veya TXT dosyası seçin",
-                type=["csv", "xlsx", "txt"], accept_multiple_files=True,
+                "CSV, Excel (.xlsx), TXT veya Word (.docx) dosyası seçin",
+                type=["csv", "xlsx", "txt", "docx"], accept_multiple_files=True,
                 key=f"yukleme_{st.session_state.get('yukleme_surumu', 0)}",
-                help="Birden fazla TXT dosyası birlikte yüklenebilir. CSV/Excel dosyalarında her seferinde tek "
+                help="Birden fazla aynı tür TXT veya Word dosyası birlikte yüklenebilir. CSV/Excel dosyalarında tek "
                      "dosya analiz edilir (son yüklenen).",
             )
             if dosyalar:
-                # Son yüklenen dosyanın türü belirleyicidir: CSV/Excel ise yalnızca o dosya,
-                # TXT ise yüklenen tüm TXT dosyaları birlikte kullanılır.
-                son_txt = dosyalar[-1].name.lower().endswith(".txt")
-                txtler = [d for d in dosyalar if d.name.lower().endswith(".txt")] if son_txt else []
-                tablolar = [] if son_txt else [dosyalar[-1]]
-                kullanilmayan = [d.name for d in dosyalar if d not in txtler and d not in tablolar]
+                # Aynı türdeki TXT / DOCX dosyalarını bir arada analiz et.
+                son_uzanti = dosyalar[-1].name.lower().rsplit(".", 1)[-1]
+                coklu_tur = son_uzanti if son_uzanti in ("txt", "docx") else None
+                metin_dosyalari = ([d for d in dosyalar if d.name.lower().endswith("." + coklu_tur)]
+                                    if coklu_tur else [])
+                tablolar = [] if coklu_tur else [dosyalar[-1]]
+                kullanilmayan = [d.name for d in dosyalar if d not in metin_dosyalari and d not in tablolar]
                 if kullanilmayan:
-                    st.info("Yalnızca **" + _md(", ".join(d.name for d in txtler) if son_txt else dosyalar[-1].name)
+                    st.info("Yalnızca **" + _md(", ".join(d.name for d in metin_dosyalari) if coklu_tur
+                                                else dosyalar[-1].name)
                             + "** analiz ediliyor. Kullanılmayan dosyalar: " + _md(", ".join(kullanilmayan))
                             + ". Bunları yukarıdaki listeden ✕ ile kaldırabilirsiniz.")
                 try:
-                    if txtler:
-                        txt_modu = st.selectbox("TXT dosyasını belgelere nasıl ayıralım?", list(TXT_MODLARI),
-                                                format_func=TXT_MODLARI.get, index=1 if len(txtler) == 1 else 0,
-                                                help="TF-IDF için en az iki belge gerekir. Tek bir uzun metin "
-                                                     "yüklediyseniz 'Her paragraf bir belge' seçin.")
-                        icerik = tuple((d.name, d.getvalue()) for d in txtler)
-                        veri_kimligi = ozet("txt", icerik, txt_modu)
-                        okuma = _hesapla("okuma", veri_kimligi, lambda: txt_oku(list(icerik), txt_modu), 1)
-                        veri_adi = ", ".join(d.name for d in txtler)
+                    if coklu_tur:
+                        modlar = DOCX_MODLARI if coklu_tur == "docx" else TXT_MODLARI
+                        txt_modu = st.selectbox(
+                            "Dosyayı belgelere nasıl ayıralım?", list(modlar),
+                            format_func=modlar.get,
+                            index=1 if len(metin_dosyalari) == 1 else 0,
+                            help="TF-IDF için en az iki belge gerekir. Tek uzun metni paragraflara bölebilirsiniz.")
+                        icerik = tuple((d.name, d.getvalue()) for d in metin_dosyalari)
+                        veri_kimligi = ozet(coklu_tur, icerik, txt_modu)
+                        okuma = _hesapla("okuma", veri_kimligi,
+                                         lambda: docx_oku(list(icerik), txt_modu) if coklu_tur == "docx"
+                                         else txt_oku(list(icerik), txt_modu), 1)
+                        veri_adi = ", ".join(d.name for d in metin_dosyalari)
                     else:
                         d = tablolar[0]
                         bayt = d.getvalue()

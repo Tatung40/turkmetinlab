@@ -290,6 +290,79 @@ def txt_oku(dosyalar: List[Tuple[str, bytes]], mod: str = "dosya") -> OkumaSonuc
     return OkumaSonucu(pd.DataFrame(satirlar), ", ".join(sorted(kodlamalar)), None, uyarilar)
 
 
+
+DOCX_MODLARI = {
+    "dosya": "Her Word dosyası bir belge",
+    "paragraf": "Her paragraf / tablo satırı bir belge",
+}
+DOCX_EN_FAZLA_DOSYA = 16 * 2**20
+DOCX_EN_FAZLA_ACIK_BOYUT = 80 * 2**20
+
+
+def docx_dosyasi_denetle(veri: bytes) -> None:
+    """Office Open XML yapısını ve ZIP bombası riskini denetle."""
+    if not veri:
+        raise VeriOkumaHatasi("Word dosyası boş.")
+    if len(veri) > DOCX_EN_FAZLA_DOSYA:
+        raise VeriOkumaHatasi("Word dosyası 16 MB sınırını aşıyor.")
+    if not veri.startswith(b"PK\x03\x04"):
+        raise VeriOkumaHatasi("Bu dosya geçerli bir .docx Word belgesi değil.")
+    try:
+        with zipfile.ZipFile(io.BytesIO(veri)) as z:
+            bilgiler = z.infolist()
+            adlar = {b.filename for b in bilgiler}
+            toplam = sum(b.file_size for b in bilgiler)
+            sikisik = sum(b.compress_size for b in bilgiler) or 1
+    except (zipfile.BadZipFile, OSError) as e:
+        raise VeriOkumaHatasi("Word dosyası bozuk veya eksik.") from e
+    if "word/document.xml" not in adlar or "[Content_Types].xml" not in adlar:
+        raise VeriOkumaHatasi("Bu dosya bir .docx Word belgesi değil.")
+    if "word/vbaProject.bin" in adlar:
+        raise VeriOkumaHatasi("Makro içeren Word dosyaları desteklenmiyor.")
+    if toplam > DOCX_EN_FAZLA_ACIK_BOYUT or (toplam > 10 * 2**20 and toplam / sikisik > 200):
+        raise VeriOkumaHatasi("Word dosyasının açılmış boyutu güvenli sınırı aşıyor.")
+
+
+def docx_oku(dosyalar: List[Tuple[str, bytes]], mod: str = "dosya") -> OkumaSonucu:
+    """Word paragraf ve tablo satırlarını belge sırasıyla, bellekte okur."""
+    if mod not in DOCX_MODLARI:
+        raise VeriOkumaHatasi("Geçersiz Word bölme seçeneği.")
+    from docx import Document
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+
+    satirlar, uyarilar = [], []
+    for ad, veri in dosyalar:
+        docx_dosyasi_denetle(veri)
+        try:
+            belge = Document(io.BytesIO(veri))
+            parcalar = []
+            for blok in belge.iter_inner_content():
+                if isinstance(blok, Paragraph):
+                    metin = blok.text.strip()
+                    if metin:
+                        parcalar.append(metin)
+                elif isinstance(blok, Table):
+                    for satir in blok.rows:
+                        alanlar = [h.text.strip() for h in satir.cells]
+                        if any(alanlar):
+                            parcalar.append(" | ".join(alanlar))
+        except Exception as e:
+            raise VeriOkumaHatasi("Word dosyası okunamadı. Parolalı veya bozuk olabilir.") from e
+        if not parcalar:
+            uyarilar.append(f"'{ad}' içinde okunabilir paragraf veya tablo metni bulunamadı.")
+            continue
+        if mod == "dosya":
+            satirlar.append({"belge": ad, "metin": "\n\n".join(parcalar)})
+        else:
+            for i, metin in enumerate(parcalar, start=1):
+                satirlar.append({"belge": f"{ad} — bölüm {i}", "metin": metin})
+    if not satirlar:
+        raise VeriOkumaHatasi("Word dosyalarında okunabilir metin bulunamadı.")
+    uyarilar.append("Resimlerdeki metinler, üstbilgiler, altbilgiler ve dipnotlar çıkarılmadı.")
+    return OkumaSonucu(pd.DataFrame(satirlar), uyarilar=uyarilar)
+
+
 def _temizle(tablo: pd.DataFrame) -> pd.DataFrame:
     tablo = tablo.dropna(how="all").dropna(axis=1, how="all")
     tablo.columns = [str(c).strip() if str(c).strip() else f"Sütun {i + 1}" for i, c in enumerate(tablo.columns)]
@@ -338,4 +411,6 @@ def dosya_oku(ad: str, veri: bytes, sayfa=0, txt_modu: str = "dosya", baslik_sat
                               "Kitabı (.xlsx)' seçeneğiyle dönüştürüp yeniden yükleyin.")
     if uzanti == "txt":
         return txt_oku([(ad, veri)], txt_modu)
-    raise VeriOkumaHatasi(f"Desteklenmeyen dosya türü: .{uzanti}. CSV, XLSX veya TXT yükleyin.")
+    if uzanti == "docx":
+        return docx_oku([(ad, veri)], txt_modu)
+    raise VeriOkumaHatasi(f"Desteklenmeyen dosya türü: .{uzanti}. CSV, XLSX, TXT veya DOCX yükleyin.")
