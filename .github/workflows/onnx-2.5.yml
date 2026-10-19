@@ -1,0 +1,123 @@
+# TürkMetinLab 2.5 — E5-small ONNX karşılaştırması (yalnızca CPU).
+# YALNIZCA elle başlatılır. Uygulamayı, varsayılan testleri ve Streamlit'i değiştirmez.
+# Tek iş = tek makine: TF-IDF, E5 PyTorch ve E5 ONNX aynı donanımda ölçülür.
+# Sıra: dönüştür → 20 örnekte uyum → 100 belge → (başarılıysa) 500 belge. Yeniden deneme yoktur.
+name: ONNX 2.5 (E5-small)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onnx-2-5
+  cancel-in-progress: false
+
+jobs:
+  onnx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bağımlılıklar (PyTorch CPU dizini; dönüştürme ve PyTorch referansı için)
+        timeout-minutes: 15
+        run: |
+          mkdir -p cikti
+          pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r fizibilite_2.5/requirements-fizibilite.txt -r fizibilite_2.5/onnx/requirements-donusturme.txt
+          python fizibilite_2.5/ortam_denetimi.py cikti
+
+      - name: torch'suz çıkarım ortamı (ONNX ölçümleri burada çalışır)
+        timeout-minutes: 10
+        run: |
+          python -m venv "$RUNNER_TEMP/ortvenv"
+          "$RUNNER_TEMP/ortvenv/bin/pip" install -r fizibilite_2.5/onnx/requirements-onnx.txt
+          "$RUNNER_TEMP/ortvenv/bin/pip" freeze > cikti/onnx_ortam_paketleri.txt
+          if grep -qi '^torch' cikti/onnx_ortam_paketleri.txt; then echo "HATA: çıkarım ortamında torch var"; exit 1; fi
+
+      - name: Değerlendirme verisi (DergiPark; yalnızca bu iş süresince)
+        timeout-minutes: 5
+        run: |
+          curl -fsSL --retry 2 --max-time 120 -o "$RUNNER_TEMP/TRAll.txt" \
+            https://raw.githubusercontent.com/humakilicunlu/DergiParkEn/main/TRAll.txt
+          sha256sum "$RUNNER_TEMP/TRAll.txt" | tee cikti/veri_sha256.txt
+
+      - name: Model önbelleği (ağırlıklar artifact'e girmez)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/turkmetinlab_modeller
+          key: modeller-e5-v1
+          restore-keys: modeller-
+
+      - name: E5'i indir (tek deneme)
+        timeout-minutes: 15
+        run: python fizibilite_2.5/model_indir.py ~/.cache/turkmetinlab_modeller cikti intfloat/multilingual-e5-small
+
+      - name: ONNX önbelleği (dönüşüm bir kez yapılır)
+        id: onnx_onbellek
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/turkmetinlab_onnx/e5
+          key: onnx-e5-${{ hashFiles('fizibilite_2.5/onnx/e5_onnx_donustur.py', 'fizibilite_2.5/onnx/requirements-donusturme.txt') }}
+
+      - name: ONNX'e dönüştür (önbellek doğrulanır; eksik/uyumsuzsa yeniden oluşturulur)
+        timeout-minutes: 15
+        run: >
+          python fizibilite_2.5/onnx/e5_onnx_donustur.py --onbellekten-devam
+          --onbellek ~/.cache/turkmetinlab_modeller --cikti ~/.cache/turkmetinlab_onnx/e5 --kunye cikti/onnx_kunye.json
+
+      - name: Uyum denetimi — 20 örnek (FP32 uyumsuzsa iş durur; INT8 hatası yalnızca INT8'i eler)
+        timeout-minutes: 10
+        run: |
+          python fizibilite_2.5/onnx/e5_onnx_uyum.py --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 \
+            --onbellek ~/.cache/turkmetinlab_modeller --veri "$RUNNER_TEMP/TRAll.txt" \
+            --cikti cikti --adaylar cikti/onnx_adaylar.txt
+          echo "ADAYLAR=$(cat cikti/onnx_adaylar.txt)" >> "$GITHUB_ENV"
+
+      - name: Aşama 1 — 100 belge
+        timeout-minutes: 25
+        run: >
+          python fizibilite_2.5/anlamsal_karsilastirma.py --kati --n 100 --etiket onnx
+          --yontemler "tfidf_tml,e5_ozgun,$ADAYLAR"
+          --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 --onnx-python "$RUNNER_TEMP/ortvenv/bin/python"
+          --veri "$RUNNER_TEMP/TRAll.txt" --onbellek ~/.cache/turkmetinlab_modeller --cikti cikti
+          --azami-sure 900 --azami-rss-mb 6000
+
+      - name: Aşama 2 — 500 belge (yalnızca aşama 1 başarılıysa)
+        timeout-minutes: 35
+        run: >
+          python fizibilite_2.5/anlamsal_karsilastirma.py --kati --n 500 --etiket onnx
+          --yontemler "tfidf_tml,e5_ozgun,$ADAYLAR"
+          --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 --onnx-python "$RUNNER_TEMP/ortvenv/bin/python"
+          --veri "$RUNNER_TEMP/TRAll.txt" --onbellek ~/.cache/turkmetinlab_modeller --cikti cikti
+          --azami-sure 1500 --azami-rss-mb 6000
+
+      - name: Özet
+        if: always()
+        run: |
+          echo "Ölçüm makinesi: GitHub Actions ubuntu-latest (CPU). Streamlit sunucu ölçümü değildir." >> "$GITHUB_STEP_SUMMARY"
+          for f in cikti/onnx_uyum_20.json; do [ -f "$f" ] && { echo '```json'; cat "$f"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; done
+          for f in cikti/sonuclar_n100_onnx.md cikti/sonuclar_n500_onnx.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
+          ls -la cikti || true
+
+      - name: Sonuçları sakla (yalnızca JSON, Markdown, TXT; ONNX dosyaları girmez)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onnx-2.5-sonuclar
+          path: |
+            cikti/*.json
+            cikti/*.md
+            cikti/*.txt
+          if-no-files-found: warn
+          retention-days: 30
