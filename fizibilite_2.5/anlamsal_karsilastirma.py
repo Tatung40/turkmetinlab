@@ -137,6 +137,28 @@ def _durum(alan):
     return None
 
 
+def _pss():
+    """Orantılı bellek (paylaşılan sayfalar paylaşan süreçlere bölünür); yoksa None."""
+    try:
+        with open("/proc/self/smaps_rollup") as f:
+            return round(next(int(x.split()[1]) for x in f if x.startswith("Pss:")) / 1024, 1)
+    except (OSError, StopIteration):
+        return None
+
+
+def _yukleme_olc(bilgi):
+    bilgi["rss_yukleme_sonrasi_MB"] = _durum("VmRSS")
+    bilgi["pss_yukleme_sonrasi_MB"] = _pss()
+    bilgi["tepe_yukleme_MB"] = _durum("VmHWM")  # yükleme sırasındaki geçici kopyalar dahil
+
+
+def _cikarim_olc(bilgi):
+    bilgi["rss_kodlama_sonrasi_MB"] = _durum("VmRSS")
+    bilgi["pss_kodlama_sonrasi_MB"] = _pss()
+    bilgi["tepe_tek_oturum_MB"] = _durum("VmHWM")
+    bilgi["cikarim_ek_tepe_MB"] = round(bilgi["tepe_tek_oturum_MB"] - bilgi["rss_yukleme_sonrasi_MB"], 1)
+
+
 def _klasor_mb(yol):
     t = 0
     for d, _, dosyalar in os.walk(yol):
@@ -195,7 +217,7 @@ def gomme_calistir(yontem, basliklar, ozetler, onbellek, model_yolu, eszamanli):
     t = time.perf_counter()
     model = SentenceTransformer(model_yolu or m["ad"], device="cpu", cache_folder=onbellek)
     bilgi["yukleme_sn"] = round(time.perf_counter() - t, 2)
-    bilgi["rss_yukleme_sonrasi_MB"] = _durum("VmRSS")
+    _yukleme_olc(bilgi)
     bilgi["azami_token"] = int(model.max_seq_length)
     bilgi["vektor_boyutu"] = int(model.get_sentence_embedding_dimension())
     bilgi["parametre"] = int(sum(p.numel() for p in model.parameters()))
@@ -226,8 +248,7 @@ def gomme_calistir(yontem, basliklar, ozetler, onbellek, model_yolu, eszamanli):
     bilgi["kodlama_toplam_sn"] = round(bilgi["kodlama_100_sn"] + time.perf_counter() - t, 2)
     Dsim = kodla(ozetler, m["simetrik"]) if m["simetrik"] != m["belge"] else D  # E5: simetrik görev için "query: "
     Q = kodla(basliklar, m["sorgu"])
-    bilgi["rss_kodlama_sonrasi_MB"] = _durum("VmRSS")
-    bilgi["tepe_tek_oturum_MB"] = _durum("VmHWM")
+    _cikarim_olc(bilgi)
     if eszamanli > 1:  # Streamlit'te model paylaşılır (cache_resource); her oturum kendi metnini kodlar
         hatalar = []
 
@@ -264,7 +285,7 @@ def onnx_calistir(yontem, basliklar, ozetler, klasor, eszamanli):
     t = time.perf_counter()
     model = E5Onnx(klasor, ONNX_YONTEMLERI[anahtar], kunye.get("azami_token", 512))
     bilgi["yukleme_sn"] = round(time.perf_counter() - t, 2)
-    bilgi["rss_yukleme_sonrasi_MB"] = _durum("VmRSS")
+    _yukleme_olc(bilgi)
     bilgi["azami_token"] = model.azami_token
     bilgi["disk_MB"] = round(os.path.getsize(model.dosya) / 2**20, 1)
     if varyant == "temiz":
@@ -283,8 +304,7 @@ def onnx_calistir(yontem, basliklar, ozetler, klasor, eszamanli):
     bilgi["vektor_boyutu"] = int(D.shape[1])
     Dsim = model.encode([m["simetrik"] + x for x in ozetler])
     Q = model.encode([m["sorgu"] + x for x in basliklar])
-    bilgi["rss_kodlama_sonrasi_MB"] = _durum("VmRSS")
-    bilgi["tepe_tek_oturum_MB"] = _durum("VmHWM")
+    _cikarim_olc(bilgi)
     if eszamanli > 1:
         hatalar = []
 
@@ -300,6 +320,8 @@ def onnx_calistir(yontem, basliklar, ozetler, klasor, eszamanli):
         bilgi[f"eszamanli_{eszamanli}x100_sn"] = round(time.perf_counter() - t, 2)
         bilgi["eszamanli_hata"] = hatalar
     bilgi["tepe_MB"] = _durum("VmHWM")
+    bilgi["onnx_ayarlari"] = {"toplu_is": model.toplu_is, "arena": False, "intra_op_is_parcacigi":
+                              model.oturum.get_session_options().intra_op_num_threads}
     bilgi["torch_yuklendi_mi"] = "torch" in sys.modules
     return Q @ D.T, Dsim @ Dsim.T, bilgi
 
@@ -376,17 +398,18 @@ def ana():
             if args.veri:
                 komut += ["--veri", args.veri]
             print(f"… {y}", flush=True)
-            kod, cikti, hata, sinir = _sinirli_calistir(komut, args.azami_sure, args.azami_rss_mb)
+            kod, cikti, hata, sinir, olcum = _sinirli_calistir(komut, args.azami_sure, args.azami_rss_mb)
             satir = [s for s in cikti.splitlines() if s.startswith("SONUC ")]
             if sinir or kod != 0 or not satir:
                 neden = sinir or (hata.strip().splitlines() or ["bilinmeyen hata"])[-1][:300]
-                sonuc["yontemler"][y] = {"durum": "sınır aşıldı" if sinir else "çalıştırılamadı", "neden": neden}
+                sonuc["yontemler"][y] = {"durum": "sınır aşıldı" if sinir else "çalıştırılamadı", "neden": neden,
+                                         "dis_olcum": olcum}
                 print(f"   {sonuc['yontemler'][y]['durum']}: {neden}", flush=True)
                 continue
             bilgi = json.loads(satir[-1][6:])
             SA, SB = np.load(os.path.join(gecici, f"{y}_A.npy")), np.load(os.path.join(gecici, f"{y}_B.npy"))
             olcutler[y] = {"A": siralama_olcutleri(SA, RA), "B": siralama_olcutleri(SB, RB)}
-            sonuc["yontemler"][y] = {"durum": "çalıştı", **bilgi}
+            sonuc["yontemler"][y] = {"durum": "çalıştı", **bilgi, "dis_olcum": olcum}
             for g in ("A", "B"):
                 sonuc["yontemler"][y][g] = {a: [round(v, 4) for v in bootstrap_ga(x)] for a, x in olcutler[y][g].items()}
         # Hibrit: TF-IDF (TürkMetinLab) + gömme, sorgu başına z-puanlarının ortalaması
@@ -434,29 +457,61 @@ def ana():
         sys.exit(2)
 
 
+def _agac_bellek(sid):
+    """Aynı oturumdaki (alt + torun) süreçlerin toplam RSS ve PSS'i (MB) ve süreç sayısı."""
+    rss = pss = 0.0
+    n = 0
+    for pid in filter(str.isdigit, os.listdir("/proc")):
+        try:
+            with open(f"/proc/{pid}/stat") as f:
+                if int(f.read().rsplit(")", 1)[1].split()[3]) != sid:
+                    continue
+            with open(f"/proc/{pid}/smaps_rollup") as f:
+                for x in f:
+                    if x.startswith("Rss:"):
+                        rss += int(x.split()[1]) / 1024
+                    elif x.startswith("Pss:"):
+                        pss += int(x.split()[1]) / 1024
+            n += 1
+        except (OSError, IndexError, ValueError):
+            continue
+    return rss, pss, n
+
+
 def _sinirli_calistir(komut, azami_sure, azami_rss_mb):
-    """Alt süreci süre ve bellek (RSS) sınırıyla çalıştırır; yeniden deneme yapmaz."""
+    """Alt süreci kendi oturumunda, süre ve bellek sınırıyla çalıştırır; yeniden deneme yapmaz.
+
+    Sınır, süreç ağacının (alt + torun) toplam RSS'ine uygulanır. Dışarıdan örneklenen tepe RSS/PSS ve bitişte
+    kalan (artık) süreç sayısı döner; artık süreçler sonlandırılır, böylece bellek sonraki yönteme taşınmaz.
+    """
+    olcum = {"dis_tepe_rss_MB": 0.0, "dis_tepe_pss_MB": 0.0, "en_cok_surec": 0, "artik_surec": 0}
     with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
-        p = subprocess.Popen(komut, stdout=out, stderr=err, text=True)
+        p = subprocess.Popen(komut, stdout=out, stderr=err, text=True, start_new_session=True)
         bas, sinir = time.time(), None
         while p.poll() is None:
             time.sleep(0.5)
-            try:
-                with open(f"/proc/{p.pid}/status") as f:
-                    rss = next((int(x.split()[1]) / 1024 for x in f if x.startswith("VmRSS:")), 0)
-            except OSError:
-                rss = 0
+            rss, pss, n = _agac_bellek(p.pid)
+            olcum["dis_tepe_rss_MB"] = round(max(olcum["dis_tepe_rss_MB"], rss), 1)
+            olcum["dis_tepe_pss_MB"] = round(max(olcum["dis_tepe_pss_MB"], pss), 1)
+            olcum["en_cok_surec"] = max(olcum["en_cok_surec"], n)
             if rss > azami_rss_mb:
                 sinir = f"bellek sınırı aşıldı ({rss:.0f} MB > {azami_rss_mb} MB)"
             elif time.time() - bas > azami_sure:
                 sinir = f"süre sınırı aşıldı (> {azami_sure} sn)"
             if sinir:
-                p.kill()
-                p.wait()
                 break
+        if p.poll() is None:
+            p.kill()
+        p.wait()
+        olcum["artik_surec"] = _agac_bellek(p.pid)[2]  # ana süreç bittikten sonra kalanlar
+        if olcum["artik_surec"]:
+            try:
+                os.killpg(p.pid, 9)
+            except ProcessLookupError:
+                pass
         out.seek(0)
         err.seek(0)
-        return p.returncode, out.read(), err.read(), sinir
+        return p.returncode, out.read(), err.read(), sinir, olcum
 
 
 def rapor(s) -> str:
@@ -481,6 +536,10 @@ def rapor(s) -> str:
     out += ["## Kaynak ölçümleri (bu makinede, CPU)", "",
             "| Yöntem | Yükleme sn | 100 belge sn | Tüm belgeler sn | Tepe RAM MB | Vektör boyutu | Azami token | "
             "Kesilen belge | Disk MB | Eşzamanlı |", "|---|---|---|---|---|---|---|---|---|---|"]
+    bellek = ["", "Bellek ayrıntısı (MB): yükleme sonrası RSS/PSS, yükleme tepesi, tek oturum çıkarım ek tepesi, "
+              "dışarıdan örneklenen süreç ağacı tepe RSS/PSS (0,5 sn aralıkla), artık süreç.", "",
+              "| Yöntem | Yükleme RSS | Yükleme PSS | Yükleme tepe | Çıkarım ek tepe | Ağaç tepe RSS | Ağaç tepe PSS | Artık süreç |",
+              "|---|---|---|---|---|---|---|---|"]
     for y, r in s["yontemler"].items():
         if r.get("durum") != "çalıştı":
             continue
@@ -488,6 +547,11 @@ def rapor(s) -> str:
         out.append(f"| {y} | {r.get('yukleme_sn', '—')} | {r.get('kodlama_100_sn', '—')} | {r.get('kodlama_toplam_sn', '—')} | "
                    f"{r.get('tepe_MB', '—')} | {r.get('vektor_boyutu', '—')} | {r.get('azami_token', '—')} | "
                    f"{r.get('kesilen_belge_orani', '—')} | {r.get('disk_MB', '—')} | {es} |")
+        d = r.get("dis_olcum", {})
+        bellek.append(f"| {y} | {r.get('rss_yukleme_sonrasi_MB', '—')} | {r.get('pss_yukleme_sonrasi_MB', '—')} | "
+                      f"{r.get('tepe_yukleme_MB', '—')} | {r.get('cikarim_ek_tepe_MB', '—')} | {d.get('dis_tepe_rss_MB', '—')} | "
+                      f"{d.get('dis_tepe_pss_MB', '—')} | {d.get('artik_surec', '—')} |")
+    out += bellek
     onnx = {y: r for y, r in s["yontemler"].items() if "pytorch_uyumu" in r}
     if onnx:
         out += ["", "## ONNX ↔ PyTorch E5 (aynı makine, aynı sorgular)", "",

@@ -37,6 +37,14 @@
   durdurur); ONNX önbelleği SHA-256 ve kaynak sürümle doğrulanır, bozuksa güvenli yeniden oluşturulur.
   `test_onnx.py`: 9 test geçti (küçük rastgele model; gerçek E5 değil).
 
+## Bellek düzeltmesi (GitHub #2 sonrası) — ayrıntı: `onnx/RAPOR_ONNX.md` §8
+
+- #2: FP32 uyumlu, INT8 elendi (ilk-5 0,76). ONNX FP32 n=100'de 6.078 MB ile sınırda durdu.
+- Neden: birleştirilmemiş dikkat (toplu iş × 12 × uzunluk²) × 3 eşzamanlı oturum + geri verilmeyen arena.
+- Düzeltme: toplu iş 8, uzunluk sıralaması, arena kapalı, iş parçacığı ≤ 4. Ölçüm: süreç ağacı RSS + PSS,
+  artık süreç denetimi, yükleme/çıkarım ayrımı.
+- E5 boyutlu rastgele modelle: 3 eşzamanlı tepe >5.000 → 1.786 MB. Gerçek E5 için GitHub #3 gerekli.
+
 ## Sıradaki adımlar
 
 1. `onnx-2.5.yml` dosyasını `main`'e ekle (yalnızca bu dosya; düğmenin görünmesi için), iş akışını
