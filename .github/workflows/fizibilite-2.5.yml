@@ -1,0 +1,86 @@
+# TürkMetinLab 2.5 — anlamsal model fizibilitesi (MiniLM ve E5, yalnızca CPU).
+# YALNIZCA elle başlatılır. Uygulamayı, varsayılan testleri (testler.yml) ve Streamlit'i değiştirmez.
+# Aşama 1: 100 belge. Yalnızca başarılıysa aşama 2: 500 belge. Yeniden deneme yoktur.
+name: Fizibilite 2.5 (anlamsal modeller)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fizibilite-2-5
+  cancel-in-progress: false
+
+jobs:
+  karsilastir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bağımlılıklar (resmî PyTorch CPU dizini, CUDA yok)
+        timeout-minutes: 15
+        run: |
+          pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r fizibilite_2.5/requirements-fizibilite.txt
+          python fizibilite_2.5/ortam_denetimi.py cikti
+
+      - name: Değerlendirme verisi (DergiPark; yalnızca bu iş süresince)
+        timeout-minutes: 5
+        run: |
+          curl -fsSL --retry 2 --max-time 120 -o "$RUNNER_TEMP/TRAll.txt" \
+            https://raw.githubusercontent.com/humakilicunlu/DergiParkEn/main/TRAll.txt
+          sha256sum "$RUNNER_TEMP/TRAll.txt" | tee cikti/veri_sha256.txt
+
+      - name: Model önbelleği (ağırlıklar artifact'e girmez)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/turkmetinlab_modeller
+          key: modeller-minilm-e5-v1
+
+      - name: Modelleri indir (tek deneme)
+        timeout-minutes: 20
+        run: python fizibilite_2.5/model_indir.py ~/.cache/turkmetinlab_modeller cikti
+
+      - name: Aşama 1 — 100 belge
+        timeout-minutes: 30
+        run: >
+          python fizibilite_2.5/anlamsal_karsilastirma.py --kati --n 100
+          --veri "$RUNNER_TEMP/TRAll.txt" --onbellek ~/.cache/turkmetinlab_modeller --cikti cikti
+          --azami-sure 900 --azami-rss-mb 6000
+
+      - name: Aşama 2 — 500 belge (yalnızca aşama 1 başarılıysa)
+        timeout-minutes: 45
+        run: >
+          python fizibilite_2.5/anlamsal_karsilastirma.py --kati --n 500
+          --veri "$RUNNER_TEMP/TRAll.txt" --onbellek ~/.cache/turkmetinlab_modeller --cikti cikti
+          --azami-sure 1500 --azami-rss-mb 6000
+
+      - name: Özet
+        if: always()
+        run: |
+          echo "Bu sonuçlar GitHub Actions makinesinde (ubuntu-latest, CPU) ölçülmüştür; Streamlit sunucu ölçümü değildir." >> "$GITHUB_STEP_SUMMARY"
+          for f in cikti/sonuclar_n100.md cikti/sonuclar_n500.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
+          ls -la cikti || true
+
+      - name: Sonuçları sakla (yalnızca JSON ve Markdown)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fizibilite-2.5-sonuclar
+          path: |
+            cikti/*.json
+            cikti/*.md
+            cikti/*.txt
+          if-no-files-found: warn
+          retention-days: 30
