@@ -99,3 +99,58 @@ PyTorch E5'i **aynı makinede yeniden ölçer**; süre/RAM karşılaştırması 
    - `onnx_kunye.json`, `onnx_uyum_20.json`;
    - `sonuclar_n100_onnx.*`, `sonuclar_n500_onnx.*`.
 4. `sonuclar_n500_onnx.json` ile 4. bölümdeki ölçütler doldurulmalı ve bu rapor güncellenmelidir.
+
+## 8. GitHub Actions #2 ve bellek düzeltmesi (19 Ekim 2026)
+
+**Kullanıcının bildirdiği #2 sonuçları** (JSON burada görülmedi):
+- FP32 uyumu geçti: kosinüs 1,000; ilk-1 ve ilk-5 %100.
+- INT8 geçemedi: ilk-5 örtüşme 0,76 < 0,80. Doğru biçimde elendi.
+- PyTorch E5 tepe RAM: 2.614 MB. ONNX FP32 (n=100): 6.078 MB'ta 6.000 MB sınırıyla durduruldu; n=500 çalışmadı.
+
+**Doğrulanan neden:** ONNX sürecinin kendi belleği. Ölçüm hatası değil.
+- Her yöntem zaten ayrı ve ardışık bir alt süreçteydi. Sınır yalnızca o sürecin RSS'ine bakıyordu; PyTorch
+  belleği eklenmiyordu. Torun süreç yoktu.
+- Dışa aktarılan çizgede dikkat birleştirilmemiş: 12 açık `Softmax` + `MatMul` var, `Attention` düğümü yok.
+  Dikkat matrisi katman başına *toplu iş × 12 × uzunluk²* boyutunda açıkça oluşuyor. Toplu iş 32 ve 512 token
+  için tek tensör ≈ 400 MB. PyTorch CPU'da birleşik SDPA çekirdeği bu matrisi bu biçimde tutmuyor.
+- 3 eşzamanlı oturum bunu üçe katlıyor. ONNX Runtime bellek havuzu (arena) tepe blokları geri vermediği için
+  bellek birikiyor.
+
+**Yeniden üretim:** Rastgele ağırlıklı ama E5-small boyutlarında bir modelle (12 katman, 384 boyut, 250.037
+sözcük; dosya 448 MB) bu makinede (2 çekirdek, 8 GB) yapıldı. Belirteç uzunlukları gerçeğe yakındı: ortanca
+223, %1'i 512 üstü. Gerçek E5 değildir; yalnızca bellek davranışı içindir.
+
+| Ayar (ONNX FP32, 100 belge) | Tek oturum tepe | 3 eşzamanlı tepe | Süre (sn) |
+|---|---|---|---|
+| Eski: toplu iş 32, arena açık | — | **5.000 MB sınırını aştı** | — |
+| Toplu iş 32, arena kapalı | 2.615 MB | 4.844 MB | 47,3 |
+| Toplu iş 16, arena kapalı, sıralı | 1.586 MB | 3.390 MB | 41,0 |
+| **Yeni: toplu iş 8, arena kapalı, sıralı** | **1.098 MB** | **1.786 MB** | **28,4** |
+| Toplu iş 8, arena açık, sıralı | 1.071 MB | 2.089 MB (geri verilmez) | 18,7 |
+
+**Düzeltme** (`e5_onnx_kodlayici.py`; doğruluk eşikleri ve sınırlar değişmedi):
+- Toplu iş 8.
+- Metinler uzunluğa göre sıralanır; sentence-transformers da böyle yapar. Çıktı özgün sıraya döner.
+- Arena ve bellek kalıbı kapalı.
+- `intra_op` iş parçacığı en çok 4, `inter_op` 1.
+
+Arena açıkken bu makinede 1,5 kat daha hızlıydı. Ancak tepe bellek süreçte kalıcı oluyor. Ücretsiz Streamlit
+için bellek öncelikli olduğundan kapalı tutuldu.
+
+**Ölçüm iyileştirmeleri** (`anlamsal_karsilastirma.py`):
+- Her yöntem kendi oturumunda çalışır. Sınır süreç ağacının (alt + torun) toplam RSS'ine uygulanır.
+- Dışarıdan örneklenen tepe RSS ve PSS ayrı raporlanır.
+- Bitişte kalan süreç sayılır ve sonlandırılır (`artik_surec`).
+- Yükleme belleği (RSS/PSS/tepe) ve çıkarımın ek tepesi ayrı raporlanır.
+
+**Aynı modelle uçtan uca karşılaştırma** (n=100, `--kati`, çıkış 0; bu makine):
+
+| Yöntem | Tepe RAM | Yükleme RSS | Çıkarım ek tepe | 100 belge |
+|---|---|---|---|---|
+| PyTorch | 2.241 MB | 787 MB | 535 MB | 13,1 sn |
+| ONNX FP32 | 1.964 MB | 579 MB | 743 MB | 27,3 sn |
+
+- FP32 ↔ PyTorch uyumu: ilk-1 ve ilk-5 1,0; nDCG@5 farkı 0.
+- Artık süreç: 0.
+- **Not:** Bu makinede ONNX FP32, PyTorch'tan **yaklaşık 2 kat yavaş.** Bellek kazancı ise sınırlı (%12).
+  "ONNX daha hızlı/az bellekli" sonucu çıkarılamaz. Gerçek karar GitHub #3 ölçümüyle verilmelidir.

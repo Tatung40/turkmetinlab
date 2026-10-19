@@ -55,6 +55,17 @@ def test_onnx_pytorch_ile_ayni(kucuk_model):
     assert list(uz) == [len(st.tokenizer(m)["input_ids"]) for m in metin]
 
 
+def test_siralama_ve_toplu_is_sonucu_degistirmez(kucuk_model):
+    from e5_onnx_kodlayici import E5Onnx
+    e = E5Onnx(str(kucuk_model / "onnx"), "fp32", 64)
+    metin = [f"passage: {'yapay zekâ ' * k}örnek" for k in (1, 30, 3, 12, 0, 7, 25, 2, 9, 4, 18)]
+    tek = np.vstack([e.encode([m]) for m in metin])  # dolgusuz tek tek
+    assert np.abs(e.encode(metin) - tek).max() < 1e-5  # sıralı küçük toplu işlerde sıra korunur
+    assert np.abs(e.encode(metin, batch_size=32) - tek).max() < 1e-5
+    so = e.oturum.get_session_options()
+    assert e.toplu_is == 8 and not so.enable_cpu_mem_arena and so.intra_op_num_threads >= 1
+
+
 def test_kodlayici_torch_yuklemez(kucuk_model):
     kod = (f"import sys; sys.path.insert(0, {BURA!r}); from e5_onnx_kodlayici import E5Onnx; "
            f"E5Onnx({str(kucuk_model / 'onnx')!r}, 'int8', 64).encode(['passage: x']); print('torch' in sys.modules)")
