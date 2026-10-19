@@ -40,6 +40,7 @@ MODELLER = {
     "e5": {"ad": "intfloat/multilingual-e5-small", "lisans": "MIT",
            "sorgu": "query: ", "belge": "passage: ", "simetrik": "query: "},
 }
+ONNX_YONTEMLERI = {"e5onnx32": "fp32", "e5onnx8": "int8"}  # PyTorch'suz E5 (ONNX Runtime)
 VARSAYILAN = ["tfidf_ham", "tfidf_tml", "tfidf_tml_terim", "tfidf_tml_lemma",
               "minilm_ozgun", "minilm_temiz", "e5_ozgun", "e5_temiz"]
 REFERANS = "tfidf_tml"
@@ -245,10 +246,71 @@ def gomme_calistir(yontem, basliklar, ozetler, onbellek, model_yolu, eszamanli):
     return Q @ D.T, Dsim @ Dsim.T, bilgi
 
 
+def onnx_calistir(yontem, basliklar, ozetler, klasor, eszamanli):
+    """E5'in ONNX Runtime sürümü. Bu süreç torch'u hiç içe aktarmaz (sonuçta denetlenir)."""
+    import threading
+
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "onnx"))
+    anahtar, varyant = yontem.split("_")
+    m = MODELLER["e5"]
+    kunye = json.load(open(os.path.join(klasor, "onnx_kunye.json")))
+    bilgi = {"model": m["ad"] + f" (ONNX {ONNX_YONTEMLERI[anahtar].upper()})", "lisans": m["lisans"], "metin": varyant,
+             "rss_baslangic_MB": _durum("VmRSS"), "kaynak_surum": kunye.get("kaynak_surum")}
+    t = time.perf_counter()
+    import onnxruntime
+    from e5_onnx_kodlayici import E5Onnx
+    bilgi["ithal_sn"] = round(time.perf_counter() - t, 2)
+    bilgi["onnxruntime"] = onnxruntime.__version__
+    t = time.perf_counter()
+    model = E5Onnx(klasor, ONNX_YONTEMLERI[anahtar], kunye.get("azami_token", 512))
+    bilgi["yukleme_sn"] = round(time.perf_counter() - t, 2)
+    bilgi["rss_yukleme_sonrasi_MB"] = _durum("VmRSS")
+    bilgi["azami_token"] = model.azami_token
+    bilgi["disk_MB"] = round(os.path.getsize(model.dosya) / 2**20, 1)
+    if varyant == "temiz":
+        basliklar = [" ".join(x) for x in _tml_belirtecleri(basliklar)]
+        ozetler = [" ".join(x) for x in _tml_belirtecleri(ozetler)]
+    uzunluk = model.token_uzunluklari([m["belge"] + x for x in ozetler])
+    bilgi["token_uzunlugu_ortanca"] = int(np.median(uzunluk))
+    bilgi["kesilen_belge_orani"] = round(float((uzunluk > model.azami_token).mean()), 4)
+    model.encode(ozetler[:2])  # ısınma
+    t = time.perf_counter()
+    D100 = model.encode([m["belge"] + x for x in ozetler[:100]])
+    bilgi["kodlama_100_sn"] = round(time.perf_counter() - t, 2)
+    t = time.perf_counter()
+    D = np.vstack([D100, model.encode([m["belge"] + x for x in ozetler[100:]])]) if len(ozetler) > 100 else D100
+    bilgi["kodlama_toplam_sn"] = round(bilgi["kodlama_100_sn"] + time.perf_counter() - t, 2)
+    bilgi["vektor_boyutu"] = int(D.shape[1])
+    Dsim = model.encode([m["simetrik"] + x for x in ozetler])
+    Q = model.encode([m["sorgu"] + x for x in basliklar])
+    bilgi["rss_kodlama_sonrasi_MB"] = _durum("VmRSS")
+    bilgi["tepe_tek_oturum_MB"] = _durum("VmHWM")
+    if eszamanli > 1:
+        hatalar = []
+
+        def is_():
+            try:
+                model.encode([m["belge"] + x for x in ozetler[:100]])
+            except Exception as e:  # pragma: no cover
+                hatalar.append(repr(e))
+        t = time.perf_counter()
+        iplikler = [threading.Thread(target=is_) for _ in range(eszamanli)]
+        [x.start() for x in iplikler]
+        [x.join() for x in iplikler]
+        bilgi[f"eszamanli_{eszamanli}x100_sn"] = round(time.perf_counter() - t, 2)
+        bilgi["eszamanli_hata"] = hatalar
+    bilgi["tepe_MB"] = _durum("VmHWM")
+    bilgi["torch_yuklendi_mi"] = "torch" in sys.modules
+    return Q @ D.T, Dsim @ Dsim.T, bilgi
+
+
 def tek(args):
     basliklar, ozetler, anahtar, _ = veri_oku(args.veri, args.n)
     t0 = time.perf_counter()
-    if args.tek.startswith("tfidf"):
+    os.environ["TML_GECICI"] = args.gecici
+    if args.tek.split("_")[0] in ONNX_YONTEMLERI:
+        SA, SB, bilgi = onnx_calistir(args.tek, basliklar, ozetler, args.onnx_klasor, args.eszamanli)
+    elif args.tek.startswith("tfidf"):
         SA, SB, bilgi = tfidf_calistir(args.tek, basliklar, ozetler)
         bilgi["tepe_MB"] = _durum("VmHWM")
     else:
@@ -286,6 +348,8 @@ def ana():
     p.add_argument("--azami-rss-mb", type=int, default=6000, help="yöntem başına bellek sınırı (MB); aşılırsa durdurulur")
     p.add_argument("--kati", action="store_true",
                    help="istenen yöntemlerden biri çalışmaz ya da sınırı aşarsa 2 çıkış koduyla bitir (CI aşamaları için)")
+    p.add_argument("--onnx-klasor", default="", help="e5_onnx_donustur.py çıktısı (model_fp32/int8.onnx, tokenizer.json)")
+    p.add_argument("--onnx-python", default="", help="ONNX yöntemleri için torch'suz Python yorumlayıcısı (isteğe bağlı)")
     p.add_argument("--tek", help=argparse.SUPPRESS)
     p.add_argument("--gecici", help=argparse.SUPPRESS)
     args = p.parse_args()
@@ -306,7 +370,8 @@ def ana():
     olcutler = {}
     with tempfile.TemporaryDirectory() as gecici:
         for y in [x for x in args.yontemler.split(",") if x]:
-            komut = [sys.executable, os.path.abspath(__file__), "--tek", y, "--n", str(args.n), "--gecici", gecici,
+            yorumlayici = args.onnx_python if (args.onnx_python and y.split("_")[0] in ONNX_YONTEMLERI) else sys.executable
+            komut = [yorumlayici, os.path.abspath(__file__), "--tek", y, "--onnx-klasor", args.onnx_klasor, "--n", str(args.n), "--gecici", gecici,
                      "--onbellek", args.onbellek, "--eszamanli", str(args.eszamanli), "--model-yolu", args.model_yolu]
             if args.veri:
                 komut += ["--veri", args.veri]
@@ -335,6 +400,20 @@ def ana():
                 sonuc["yontemler"][h] = {"durum": "çalıştı (skor birleştirme; ek kaynak ölçülmedi)"}
                 for g in ("A", "B"):
                     sonuc["yontemler"][h][g] = {a: [round(v, 4) for v in bootstrap_ga(x)] for a, x in olcutler[h][g].items()}
+        # ONNX ↔ PyTorch E5 uyumu (aynı belgeler, aynı sorgular)
+        for y in list(olcutler):
+            pt = "e5_" + y.split("_")[-1]
+            if y.split("_")[0] in ONNX_YONTEMLERI and pt in olcutler:
+                uy = {}
+                for g in ("A", "B"):
+                    X, Y = (np.load(os.path.join(gecici, f"{k}_{g}.npy")) for k in (pt, y))
+                    ust = [len(set(np.argsort(-X[i])[:5]) & set(np.argsort(-Y[i])[:5])) / 5 for i in range(len(X))]
+                    ilk = [int(np.argmax(X[i]) == np.argmax(Y[i])) for i in range(len(X))]
+                    uy[g] = {"ilk5_ortusme_ort": round(float(np.mean(ust)), 4), "ilk1_ayni_orani": round(float(np.mean(ilk)), 4)}
+                sonuc["yontemler"][y]["pytorch_uyumu"] = uy
+                sonuc["yontemler"][y]["fark_e5_pytorch"] = {
+                    g: {a: [round(v, 4) for v in bootstrap_ga(olcutler[y][g][a] - olcutler[pt][g][a])]
+                        for a in ("isabet@5", "mrr", "ndcg@5")} for g in ("A", "B")}
     # Referansa göre eşleştirilmiş farklar
     if REFERANS in olcutler:
         for y in olcutler:
@@ -409,6 +488,18 @@ def rapor(s) -> str:
         out.append(f"| {y} | {r.get('yukleme_sn', '—')} | {r.get('kodlama_100_sn', '—')} | {r.get('kodlama_toplam_sn', '—')} | "
                    f"{r.get('tepe_MB', '—')} | {r.get('vektor_boyutu', '—')} | {r.get('azami_token', '—')} | "
                    f"{r.get('kesilen_belge_orani', '—')} | {r.get('disk_MB', '—')} | {es} |")
+    onnx = {y: r for y, r in s["yontemler"].items() if "pytorch_uyumu" in r}
+    if onnx:
+        out += ["", "## ONNX ↔ PyTorch E5 (aynı makine, aynı sorgular)", "",
+                "Uyum: iki sıralamanın ilk-5 örtüşmesi ve ilk sıradaki belgenin aynı olma oranı. "
+                "Fark: ONNX − PyTorch, eşleştirilmiş, %95 bootstrap GA.", "",
+                "| Yöntem | Görev | İlk-5 örtüşme | İlk-1 aynı | Fark İsabet@5 | Fark MRR | Fark nDCG@5 |",
+                "|---|---|---|---|---|---|---|"]
+        for y, r in onnx.items():
+            for g in ("A", "B"):
+                u, f = r["pytorch_uyumu"][g], r["fark_e5_pytorch"][g]
+                out.append(f"| {y} | {g} | {u['ilk5_ortusme_ort']} | {u['ilk1_ayni_orani']} | " +
+                           " | ".join(f"{f[a][0]:+.3f} [{f[a][1]:+.3f}, {f[a][2]:+.3f}]" for a in ("isabet@5", "mrr", "ndcg@5")) + " |")
     return "\n".join(out) + "\n"
 
 

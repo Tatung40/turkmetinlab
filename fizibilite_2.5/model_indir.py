@@ -7,7 +7,7 @@ import sys
 from huggingface_hub import snapshot_download
 
 onbellek, cikti = sys.argv[1], sys.argv[2]
-MODELLER = ["sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "intfloat/multilingual-e5-small"]
+MODELLER = sys.argv[3:] or ["sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "intfloat/multilingual-e5-small"]
 DESEN = ["*.json", "*.txt", "model.safetensors", "sentencepiece.bpe.model", "1_Pooling/*", "README.md"]
 kunye = {}
 for m in MODELLER:

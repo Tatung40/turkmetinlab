@@ -1,7 +1,7 @@
 # TürkMetinLab 2.5 — Anlamsal model fizibilite çalışması
 
 Bu klasör TürkMetinLab uygulamasının kodunu **değiştirmez**. Uygulamanın ön işlemesini (`tmlab`) yalnızca okuyarak
-kullanır. Sonuç raporu: [`RAPOR.md`](RAPOR.md).
+kullanır. Sonuç raporu: [`RAPOR.md`](RAPOR.md). ONNX aşaması: [`onnx/RAPOR_ONNX.md`](onnx/RAPOR_ONNX.md).
 
 ## Karşılaştırılan yöntemler
 
