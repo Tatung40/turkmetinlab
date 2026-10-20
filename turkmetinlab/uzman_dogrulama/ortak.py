@@ -38,6 +38,11 @@ PILOT_SAYISI = 5
 PILOT_TOHUMU = 2511  # pilot sorgular, asıl 50 sorgu çekildikten SONRA kalanlardan seçilir (örtüşme yok)
 ASAMALAR = {"pilot": "PİLOT (yönerge denemesi; asıl analize katılmaz)", "asil": "ASIL ÇALIŞMA"}
 KIMLIK_ONEKI = {"pilot": "P-", "asil": "Ç-"}
+# Eğitim Programları ve Öğretim — üç insan uzmanlı ayrı çalışma (YZ pilotundan bağımsız; ayrı havuz, önek, dosya adı)
+ASAMALAR.update({"egitim_pilot": "EĞİTİM İNSAN PİLOTU (yönerge denemesi; asıl analize katılmaz)",
+                 "egitim_asil": "EĞİTİM İNSAN ASIL ÇALIŞMA"})
+KIMLIK_ONEKI.update({"egitim_pilot": "IP-", "egitim_asil": "IA-"})
+EGITIM_TOHUMU, EGITIM_PILOT_TOHUMU = 2520, 2521
 KAYNAK_LISANS = ("DergiParkEn deposunda (humakilicunlu/DergiParkEn) lisans dosyası ya da yeniden dağıtım izni "
                  "bulunmuyor; README yalnızca atıf istiyor (Kılıç Ünlü ve Çetin, 2023, Neural Comput & Applic "
                  "35:3413–3422). Özetlerin telif hakları yazarlara/dergilere aittir ve yeniden dağıtım koşulları "

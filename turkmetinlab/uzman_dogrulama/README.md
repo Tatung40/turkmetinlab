@@ -127,3 +127,54 @@ Uzlaşı yoksa karar verilmez.
   - Sonuçlar başka alanlara genellenmemelidir.
 - Üç düzeyli kısmi ilgililik özneldir. Yönerge ve uzlaşı süreci bu öznelliği azaltır, ama tamamen ortadan kaldırmaz.
 - **Görev:** Yalnızca belge → belge benzerliği değerlendirilir. Kısa sorgu ile arama görevi kapsam dışıdır.
+---
+
+# Eğitim Programları ve Öğretim — üç insan uzmanlı doğrulama (ayrı çalışma)
+
+DergiPark YZ pilotundan bağımsızdır. O pilotun dosyaları, anahtarları ve sonuçları bu çalışmada kullanılmaz ve
+değiştirilmez. Ayrımı sağlayanlar:
+- havuz kimliği ayrıdır;
+- kimlik önekleri `IP-` (pilot) ve `IA-` (asıl) olarak ayrılmıştır;
+- dosya adları `pilot_insan_uzman_N.xlsx` ve `pilot_insan_anahtar.json` biçimindedir;
+- yönerge alana özgüdür: `YONERGE_EGITIM.md`.
+
+## Derlem (`egitim_derlem.py`)
+
+- **Kaynak:** OpenAlex Works API (ücretsiz). DergiPark kayıtları erişim adresinden işaretlenir.
+- **Saklanan bilgiler:**
+  - kaynak kimliği, DOI, başlık, özet, yıl, dergi;
+  - erişim adresi ve OpenAlex konu bilgisi;
+  - kural tabanlı alt alanlar.
+- **Lisans:** OpenAlex üst verisi CC0'dır. **Özetlerin yeniden dağıtım koşulları bilinmiyor.** Bu yüzden derlem
+  yalnızca şifreli pakettedir; açık artifact'te yalnızca metin içermeyen özet bulunur.
+- **Kurallar:**
+  - Dahil etme, dışlama ve alt alanlar betiğin başında yazılıdır.
+  - Başlıkta "eğitim" geçmesi yetmez: en az iki alan ifadesi gerekir ve bunlardan biri çekirdek olmalıdır.
+- **Yeterlilik:** Şu üç koşul sağlanmazsa **uzman dosyası üretilmez** ve iş "VERİ YETERSİZ" ile durur:
+  - en az 300 uygun kayıt;
+  - en az 55 sorgu adayı;
+  - en az 4 alt alanda 10'ar kayıt.
+
+## Çalıştırma
+
+1. *Actions → ONNX 2.5 (E5-small) → Run workflow*: dal `gelistirme-2.5-staging`, kip `egitim`, aşama `pilot`.
+   `TML_DOGRULAMA_PAROLA` gizli anahtarı gerekir.
+2. **Artifact'te:** `egitim_derlem_ozeti.json`, `egitim_havuz_ozeti_egitim_pilot.json` ve şifreli
+   `egitim_insan_paketi_egitim_pilot.7z`.
+   - Her uzmana yalnızca kendi `pilot_insan_uzman_N.xlsx` dosyasını ve `YONERGE_EGITIM.md`'yi gönderin.
+   - Anahtar ve derlem sizde kalır.
+3. **Asıl çalışma daha sonra yapılacaksa:**
+   - `egitim_havuz_ozeti_egitim_pilot.json` dosyasını depoya `turkmetinlab/uzman_dogrulama/` altına ekleyin. Bu
+     dosya metin içermez, yalnızca kimlik içerir.
+   - İş akışı bu dosyadaki pilot sorgularını asıl çalışmada otomatik dışlar.
+4. **Analiz (yerel):**
+   ```bash
+   python uzman_dogrulama/coklu_analiz.py --anahtar pilot_insan_anahtar.json \
+       --uzman pilot_insan_uzman_1.xlsx pilot_insan_uzman_2.xlsx pilot_insan_uzman_3.xlsx --cikti sonuc
+   ```
+   - Bu adım şunları üretir:
+     - Krippendorff α (sıralı), çok puanlayıcılı AC2 ve ikili κ;
+     - örüntü ve uyuşmazlık tabloları;
+     - `pilot_insan_uzlasma.xlsx` (puanların aynı olmadığı çiftler).
+   - Uzlaşıdan sonra aynı komut `--uzlasma` ile yeniden çalıştırılır.
+   - Pilotta karar verilmez. +0,030 eşiği asıl çalışmaya aittir ve değişmez.
