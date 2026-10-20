@@ -1,0 +1,16 @@
+streamlit==1.65.0
+pandas==3.0.5
+numpy==2.5.3
+scikit-learn==1.9.1
+scipy==1.18.1
+networkx==3.6.1
+plotly==7.1.0
+wordcloud==1.9.6
+matplotlib==3.11.2
+openpyxl==3.1.5
+xlsxwriter==3.2.9
+simplemma==2.0.0
+# 2.5 deneysel anlamsal analiz (torch YOK)
+onnxruntime==1.31.0
+tokenizers==0.23.3
+python-docx>=1.1,<2
