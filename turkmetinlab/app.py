@@ -703,13 +703,18 @@ def ana():
                     index=1+guess(["intensity","yoğunluk"]) if any(
                         any(z in str(c).casefold() for z in ("intensity","yoğunluk")) for c in fields) else 0,
                     key="teslex_intensity")
-                st.caption("Sütun adları kaynaktan okunur. Duygular farklı sütunlara dağıtılmışsa "
-                           "bu sürüm yalnızca seçilen tek duygu sütununu işler.")
+                emotion_columns=st.multiselect(
+                    "Ayrı duygu sütunları (varsa)", fields, default=[],
+                    key="teslex_emotion_columns",
+                    help="Sekiz duygu ayrı sütunlardaysa ilgili sütunları seçin. Boş, 0 ve Hayır değerleri sayılmaz.")
+                st.caption("Sütun adlarını kontrol edin; yanlış eşleştirme sonuçları geçersiz kılar. "
+                           "Ayrı duygu sütunları seçildiğinde hepsi birlikte değerlendirilir.")
                 if st.button("TES-Lex analizi çalıştır",key="teslex_go"):
                     from tmlab import teslex
                     try:
                         lex=teslex.compile_lexicon(frame,w,p,None if em=="(yok)" else em,
-                                                    None if intensity=="(yok)" else intensity)
+                                                    None if intensity=="(yok)" else intensity,
+                                                    emotion_columns=emotion_columns)
                         st.session_state["teslex_results"] = teslex.analyze_corpus(metinler,adlar,lex)
                         st.session_state["teslex_result_key"] = hazirlik_anahtari
                         st.session_state["teslex_entry_count"] = len(lex)

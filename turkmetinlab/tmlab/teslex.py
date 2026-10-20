@@ -40,7 +40,7 @@ def _split_emotions(s):
     return tuple(name for name,keys in aliases.items() if any(
         re.search(r"(?<!\w)"+re.escape(key)+r"(?!\w)",low) for key in keys))
 
-def compile_lexicon(frame, word_col, polarity_col, emotion_col=None, intensity_col=None):
+def compile_lexicon(frame, word_col, polarity_col, emotion_col=None, intensity_col=None, emotion_columns=None):
     """Mapping is explicit: never assume actual unpublished XLSX column names."""
     if word_col not in frame or polarity_col not in frame:
         raise ValueError("Kelime ve polarite sütunları seçilmeli")
@@ -53,7 +53,16 @@ def compile_lexicon(frame, word_col, polarity_col, emotion_col=None, intensity_c
         polar=str(row[polarity_col]).strip()
         emotion=str(row[emotion_col]) if emotion_col else ""
         strength=str(row[intensity_col]) if intensity_col else ""
-        out[key]={"polarite":polar,"duygular":_split_emotions(emotion),
+        detected=set(_split_emotions(emotion))
+        # Duygu başlıkları ayrı sütunlardaysa 8 etiket korunur; boş/0/Hayır işaretleri eşleşmez.
+        for col in (emotion_columns or ()):
+            if col not in frame:
+                raise ValueError("Duygu sütunu bulunamadı")
+            value=normalize(row[col])
+            if value and value not in ("0","0.0","no","false","hayır","yok","none","nan","-"):
+                detected.update(_split_emotions(col))
+                detected.update(_split_emotions(value))
+        out[key]={"polarite":polar,"duygular":tuple(sorted(detected)),
                   "yogunluk":strength}
     if not out: raise ValueError("Eşleştirilebilir sözlük kaydı yok")
     return out
