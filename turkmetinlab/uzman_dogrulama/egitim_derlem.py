@@ -157,10 +157,14 @@ def topla(ifadeler=ARAMA_IFADELERI, bekle: float = 0.2) -> tuple[list, dict]:
                                         "search": f'"{ifade}"', "per-page": 100, "cursor": imlec,
                                         "select": "id,doi,display_name,title,abstract_inverted_index,publication_year,"
                                                   "primary_location,topics"})
-            anahtar = os.environ.get("OPENALEX_API_KEY", "").strip()
-            if not anahtar:
-                raise RuntimeError("OPENALEX_API_KEY GitHub Actions secret tanımlanmamış.")
-            q += "&" + urllib.parse.urlencode({"api_key": anahtar})
+            # Local mock server tests require no credential; production OpenAlex does.
+            parsed = urllib.parse.urlsplit(ADRES)
+            local_test_server = parsed.hostname in ("127.0.0.1", "::1", "localhost")
+            if not local_test_server:
+                anahtar = os.environ.get("OPENALEX_API_KEY", "").strip()
+                if not anahtar:
+                    raise RuntimeError("OPENALEX_API_KEY GitHub Actions secret tanımlanmamış.")
+                q += "&" + urllib.parse.urlencode({"api_key": anahtar})
             veri = _getir(f"{ADRES}/works?{q}")
             for w in veri.get("results", []):
                 ham.setdefault(w.get("id"), w)
