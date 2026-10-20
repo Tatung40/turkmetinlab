@@ -154,9 +154,13 @@ def topla(ifadeler=ARAMA_IFADELERI, bekle: float = 0.2) -> tuple[list, dict]:
         imlec, sayfa = "*", 0
         while imlec and sayfa < SAYFA_SINIRI:
             q = urllib.parse.urlencode({"filter": "language:tr,has_abstract:true,type:article,is_retracted:false",
-                                        "search": f'"{ifade}"', "per-page": 200, "cursor": imlec,
+                                        "search": f'"{ifade}"', "per-page": 100, "cursor": imlec,
                                         "select": "id,doi,display_name,title,abstract_inverted_index,publication_year,"
                                                   "primary_location,topics"})
+            anahtar = os.environ.get("OPENALEX_API_KEY", "").strip()
+            if not anahtar:
+                raise RuntimeError("OPENALEX_API_KEY GitHub Actions secret tanımlanmamış.")
+            q += "&" + urllib.parse.urlencode({"api_key": anahtar})
             veri = _getir(f"{ADRES}/works?{q}")
             for w in veri.get("results", []):
                 ham.setdefault(w.get("id"), w)
