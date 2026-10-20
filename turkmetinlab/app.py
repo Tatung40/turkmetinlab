@@ -667,6 +667,66 @@ def ana():
                 st.info("Düşük kapsama oranında sonuçlar özellikle belirsizdir. "
                         "Sözlük puanı araştırmacının/katılımcının gerçek duygusunu kanıtlamaz.")
 
+    # --- TES-Lex: academic/research lexicon, independent of SWNetTR++ -------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("TES-Lex · Sekiz temel duygu (deneysel)")
+            st.caption("Kumova Metin ve Aka Uymaz (2025). Veri akademik/araştırma kullanımıyla sınırlı "
+                       "olarak açıklanmıştır. Diğer kullanım için hak sahiplerinden izin alın.")
+            st.markdown("[TES-Lex veri kaynağı](https://github.com/HandeAkaUymaz/TES-Lex)")
+            if st.button("TES-Lex sözlüğünü yükle", key="teslex_load"):
+                try:
+                    from tmlab import teslex
+                    with st.spinner("TES-Lex Excel sözlüğü indiriliyor…"):
+                        st.session_state["teslex_data"] = teslex.load_source()
+                    st.success("Sözlük yüklendi; aşağıda sütunları eşleştirin.")
+                except (OSError, ValueError, TimeoutError, ImportError) as exc:
+                    st.error("TES-Lex kaynağı okunamadı. Sözlük indirilebilirliğini kontrol edin.")
+            frame=st.session_state.get("teslex_data")
+            if frame is not None:
+                fields=list(frame.columns)
+                st.caption(f"Sözlük kaydı: {len(frame):,} · Sütunlar: {', '.join(map(str, fields))}")
+                def guess(keys):
+                    for index,c in enumerate(fields):
+                        if any(key in str(c).casefold() for key in keys):
+                            return index
+                    return 0
+                w=st.selectbox("Kelime sütunu",fields,index=guess(["word","kelime","sözcük"]),key="teslex_word")
+                p=st.selectbox("Polarite sütunu",fields,index=guess(["polar","sentiment","yönelim"]),key="teslex_pol")
+                optional=["(yok)"]+fields
+                em=st.selectbox("Sekiz duyguyu içeren sütun",optional,
+                    index=1+guess(["emotion","duygu"]) if any(
+                        any(z in str(c).casefold() for z in ("emotion","duygu")) for c in fields) else 0,
+                    key="teslex_em")
+                intensity=st.selectbox("Yoğunluk sütunu",optional,
+                    index=1+guess(["intensity","yoğunluk"]) if any(
+                        any(z in str(c).casefold() for z in ("intensity","yoğunluk")) for c in fields) else 0,
+                    key="teslex_intensity")
+                st.caption("Sütun adları kaynaktan okunur. Duygular farklı sütunlara dağıtılmışsa "
+                           "bu sürüm yalnızca seçilen tek duygu sütununu işler.")
+                if st.button("TES-Lex analizi çalıştır",key="teslex_go"):
+                    from tmlab import teslex
+                    try:
+                        lex=teslex.compile_lexicon(frame,w,p,None if em=="(yok)" else em,
+                                                    None if intensity=="(yok)" else intensity)
+                        st.session_state["teslex_results"] = teslex.analyze_corpus(metinler,adlar,lex)
+                        st.session_state["teslex_result_key"] = hazirlik_anahtari
+                        st.session_state["teslex_entry_count"] = len(lex)
+                    except ValueError as exc:
+                        st.error("TES-Lex sütun eşleştirmesi geçerli değil.")
+                if st.session_state.get("teslex_result_key")==hazirlik_anahtari and "teslex_results" in st.session_state:
+                    summary,details=st.session_state["teslex_results"]
+                    st.caption(f"Çözümlenen sözlük girdisi: {st.session_state.get('teslex_entry_count',0):,}. "
+                               "Bunlar bağlamsal duygu sınıfları değil, sözlük eşleşmeleridir.")
+                    st.dataframe(pd.DataFrame(summary),use_container_width=True,hide_index=True)
+                    st.dataframe(pd.DataFrame(details),use_container_width=True,hide_index=True)
+                    st.download_button("TES-Lex belge sonuçlarını indir",csv_bayt(pd.DataFrame(summary),";",True),
+                        "teslex_belgeler.csv","text/csv",key="teslex_summary_csv",on_click="ignore")
+                    if details:
+                        st.download_button("TES-Lex eşleşmelerini indir",csv_bayt(pd.DataFrame(details),";",True),
+                            "teslex_eslesmeler.csv","text/csv",key="teslex_detail_csv",on_click="ignore")
+
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
         st.subheader("Kelime bulutu")
