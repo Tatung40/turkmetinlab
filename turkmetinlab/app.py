@@ -368,7 +368,7 @@ def ana():
     # -----------------------------------------------------------------------
     sekmeler = st.tabs(["🏠 Başlarken", "📄 Veri", "🧹 Ön İşleme", "📚 Terimler", "📊 Sözcük Sıklığı", "🔗 N-gram",
                         "⚖️ TF-IDF", "🧭 Benzerlik", "🕸️ Sözcük Ağı", "🧩 Konular", "👥 Gruplar", "☁️ Kelime Bulutu",
-                        *(["🧪 Anlamsal (deneysel)"] if DENEYSEL_ANLAMSAL else []), "⬇️ İndir"])
+                        *(["🧪 Anlamsal (deneysel)", "💬 Duygu Analizi (deneysel)"] if DENEYSEL_ANLAMSAL else []), "⬇️ İndir"])
 
     def bos_sekmeler(mesaj: str, hata_metni=None, veri_goster: bool = False):
         with sekmeler[0]:
@@ -634,6 +634,38 @@ def ana():
         with sekmeler[12]:
             from tmlab import anlamsal_sekme
             anlamsal_sekme.goster(baglam, _hesapla, _bul, _tablo_goster, _md)
+
+    # --- Experimental SWNetTR++ sentiment tab (staging only) -----------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.subheader("SWNetTR++ · Türkçe sözlük tabanlı duygu göstergeleri")
+            st.caption("Deneysel. Duygu etiketleri değildir; olumsuzluk, ironi, bağlam ve sözcük anlam ayrımını "
+                       "tam çözümlemez. Kaynak: Sağlam, Genç ve Sever (2019; 2016).")
+            st.markdown("[SWNetTR++ kaynak sözlüğü](https://github.com/swnettr/SWNetTR)")
+            if st.button("Duygu göstergelerini hesapla", key="swtr_calistir"):
+                try:
+                    from tmlab import duygu as du
+                    with st.spinner("SWNetTR++ yükleniyor ve metinler değerlendiriliyor…"):
+                        lex = du.load_lexicon()
+                        st.session_state["swtr_sonuc"] = du.analyze_corpus(metinler, adlar, lex)
+                        st.session_state["swtr_veri_anahtari"] = hazirlik_anahtari
+                        st.session_state["swtr_sozluk_boyutu"] = len(lex)
+                except (OSError, ValueError, TimeoutError) as exc:
+                    st.session_state.pop("swtr_sonuc", None)
+                    st.error("Duygu sözlüğüne ulaşılamadı veya dosya okunamadı. Tekrar deneyin.")
+            if st.session_state.get("swtr_veri_anahtari") == hazirlik_anahtari and "swtr_sonuc" in st.session_state:
+                summary, detail = st.session_state["swtr_sonuc"]
+                st.caption(f"Yüklenen sözlük girdisi: {st.session_state.get('swtr_sozluk_boyutu', 0):,}. "
+                           "Sözlükte bulunmayan sözcükler duygu açısından nötr kabul edilmez.")
+                st.dataframe(pd.DataFrame(summary), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(detail), use_container_width=True, hide_index=True)
+                st.download_button("Belge göstergelerini CSV indir", csv_bayt(pd.DataFrame(summary), ";", True),
+                                   "duygu_belge.csv", "text/csv", on_click="ignore", key="swtr_csv1")
+                if detail:
+                    st.download_button("Eşleşmeleri CSV indir", csv_bayt(pd.DataFrame(detail), ";", True),
+                                       "duygu_eslesme.csv", "text/csv", on_click="ignore", key="swtr_csv2")
+                st.info("Düşük kapsama oranında sonuçlar özellikle belirsizdir. "
+                        "Sözlük puanı araştırmacının/katılımcının gerçek duygusunu kanıtlamaz.")
 
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
