@@ -45,6 +45,8 @@ from tmlab.stopwords import AKADEMIK_KALIP_SOZCUKLER, GENEL_DURAK_SOZCUKLER
 from tmlab.visualize import kelime_bulutu_png, tfidf_isi_haritasi, yatay_cubuk
 
 KOK = os.path.dirname(os.path.abspath(__file__))
+# 2.5 deneysel anlamsal analiz yalnızca bu ortam değişkeniyle açılır (staging/streamlit_app.py); varsayılan kapalı.
+DENEYSEL_ANLAMSAL = os.environ.get("TML_DENEYSEL_ANLAMSAL") == "1"
 ORNEK_CSV = os.path.join(KOK, "ornek_veri", "ornek_akademik_ozetler.csv")
 
 st.set_page_config(page_title="TürkMetinLab", page_icon="📚", layout="wide")
@@ -365,7 +367,7 @@ def ana():
     # -----------------------------------------------------------------------
     sekmeler = st.tabs(["🏠 Başlarken", "📄 Veri", "🧹 Ön İşleme", "📚 Terimler", "📊 Sözcük Sıklığı", "🔗 N-gram",
                         "⚖️ TF-IDF", "🧭 Benzerlik", "🕸️ Sözcük Ağı", "🧩 Konular", "👥 Gruplar", "☁️ Kelime Bulutu",
-                        "⬇️ İndir"])
+                        *(["🧪 Anlamsal (deneysel)"] if DENEYSEL_ANLAMSAL else []), "⬇️ İndir"])
 
     def bos_sekmeler(mesaj: str, hata_metni=None, veri_goster: bool = False):
         with sekmeler[0]:
@@ -627,6 +629,10 @@ def ana():
         _konu_sekmesi(baglam)
     with sekmeler[10]:
         _grup_sekmesi(baglam)
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[12]:
+            from tmlab import anlamsal_sekme
+            anlamsal_sekme.goster(baglam, _hesapla, _bul, _tablo_goster, _md)
 
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
@@ -658,7 +664,7 @@ def ana():
                        "seferinde aynıdır (sabit tohum değeri).")
 
     # --- İndir --------------------------------------------------------------
-    with sekmeler[12]:
+    with sekmeler[-1]:
         st.subheader("Sonuçları indir")
         zaman = datetime.now().strftime("%Y-%m-%d_%H-%M")
         ayar_tablosu = sozluk_tablosu({
