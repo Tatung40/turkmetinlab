@@ -28,6 +28,7 @@ from tmlab import birliktelik as ba
 from tmlab import grup as gr
 from tmlab import konu as km
 from tmlab import terimler as tm
+from tmlab.akademik_terimler import load_lexicon
 from tmlab.analysis import (TfidfHatasi, derlem_ozeti, ngram_sikligi, sozcuk_sikligi,
                             tfidf_hesapla, turkce_sirala_anahtari)
 from tmlab.export import EXCEL_SATIR_SINIRI, csv_bayt, excel_bayt_ve_uyarilar, sozluk_tablosu
@@ -1289,8 +1290,17 @@ def _terim_kenar_cubugu() -> dict:
         kisaltma = st.checkbox("Kısaltmaları da tanı (YEM, NLP, IoT…)", False, key="terim_kisaltma",
                                help="Büyük/küçük harfe duyarlıdır ('yem' eşleşmez). Tamamı büyük harfli başlık "
                                     "satırlarında kısaltma eşleştirilmez.")
+        deneysel = False
+        if DENEYSEL_ANLAMSAL:
+            deneysel = st.checkbox(
+                "Akademik Sözlük v1.1 — deneysel terimleri de ekle", False, key="terim_v11_deneysel",
+                help="6.426 tez kaydından çıkarılmış adaylar. Yalnızca staging ortamında açılır; "
+                     "mevcut 637 terimlik sözlükle birlikte çalışır. Uzman doğrulaması yapılmamıştır.")
+            if deneysel:
+                st.caption("⚠️ v1.1 girdileri doğrulanmamış adaylardır; analiz çıktılarında deneysel olarak işaretlenir.")
         st.caption("⚠️ Sözlükteki terimler uzman doğrulaması bekleyen **aday terimlerdir**.")
-    return {"acik": True, "alanlar": tuple(secili), "temsil": temsil, "kisaltma": bool(kisaltma)}
+    return {"acik": True, "alanlar": tuple(secili), "temsil": temsil,
+            "kisaltma": bool(kisaltma), "deneysel": bool(deneysel)}
 
 
 def _kullanici_terimleri() -> list:
@@ -1299,7 +1309,27 @@ def _kullanici_terimleri() -> list:
 
 
 def _etkin_sozluk(ayar: dict) -> list:
-    return tm.sozluk_olustur(ayar.get("alanlar", ()), st.session_state.get(T_KAPALI, []), _kullanici_terimleri())
+    sonuc = tm.sozluk_olustur(ayar.get("alanlar", ()), st.session_state.get(T_KAPALI, []), _kullanici_terimleri())
+    if DENEYSEL_ANLAMSAL and ayar.get("deneysel"):
+        # Add candidate data to the EXISTING tested matcher, not a parallel pipeline.
+        mevcut = {tm.katla(t.standart) for t in sonuc}
+        for i, entry in enumerate(load_lexicon()["terimler"], 1):
+            standart = str(entry["kanonik"]).strip()
+            ifade = str(entry["terim"]).strip()
+            if not standart or not ifade or len(standart.split()) < 2:
+                continue
+            anahtar = tm.katla(standart)
+            if anahtar in mevcut:
+                continue
+            try:
+                yeni = tm.kullanici_terimi(
+                    standart, ifade if tm.katla(ifade) != anahtar else "",
+                    terim_id=f"DENEYSEL11_{i:03d}", alan="Akademik v1.1 (deneysel)")
+            except tm.SozlukHatasi:
+                continue
+            sonuc.append(yeni)
+            mevcut.add(anahtar)
+    return sonuc
 
 
 def _terim_eslestirici(ayar: dict):
@@ -1317,6 +1347,7 @@ def _terim_ayar_sozlugu(ayar: dict, terimci) -> dict:
     return {
         "Akademik terim sözlüğü": "kullanıldı (aday terimler; uzman doğrulaması yok)",
         "Sözlük sürümü": tm.sozluk_surumu(),
+        "Akademik v1.1 deneysel adayları": ("açık (uzman onayı yok)" if ayar.get("deneysel") else "kapalı"),
         "Seçilen alanlar": "; ".join(ayar["alanlar"]) or "(yok)",
         "Terim temsili": tm.TEMSILLER[ayar["temsil"]],
         "Kısaltmalar tanındı mı": ayar["kisaltma"],
