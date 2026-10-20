@@ -183,6 +183,7 @@ jobs:
         timeout-minutes: 40
         env:
           PAROLA: ${{ secrets.TML_DOGRULAMA_PAROLA }}
+          OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
           ASAMA: ${{ inputs.asama }}
         run: |
           set -euo pipefail  # set -x YOK: parola günlüğe yazılmaz
