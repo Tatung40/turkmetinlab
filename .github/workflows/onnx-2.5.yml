@@ -5,6 +5,8 @@
 #   staging (varsayılan): uygulama entegrasyon testi (gerçek model, 100/500 belge, AppTest) → isteğe bağlı Hugging Face
 #                         yayını (yalnızca HF_TOKEN gizli anahtarı ve TML_HF_REPO değişkeni tanımlıysa).
 #   karsilastirma: fizibilite karşılaştırması (100 → başarılıysa 500 belge).
+#   uzman: 50 sorguluk kör uzman değerlendirme havuzu. Metin içeren dosyalar yalnızca TML_DOGRULAMA_PAROLA ile
+#          şifrelenmiş 7z olarak saklanır; şifresiz yüklenmez.
 # Yeniden deneme yoktur.
 name: ONNX 2.5 (E5-small)
 
@@ -12,10 +14,15 @@ on:
   workflow_dispatch:
     inputs:
       kip:
-        description: "staging: uygulama entegrasyon testi · karsilastirma: fizibilite ölçümü"
+        description: "staging: uygulama entegrasyon testi · karsilastirma: fizibilite ölçümü · uzman: uzman doğrulama havuzu"
         type: choice
-        options: [staging, karsilastirma]
+        options: [staging, karsilastirma, uzman]
         default: staging
+      asama:
+        description: "Yalnızca kip=uzman — pilot: 5 sorgu (önce bu) · asil: 50 sorgu"
+        type: choice
+        options: [pilot, asil]
+        default: pilot
 
 permissions:
   contents: read
@@ -115,7 +122,7 @@ jobs:
           --azami-sure 1500 --azami-rss-mb 6000
 
       - name: Staging — uygulama entegrasyon testi (gerçek E5 ONNX FP32; 20 / 100 / 500 belge; AppTest)
-        if: inputs.kip != 'karsilastirma'
+        if: inputs.kip != 'karsilastirma' && inputs.kip != 'uzman'
         timeout-minutes: 45
         run: |
           APP=.; [ -f turkmetinlab/app.py ] && APP=turkmetinlab
@@ -125,7 +132,7 @@ jobs:
             --veri "$RUNNER_TEMP/TRAll.txt" --fizibilite fizibilite_2.5 --cikti cikti
 
       - name: Staging — modeli Hugging Face'e yayınla (isteğe bağlı; yalnızca testler geçtiyse)
-        if: inputs.kip != 'karsilastirma'
+        if: inputs.kip != 'karsilastirma' && inputs.kip != 'uzman'
         timeout-minutes: 15
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -137,6 +144,37 @@ jobs:
           fi
           python fizibilite_2.5/onnx/hf_yayinla.py --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 --repo "$HF_REPO" \
             --gizli "${HF_GIZLI:-false}" --cikti cikti/hf_yayin.json
+
+      - name: Uzman doğrulama havuzu (yalnızca kip=uzman; yalnızca şifreli paket yüklenir)
+        if: inputs.kip == 'uzman'
+        timeout-minutes: 30
+        env:
+          PAROLA: ${{ secrets.TML_DOGRULAMA_PAROLA }}
+          ASAMA: ${{ inputs.asama }}
+        run: |
+          set -euo pipefail  # set -x YOK: parola komut satırında görünmesin (gizli anahtarlar ayrıca maskelenir)
+          case "${ASAMA:-pilot}" in pilot|asil) ASAMA="${ASAMA:-pilot}" ;; *) echo "::error::geçersiz aşama"; exit 1 ;; esac
+          if [ -z "${PAROLA:-}" ]; then
+            echo "::error::TML_DOGRULAMA_PAROLA gizli anahtarı yok. Metin içeren dosyalar şifresiz yüklenmez."; exit 1
+          fi
+          if ! command -v 7z > /dev/null; then  # Ubuntu deposundan ücretsiz p7zip-full (tek deneme)
+            sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full > /dev/null || true
+          fi
+          command -v 7z > /dev/null || { echo "::error::7z kurulamadı; paket üretilmedi."; exit 1; }
+          GIZLI="$RUNNER_TEMP/uzman_gizli"
+          PAKET="$GITHUB_WORKSPACE/cikti/uzman_paketi_${ASAMA}.7z"
+          trap 'rm -rf "$GIZLI"' EXIT  # şifresiz dosyalar her durumda silinir; artifact klasörüne hiç yazılmaz
+          APP=.; [ -f turkmetinlab/app.py ] && APP=turkmetinlab
+          python -m venv "$RUNNER_TEMP/uzvenv"
+          "$RUNNER_TEMP/uzvenv/bin/pip" install -q -r "$APP/staging/requirements.txt"
+          "$RUNNER_TEMP/uzvenv/bin/python" "$APP/uzman_dogrulama/havuz_olustur.py" --asama "$ASAMA" \
+            --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 --veri "$RUNNER_TEMP/TRAll.txt" --fizibilite fizibilite_2.5 \
+            --cikti "$GIZLI" --ozet cikti
+          cp "$APP/uzman_dogrulama/YONERGE.md" "$GIZLI/uzmanlara_gonderin/"
+          bash "$APP/uzman_dogrulama/paketle.sh" "$GIZLI" "$PAKET"
+          if [ -n "$(find cikti \( -name '*.xlsx' -o -name '*anahtar*.json' \) -print)" ]; then
+            rm -f "$PAKET"; echo "::error::Artifact klasöründe şifresiz uzman dosyası bulundu; yükleme durduruldu."; exit 1
+          fi
 
       - name: Özet
         if: always()
@@ -155,5 +193,6 @@ jobs:
             cikti/*.json
             cikti/*.md
             cikti/*.txt
+            cikti/*.7z
           if-no-files-found: warn
           retention-days: 30
