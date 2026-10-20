@@ -1,0 +1,596 @@
+{
+  "surum": "1.1-deneysel",
+  "varsayilan_etkin": false,
+  "uzman_onayi": false,
+  "aciklama": "Bağımsız, kullanıcı tercihine bağlı terim eşleştirme; mevcut analizler etkilenmez",
+  "terimler": [
+    {
+      "terim": "ölçek geliştirme",
+      "kanonik": "ölçek geliştirme",
+      "belge_frekansi": 838,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "duygusal emek",
+      "kanonik": "duygusal emek",
+      "belge_frekansi": 486,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "psikolojik danışma",
+      "kanonik": "psikolojik danışma",
+      "belge_frekansi": 445,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "eğitim yönetimi",
+      "kanonik": "eğitim yönetimi",
+      "belge_frekansi": 109,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "psikolojik danışmanlık",
+      "kanonik": "psikolojik danışmanlık",
+      "belge_frekansi": 341,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "grupla psikolojik danışma",
+      "kanonik": "grupla psikolojik danışma",
+      "belge_frekansi": 96,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "okul yönetimi",
+      "kanonik": "okul yönetimi",
+      "belge_frekansi": 40,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel bağlılık",
+      "kanonik": "örgütsel bağlılık",
+      "belge_frekansi": 104,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "faktör analizi",
+      "kanonik": "faktör analizi",
+      "belge_frekansi": 440,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "öğretimsel liderlik",
+      "kanonik": "öğretimsel liderlik",
+      "belge_frekansi": 36,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "etik liderlik",
+      "kanonik": "etik liderlik",
+      "belge_frekansi": 40,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "sosyal destek",
+      "kanonik": "sosyal destek",
+      "belge_frekansi": 62,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yaşam doyumu",
+      "kanonik": "yaşam doyumu",
+      "belge_frekansi": 56,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel adalet",
+      "kanonik": "örgütsel adalet",
+      "belge_frekansi": 44,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "psikolojik iyi oluş",
+      "kanonik": "psikolojik iyi oluş",
+      "belge_frekansi": 48,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "doğrulayıcı faktör analizi",
+      "kanonik": "doğrulayıcı faktör analizi",
+      "belge_frekansi": 233,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "psikolojik sağlamlık",
+      "kanonik": "psikolojik sağlamlık",
+      "belge_frekansi": 39,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel sessizlik",
+      "kanonik": "örgütsel sessizlik",
+      "belge_frekansi": 36,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "dönüşümcü liderlik",
+      "kanonik": "dönüşümcü liderlik",
+      "belge_frekansi": 26,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "akademik başarı",
+      "kanonik": "akademik başarı",
+      "belge_frekansi": 38,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel sinizm",
+      "kanonik": "örgütsel sinizm",
+      "belge_frekansi": 33,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "duygu düzenleme",
+      "kanonik": "duygu düzenleme",
+      "belge_frekansi": 46,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel güven",
+      "kanonik": "örgütsel güven",
+      "belge_frekansi": 27,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "psikolojik dayanıklılık",
+      "kanonik": "psikolojik dayanıklılık",
+      "belge_frekansi": 36,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "bilişsel esneklik",
+      "kanonik": "bilişsel esneklik",
+      "belge_frekansi": 27,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "algılanan sosyal destek",
+      "kanonik": "algılanan sosyal destek",
+      "belge_frekansi": 41,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "sürekli kaygı",
+      "kanonik": "sürekli kaygı",
+      "belge_frekansi": 38,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel vatandaşlık",
+      "kanonik": "örgütsel vatandaşlık",
+      "belge_frekansi": 42,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "duygusal zeka",
+      "kanonik": "duygusal zekâ",
+      "belge_frekansi": 43,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "okul iklimi",
+      "kanonik": "okul iklimi",
+      "belge_frekansi": 28,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel vatandaşlık davranışı",
+      "kanonik": "örgütsel vatandaşlık davranışı",
+      "belge_frekansi": 28,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "uzaktan eğitim",
+      "kanonik": "uzaktan eğitim",
+      "belge_frekansi": 31,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "sınav kaygısı",
+      "kanonik": "sınav kaygısı",
+      "belge_frekansi": 16,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgüt iklimi",
+      "kanonik": "örgüt iklimi",
+      "belge_frekansi": 13,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "eğitim denetimi",
+      "kanonik": "eğitim denetimi",
+      "belge_frekansi": 7,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yapısal eşitlik modeli",
+      "kanonik": "yapısal eşitlik modeli",
+      "belge_frekansi": 45,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "akran zorbalığı",
+      "kanonik": "akran zorbalığı",
+      "belge_frekansi": 19,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "sosyal beceri",
+      "kanonik": "sosyal beceri",
+      "belge_frekansi": 15,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel özdeşleşme",
+      "kanonik": "örgütsel özdeşleşme",
+      "belge_frekansi": 14,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "okul müdürü",
+      "kanonik": "okul müdürü",
+      "belge_frekansi": 117,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "siber zorbalık",
+      "kanonik": "siber zorbalık",
+      "belge_frekansi": 15,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "liderlik stilleri",
+      "kanonik": "liderlik stilleri",
+      "belge_frekansi": 62,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "içerik analizi",
+      "kanonik": "içerik analizi",
+      "belge_frekansi": 179,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "açımlayıcı faktör analizi",
+      "kanonik": "açımlayıcı faktör analizi",
+      "belge_frekansi": 202,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "kariyer uyumu",
+      "kanonik": "kariyer uyumu",
+      "belge_frekansi": 7,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yapı geçerliği",
+      "kanonik": "yapı geçerliği",
+      "belge_frekansi": 66,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "tükenmişlik sendromu",
+      "kanonik": "tükenmişlik sendromu",
+      "belge_frekansi": 6,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yaşam boyu öğrenme",
+      "kanonik": "yaşam boyu öğrenme",
+      "belge_frekansi": 14,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "program geliştirme",
+      "kanonik": "program geliştirme",
+      "belge_frekansi": 10,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "akran ilişkileri",
+      "kanonik": "akran ilişkileri",
+      "belge_frekansi": 8,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "madde analizi",
+      "kanonik": "madde analizi",
+      "belge_frekansi": 32,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "durum çalışması",
+      "kanonik": "durum çalışması",
+      "belge_frekansi": 94,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "öz yeterlilik",
+      "kanonik": "öz yeterlik",
+      "belge_frekansi": 0,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "durumluk kaygı",
+      "kanonik": "durumluk kaygı",
+      "belge_frekansi": 7,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "iş doyumu",
+      "kanonik": "iş doyumu",
+      "belge_frekansi": 0,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "kapsam geçerliği",
+      "kanonik": "kapsam geçerliği",
+      "belge_frekansi": 78,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "eğitim politikaları",
+      "kanonik": "eğitim politikaları",
+      "belge_frekansi": 3,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "program değerlendirme",
+      "kanonik": "program değerlendirme",
+      "belge_frekansi": 3,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "cronbach alfa",
+      "kanonik": "cronbach alfa",
+      "belge_frekansi": 78,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "dağıtımcı liderlik",
+      "kanonik": "dağıtımcı liderlik",
+      "belge_frekansi": 4,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "deneysel desen",
+      "kanonik": "deneysel desen",
+      "belge_frekansi": 75,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "örgütsel değişim",
+      "kanonik": "örgütsel değişim",
+      "belge_frekansi": 3,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "korelasyon analizi",
+      "kanonik": "korelasyon analizi",
+      "belge_frekansi": 129,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "mesleki rehberlik",
+      "kanonik": "mesleki rehberlik",
+      "belge_frekansi": 4,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "tabakalı örnekleme",
+      "kanonik": "tabakalı örnekleme",
+      "belge_frekansi": 84,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "iletişim becerileri",
+      "kanonik": "iletişim becerileri",
+      "belge_frekansi": 46,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "klasik test kuramı",
+      "kanonik": "klasik test kuramı",
+      "belge_frekansi": 4,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yüzeysel davranış",
+      "kanonik": "yüzeysel davranış",
+      "belge_frekansi": 33,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "öğretmen motivasyonu",
+      "kanonik": "öğretmen motivasyonu",
+      "belge_frekansi": 15,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "cronbach alpha",
+      "kanonik": "cronbach alfa",
+      "belge_frekansi": 59,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "eğitim planlaması",
+      "kanonik": "eğitim planlaması",
+      "belge_frekansi": 2,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "duygusal zekâ",
+      "kanonik": "duygusal zekâ",
+      "belge_frekansi": 42,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "problem çözme becerileri",
+      "kanonik": "problem çözme becerileri",
+      "belge_frekansi": 32,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "liderlik tarzları",
+      "kanonik": "liderlik stilleri",
+      "belge_frekansi": 13,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "çevrimiçi öğrenme",
+      "kanonik": "çevrimiçi öğrenme",
+      "belge_frekansi": 4,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "eğitim ekonomisi",
+      "kanonik": "eğitim ekonomisi",
+      "belge_frekansi": 1,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "duygusal bağlılık",
+      "kanonik": "duygusal bağlılık",
+      "belge_frekansi": 8,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "okul bağlılığı",
+      "kanonik": "okul bağlılığı",
+      "belge_frekansi": 1,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "eleştirel düşünme",
+      "kanonik": "eleştirel düşünme",
+      "belge_frekansi": 22,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "güvenirlik analizi",
+      "kanonik": "güvenirlik analizi",
+      "belge_frekansi": 22,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yarı deneysel desen",
+      "kanonik": "yarı deneysel desen",
+      "belge_frekansi": 32,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "mesleki tükenmişlik",
+      "kanonik": "mesleki tükenmişlik",
+      "belge_frekansi": 24,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "çoklu regresyon analizi",
+      "kanonik": "çoklu regresyon analizi",
+      "belge_frekansi": 30,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "likert tipi ölçek",
+      "kanonik": "likert tipi ölçek",
+      "belge_frekansi": 36,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "ölçek uyarlama",
+      "kanonik": "ölçek uyarlama",
+      "belge_frekansi": 11,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "derin davranış",
+      "kanonik": "derin davranış",
+      "belge_frekansi": 13,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "değişime direnç",
+      "kanonik": "değişime direnç",
+      "belge_frekansi": 3,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "yapısal eşitlik modellemesi",
+      "kanonik": "yapısal eşitlik modellemesi",
+      "belge_frekansi": 19,
+      "guvence": "deneysel aday - uzman onayı yok"
+    },
+    {
+      "terim": "madde tepki kuramı",
+      "kanonik": "madde tepki kuramı",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "yapılandırmacı yaklaşım",
+      "kanonik": "yapılandırmacı yaklaşım",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "öğretim programı",
+      "kanonik": "öğretim programı",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "eğitim programı",
+      "kanonik": "eğitim programı",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "program değerlendirme modeli",
+      "kanonik": "program değerlendirme modeli",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "madde ayırt ediciliği",
+      "kanonik": "madde ayırt ediciliği",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "güvenirlik katsayısı",
+      "kanonik": "güvenirlik katsayısı",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    },
+    {
+      "terim": "öz yeterlik",
+      "kanonik": "öz yeterlik",
+      "belge_frekansi": null,
+      "guvence": "elle önerildi - derlem frekansı ölçülmedi"
+    }
+  ],
+  "ayri_incelenecek": [
+    "ölçek geliştirme çalışması",
+    "doğrulayıcı faktör",
+    "açımlayıcı faktör",
+    "geçerlik güvenirlik",
+    "kaygı düzeyi",
+    "eğitim kurumları",
+    "eğitim sistemi",
+    "okul yöneticileri",
+    "test tekrar test",
+    "tesadüfi örnekleme"
+  ]
+}
