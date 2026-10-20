@@ -1,11 +1,21 @@
 # TürkMetinLab 2.5 — E5-small ONNX karşılaştırması (yalnızca CPU).
 # YALNIZCA elle başlatılır. Uygulamayı, varsayılan testleri ve Streamlit'i değiştirmez.
 # Tek iş = tek makine: TF-IDF, E5 PyTorch ve E5 ONNX aynı donanımda ölçülür.
-# Sıra: dönüştür → 20 örnekte uyum → 100 belge → (başarılıysa) 500 belge. Yeniden deneme yoktur.
+# Sıra: dönüştür → 20 örnekte uyum → kip'e göre:
+#   staging (varsayılan): uygulama entegrasyon testi (gerçek model, 100/500 belge, AppTest) → isteğe bağlı Hugging Face
+#                         yayını (yalnızca HF_TOKEN gizli anahtarı ve TML_HF_REPO değişkeni tanımlıysa).
+#   karsilastirma: fizibilite karşılaştırması (100 → başarılıysa 500 belge).
+# Yeniden deneme yoktur.
 name: ONNX 2.5 (E5-small)
 
 on:
   workflow_dispatch:
+    inputs:
+      kip:
+        description: "staging: uygulama entegrasyon testi · karsilastirma: fizibilite ölçümü"
+        type: choice
+        options: [staging, karsilastirma]
+        default: staging
 
 permissions:
   contents: read
@@ -85,6 +95,7 @@ jobs:
           echo "ADAYLAR=$(cat cikti/onnx_adaylar.txt)" >> "$GITHUB_ENV"
 
       - name: Aşama 1 — 100 belge
+        if: inputs.kip == 'karsilastirma'
         timeout-minutes: 25
         run: >
           python fizibilite_2.5/anlamsal_karsilastirma.py --kati --n 100 --etiket onnx
@@ -94,6 +105,7 @@ jobs:
           --azami-sure 900 --azami-rss-mb 6000
 
       - name: Aşama 2 — 500 belge (yalnızca aşama 1 başarılıysa)
+        if: inputs.kip == 'karsilastirma'
         timeout-minutes: 35
         run: >
           python fizibilite_2.5/anlamsal_karsilastirma.py --kati --n 500 --etiket onnx
@@ -102,12 +114,36 @@ jobs:
           --veri "$RUNNER_TEMP/TRAll.txt" --onbellek ~/.cache/turkmetinlab_modeller --cikti cikti
           --azami-sure 1500 --azami-rss-mb 6000
 
+      - name: Staging — uygulama entegrasyon testi (gerçek E5 ONNX FP32; 20 / 100 / 500 belge; AppTest)
+        if: inputs.kip != 'karsilastirma'
+        timeout-minutes: 45
+        run: |
+          APP=.; [ -f turkmetinlab/app.py ] && APP=turkmetinlab
+          python -m venv "$RUNNER_TEMP/appvenv"
+          "$RUNNER_TEMP/appvenv/bin/pip" install -r "$APP/staging/requirements.txt"
+          "$RUNNER_TEMP/appvenv/bin/python" "$APP/staging/entegrasyon_testi.py" --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 \
+            --veri "$RUNNER_TEMP/TRAll.txt" --fizibilite fizibilite_2.5 --cikti cikti
+
+      - name: Staging — modeli Hugging Face'e yayınla (isteğe bağlı; yalnızca testler geçtiyse)
+        if: inputs.kip != 'karsilastirma'
+        timeout-minutes: 15
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: ${{ vars.TML_HF_REPO }}
+          HF_GIZLI: ${{ vars.TML_HF_GIZLI }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_REPO" ]; then
+            echo "HF_TOKEN gizli anahtarı ya da TML_HF_REPO değişkeni yok; yayın atlandı."; exit 0
+          fi
+          python fizibilite_2.5/onnx/hf_yayinla.py --onnx-klasor ~/.cache/turkmetinlab_onnx/e5 --repo "$HF_REPO" \
+            --gizli "${HF_GIZLI:-false}" --cikti cikti/hf_yayin.json
+
       - name: Özet
         if: always()
         run: |
           echo "Ölçüm makinesi: GitHub Actions ubuntu-latest (CPU). Streamlit sunucu ölçümü değildir." >> "$GITHUB_STEP_SUMMARY"
           for f in cikti/onnx_uyum_20.json; do [ -f "$f" ] && { echo '```json'; cat "$f"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; done
-          for f in cikti/sonuclar_n100_onnx.md cikti/sonuclar_n500_onnx.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
+          for f in cikti/sonuclar_n100_onnx.md cikti/sonuclar_n500_onnx.md cikti/staging_entegrasyon.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
           ls -la cikti || true
 
       - name: Sonuçları sakla (yalnızca JSON, Markdown, TXT; ONNX dosyaları girmez)
