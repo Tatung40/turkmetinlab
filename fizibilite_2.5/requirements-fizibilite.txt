@@ -1,0 +1,14 @@
+# TürkMetinLab 2.5 fizibilite — Python 3.12, yalnızca CPU.
+# torch AYRICA ve resmî CPU paket dizininden kurulur (CUDA paketleri gelmesin):
+#   pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r fizibilite_2.5/requirements-fizibilite.txt
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+simplemma==2.0.0
+sentence-transformers==6.1.0
+transformers==5.20.1
+tokenizers==0.23.3
+huggingface-hub==1.33.0
+safetensors==0.8.0
+onnxruntime==1.31.0

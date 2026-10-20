@@ -1,0 +1,7 @@
+# Yalnızca ONNX çıkarımı (torch YOK). Python 3.12.
+onnxruntime==1.31.0
+tokenizers==0.23.3
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+simplemma==2.0.0
