@@ -15,7 +15,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 def _npmi(topics, texts):
     """Belge-düzeyi NPMI; aynı Unicode sözcükleştirme tüm modeller için kullanılır."""
-    pattern = re.compile(r"(?u)\\b\\w\\w+\\b")
+    pattern = re.compile(r"(?u)\b\w\w+\b")
     docs = [set(pattern.findall(t.casefold())) for t in texts]
     n = len(docs)
     if not n:
