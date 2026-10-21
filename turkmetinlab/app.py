@@ -1228,8 +1228,8 @@ def _konu_sekmesi(bg: dict):
             else:
                 upper_b = min(25, len(metinler_b) // 3)
                 k_b = st.slider("BERTopic konu sayısı", 2, upper_b, min(5, upper_b), key="bertopic_n")
-                min_df_b = st.number_input("BERTopic en az belge frekansı", 1, min(10, len(metinler_b)),
-                                            2, key="bertopic_min_df")
+                min_df_b = 1  # c-TF-IDF: entries are merged topic documents; higher min_df hides unique topic keywords.
+                st.caption("c-TF-IDF için minimum konu-belge frekansı 1: konuya özgü sözcükler korunur.")
                 b_key = ozet(bg["hazirlik_anahtari"], "bertopic_e5_fp32", k_b, min_df_b)
                 b_result = _bul("bertopic", b_key)
                 if b_result is None:

@@ -32,7 +32,7 @@ def test_bertopic_pipeline_in_staging(monkeypatch,tmp_path):
     from tmlab.bertopic_adapter import run as topic_run
     texts = [entry["metin"] for entry in rows]
     vectors = E5Kodlayici(folder).kodla(texts, BELGE_ONEKI)
-    _, labels, info = topic_run(texts, vectors, n_topics=3, min_df=2)
+    _, labels, info = topic_run(texts, vectors, n_topics=3, min_df=1)
     assert len(labels) == len(texts)
     at=AppTest.from_file(ENTRY,default_timeout=300).run()
     assert not at.exception,[e.value for e in at.exception]
