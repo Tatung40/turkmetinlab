@@ -732,6 +732,35 @@ def ana():
                         st.download_button("TES-Lex eşleşmelerini indir",csv_bayt(pd.DataFrame(details),";",True),
                             "teslex_eslesmeler.csv","text/csv",key="teslex_detail_csv",on_click="ignore")
 
+    # --- ELECTRA-small sentiment classifier: opt-in, staging only -------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("ELECTRA-small · Bağlamsal duygu sınıflandırma (deneysel)")
+            st.caption("Olumlu / nötr / olumsuz. Modelin eğitim bağlamı Türkçe kısa metinlerdir; "
+                       "akademik tez özetlerinde geçerliği gösterilmedi. İlk 64 token kullanılır.")
+            st.markdown("[Model kartı](https://huggingface.co/ayse-solmaz/turkish-sentiment-electra-small)")
+            if st.button("ELECTRA sınıflandırmasını çalıştır (en fazla 100 belge)",key="electra_go"):
+                try:
+                    from tmlab import electra_duygu as el
+                    with st.spinner("INT8 model indiriliyor / CPU üzerinde çalışıyor…"):
+                        state=el.load_model()
+                        result=el.classify_corpus(metinler,adlar,state)
+                        st.session_state["electra_results"] = result
+                        st.session_state["electra_data_key"] = hazirlik_anahtari
+                except (ValueError, OSError, TimeoutError, ImportError) as exc:
+                    st.session_state.pop("electra_results",None)
+                    st.error("ELECTRA model dosyaları yüklenemedi veya ONNX çıkarımı yapılamadı. "
+                             "Bu deneysel modül şu an kullanılamıyor.")
+            if st.session_state.get("electra_data_key")==hazirlik_anahtari and "electra_results" in st.session_state:
+                tab=pd.DataFrame(st.session_state["electra_results"])
+                st.dataframe(tab,use_container_width=True,hide_index=True)
+                st.download_button("ELECTRA sonuçlarını CSV indir",csv_bayt(tab,";",True),
+                                   "electra_duygu.csv","text/csv",key="electra_csv",on_click="ignore")
+                if bool(tab["Kesildi mi"].any()):
+                    st.warning("Bazı belgeler 64 tokenda kesildi. Uzun metinlerde bu etiketleri "
+                               "belgenin tamamının duygu sınıfı olarak yorumlamayın.")
+
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
         st.subheader("Kelime bulutu")
