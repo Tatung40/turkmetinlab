@@ -1241,7 +1241,10 @@ def _konu_sekmesi(bg: dict):
                             if neden:
                                 st.error(neden)
                             else:
-                                kod = ans._model(kaynak)
+                                with st.spinner("E5 ONNX modeli hazırlanıyor veya mevcut önbellekten yükleniyor…"):
+                                    klasor = an.model_hazirla(kaynak)
+                                    kod = ans._kodlayici(kaynak.kimlik, klasor)
+                                    ans._HAZIR.add(kaynak.kimlik)
                                 if kod is not None:
                                     uzunluklar = kod.belirtec_sayilari(metinler_b, an.BELGE_ONEKI)
                                     if max(uzunluklar) > kod.azami_token:
