@@ -1,0 +1,27 @@
+name: BERTopic kalite metrikleri (2.5)
+on:
+  push:
+    branches: [gelistirme-2.5-bertopic-kalite]
+    paths:
+      - 'turkmetinlab/tmlab/bertopic_kalite.py'
+      - 'turkmetinlab/tests/test_bertopic_kalite.py'
+      - '.github/workflows/bertopic-kalite.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metrikler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: turkmetinlab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install existing development dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Test metric math and data validation (no model download)
+        run: python -m pytest -q tests/test_bertopic_kalite.py -k 'not real_bertopic_with_synthetic_embeddings'
