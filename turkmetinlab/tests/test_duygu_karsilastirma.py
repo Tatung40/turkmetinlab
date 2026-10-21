@@ -10,7 +10,8 @@ def test_duplicate_names_are_kept_separate():
     df=birlestir(["A","A"],sw,te,el)
     assert df["Belge sırası"].tolist()==[1,2]
     assert df["SWNetTR++ ton ort."].tolist()==[.1,-.5]
-    assert df["TES-Lex Korku"].tolist()==[None,2]
+    assert __import__("pandas").isna(df.loc[0,"TES-Lex Korku"])
+    assert df.loc[1,"TES-Lex Korku"]==2
     assert ozetsayim(df)["Frekans"].sum()==2
 
 def test_partial_results_allowed():
