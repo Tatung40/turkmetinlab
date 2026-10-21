@@ -1215,38 +1215,59 @@ def _konu_sekmesi(bg: dict):
     st.subheader("Konu modellemesi")
     st.info(km.UYARI_METNI, icon="ℹ️")
     if DENEYSEL_ANLAMSAL:
-        with st.expander("BERTopic — E5-small ile deneysel anlamsal konu modelleme", expanded=False):
-            st.caption("NMF ve LDA korunur. BERTopic isteğe bağlı paket olarak çalışır; "
-                       "sistem kurulu değilse standart modeller etkilenmez.")
+        with st.expander("BERTopic — E5-small ile anlamsal konu modelleme (deneysel)"):
+            st.caption("BERTopic 0.17.4; E5-small ONNX FP32 belge vektörleri + KMeans (tohum=42) + "
+                       "c-TF-IDF. UMAP kullanılmaz. NMF/LDA aynen korunur.")
             from tmlab import bertopic_adapter as bta
             from tmlab import anlamsal as an
             from tmlab import anlamsal_sekme as ans
-            if len(bg["metinler"]) > bta.MAX_DOCUMENTS or len(bg["metinler"]) < 10:
-                st.warning("BERTopic için 10–500 belge içeren veri kümesi gerekir.")
+            metinler_b = list(bg["metinler"])
+            adlar_b = list(bg["adlar"])
+            if not 10 <= len(metinler_b) <= bta.MAX_DOCUMENTS:
+                st.warning("BERTopic deneysel sınır: 10–500 belge. Lütfen daha küçük bir veri kümesi yükleyin.")
             else:
-                n_topics = st.slider("BERTopic konu sayısı", 2, min(25, len(bg["metinler"]) // 3),
-                                     5, key="bertopic_n")
-                if st.button("BERTopic analizi çalıştır", key="bertopic_run"):
-                    try:
-                        from bertopic import BERTopic
-                    except ImportError:
-                        st.error("BERTopic sunucuya henüz kurulmamış. İzole gerçek çalışma testi ve "
-                                 "bağımlılık doğrulaması tamamlanmadan etkinleştirilmeyecek.")
-                    else:
-                        kaynak = an.ModelKaynagi.ortamdan()
-                        if kaynak.eksik():
-                            st.error(kaynak.eksik())
-                        else:
-                            kod = ans._model(kaynak)
-                            if kod is not None:
-                                texts = list(bg["metinler"])
-                                vectors = kod.kodla(texts, an.BELGE_ONEKI)
-                                model, doc_topics, topic_info = bta.run(texts, vectors, n_topics=n_topics)
-                                st.dataframe(topic_info, use_container_width=True, hide_index=True)
-                                st.dataframe(doc_topics, use_container_width=True, hide_index=True)
-                                st.download_button("BERTopic belge–konu CSV",
-                                    csv_bayt(doc_topics, ";", True), "bertopic_belgeler.csv",
-                                    "text/csv", key="bertopic_csv", on_click="ignore")
+                upper_b = min(25, len(metinler_b) // 3)
+                k_b = st.slider("BERTopic konu sayısı", 2, upper_b, min(5, upper_b), key="bertopic_n")
+                min_df_b = st.number_input("BERTopic en az belge frekansı", 1, min(10, len(metinler_b)),
+                                            2, key="bertopic_min_df")
+                b_key = ozet(bg["hazirlik_anahtari"], "bertopic_e5_fp32", k_b, min_df_b)
+                b_result = _bul("bertopic", b_key)
+                if b_result is None:
+                    if st.button("BERTopic analizi çalıştır", key="bertopic_run", type="primary"):
+                        try:
+                            from bertopic import BERTopic
+                            kaynak = an.ModelKaynagi.ortamdan()
+                            neden = kaynak.eksik()
+                            if neden:
+                                st.error(neden)
+                            else:
+                                kod = ans._model(kaynak)
+                                if kod is not None:
+                                    uzunluklar = kod.belirtec_sayilari(metinler_b, an.BELGE_ONEKI)
+                                    if max(uzunluklar) > kod.azami_token:
+                                        st.error("Bazı belgeler E5'in 512 token sınırını aşıyor. "
+                                                 "Sessiz kırpma önlendi. Kısaltılmış metin veri kümesi yükleyin.")
+                                    else:
+                                        with st.spinner("Türkçe E5 vektörleri ve BERTopic konuları hesaplanıyor…"):
+                                            vectors = kod.kodla(metinler_b, an.BELGE_ONEKI)
+                                            model, docs_b, topics_b = bta.run(
+                                                metinler_b, vectors, n_topics=k_b, min_df=int(min_df_b))
+                                            docs_b.insert(1, "Belge", adlar_b)
+                                            b_result = (docs_b, topics_b)
+                                            _hesapla("bertopic", b_key, lambda: b_result, 1)
+                        except (ImportError, RuntimeError, ValueError, MemoryError) as exc:
+                            st.error("BERTopic işlemi tamamlanamadı: " + str(exc))
+                if b_result is not None:
+                    docs_b, topics_b = b_result
+                    st.success(f"{len(docs_b)} belge; {len(topics_b)} konu satırı üretildi.")
+                    st.subheader("Konu bilgileri ve en önemli sözcükler")
+                    st.dataframe(topics_b, use_container_width=True, hide_index=True)
+                    st.subheader("Belge düzeyinde konu atamaları")
+                    st.dataframe(docs_b, use_container_width=True, hide_index=True)
+                    st.download_button("BERTopic konu tablosunu CSV indir", csv_bayt(topics_b, ";", True),
+                        "bertopic_konular.csv", "text/csv", key="bertopic_topics_csv", on_click="ignore")
+                    st.download_button("BERTopic belge–konu CSV indir", csv_bayt(docs_b, ";", True),
+                        "bertopic_belgeler.csv", "text/csv", key="bertopic_docs_csv", on_click="ignore")
             st.markdown("[BERTopic yöntem, bağımlılık ve sınırlılık kılavuzu]"
                         "(https://github.com/Tatung40/turkmetinlab/blob/gelistirme-2.5-staging/"
                         "turkmetinlab/docs/BERTOPIC_FIZIBILITE_2_5.md)")

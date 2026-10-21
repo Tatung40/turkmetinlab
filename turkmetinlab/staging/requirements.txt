@@ -10,7 +10,10 @@ matplotlib==3.11.2
 openpyxl==3.1.5
 xlsxwriter==3.2.9
 simplemma==2.0.0
-# 2.5 deneysel anlamsal analiz (torch YOK)
+# 2.5 deneysel anlamsal analiz (E5 ONNX FP32)
 onnxruntime==1.31.0
 tokenizers==0.23.3
 python-docx>=1.1,<2
+
+# BERTopic (yalnızca staging; canlı 2.1 requirements değiştirilmedi)
+bertopic==0.17.4
