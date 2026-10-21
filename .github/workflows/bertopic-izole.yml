@@ -1,0 +1,58 @@
+name: BERTopic izole fizibilite
+on:
+  workflow_dispatch:
+jobs:
+  bertopic:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: İsteğe bağlı paketleri kur
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install bertopic numpy pandas scikit-learn pytest
+      - name: Birim testleri
+        working-directory: turkmetinlab
+        run: python -m pytest tests/test_bertopic_adapter.py -q
+      - name: Gerçek BERTopic hesaplama
+        working-directory: turkmetinlab
+        run: |
+          python - <<'PY'
+          import numpy as np
+          from tmlab.bertopic_adapter import run
+          samples=[
+          "İklim değişikliği ve kuraklık tarımı etkiliyor",
+          "Yağış azlığı su kaynaklarını tehlikeye atıyor",
+          "Dünya ısınıyor ve kuraklık büyüyor",
+          "Atmosferde sera gazı birikiyor",
+          "İklim krizi tarımsal verimliliği düşürüyor",
+          "Kuraklık sebebiyle barajlar boşalıyor",
+          "Öğrenciler matematik sınavına hazırlanıyor",
+          "Eğitim programı ve öğretim yöntemleri tartışılıyor",
+          "Öğretmenler sınıfta ölçme değerlendirme yapıyor",
+          "Öğrencilerin sınav başarısı analiz ediliyor",
+          "Okullarda öğretmen eğitimi sürüyor",
+          "Matematik dersinde öğrenciler soru çözüyor",
+          "Hastaneler sağlık hizmeti sunuyor",
+          "Doktorlar hastalara tedavi uyguluyor",
+          "Sağlık araştırmaları hastalıkları inceliyor",
+          "Tıp alanında hastalık teşhisi ilerliyor",
+          "Hastalar doktor randevusu alıyor",
+          "Tedavi yöntemleri hastanelerde uygulanıyor",
+          ] * 2
+          rng=np.random.default_rng(42)
+          x=np.concatenate([
+             rng.normal(0,0.01,(12,16))+np.eye(16)[0],
+             rng.normal(0,0.01,(12,16))+np.eye(16)[1],
+             rng.normal(0,0.01,(12,16))+np.eye(16)[2]
+          ])
+          model,docs,topics=run(samples,x,n_topics=3,min_df=1)
+          assert len(docs)==36 and len(topics)>=3
+          print(topics.to_string(index=False))
+          print("NOTE: Synthetic vectors prove integration, not real E5 semantic performance.")
+          PY
