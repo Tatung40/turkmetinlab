@@ -1256,12 +1256,14 @@ def _konu_sekmesi(bg: dict):
                                             model, docs_b, topics_b = bta.run(
                                                 metinler_b, vectors, n_topics=k_b, min_df=int(min_df_b))
                                             docs_b.insert(1, "Belge", adlar_b)
-                                            b_result = (docs_b, topics_b)
+                                            from tmlab.konu_ornekleri import topic_examples
+                                            examples_b = topic_examples(metinler_b, docs_b["Konu"].tolist())
+                                            b_result = (docs_b, topics_b, examples_b)
                                             _hesapla("bertopic", b_key, lambda: b_result, 1)
                         except (ImportError, RuntimeError, ValueError, MemoryError) as exc:
                             st.error("BERTopic işlemi tamamlanamadı: " + str(exc))
                 if b_result is not None:
-                    docs_b, topics_b = b_result
+                    docs_b, topics_b, examples_b = b_result
                     st.success(f"{len(docs_b)} belge; {len(topics_b)} konu satırı üretildi.")
                     st.subheader("Konu bilgileri ve en önemli sözcükler")
                     st.dataframe(topics_b, use_container_width=True, hide_index=True)
@@ -1271,6 +1273,13 @@ def _konu_sekmesi(bg: dict):
                         st.caption("Grafik konuya atanan belge sayısını gösterir; olasılık veya tutarlılık puanı değildir.")
                     st.subheader("Belge düzeyinde konu atamaları")
                     st.dataframe(docs_b, use_container_width=True, hide_index=True)
+                    st.subheader("Konuya ait örnek yorumlar (kaynak metinden alıntı)")
+                    st.caption("Her konu için en fazla üç farklı yorumun ilk 400 karakteri. "
+                               "Üretken yapay zekâ özeti değildir; belge sırası üzerinden doğrulanabilir.")
+                    st.dataframe(examples_b, use_container_width=True, hide_index=True)
+                    st.download_button("Konu örneklerini CSV indir", csv_bayt(examples_b, ";", True),
+                        "bertopic_konu_ornekleri.csv", "text/csv",
+                        key="bertopic_examples_csv", on_click="ignore")
                     st.download_button("BERTopic konu tablosunu CSV indir", csv_bayt(topics_b, ";", True),
                         "bertopic_konular.csv", "text/csv", key="bertopic_topics_csv", on_click="ignore")
                     st.download_button("BERTopic belge–konu CSV indir", csv_bayt(docs_b, ";", True),

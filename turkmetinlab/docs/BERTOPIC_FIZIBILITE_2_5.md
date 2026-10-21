@@ -47,3 +47,7 @@ Gerçek E5 ağırlıklarıyla en azından eğitim, iklim ve sağlık gibi farkl�
 ## 8. Uygulama adımları
 
 Konu modelleme bölümünde BERTopic deneysel panelini açın, 10–500 belgeli verinin kimlik ve metin sütununu seçin, konu sayısını belirleyin, sonuçları çalıştırın. Konu–sözcük ve belge–konu tablolarını inceleyip CSV'leri indirin. Araştırma raporunda kullanılan sürümü, E5 modeli, token sınırı, konu sayısı, tohum, veri kümesi boyutu ve temizleme kararlarını açıkça belirtin.
+
+## 9. Konu örnekleri ve açıklanabilir özetleme
+
+Konu başına en fazla üç farklı kaynak yorumun ilk 400 karakteri, benzersiz belge sırasıyla birlikte gösterilir. Bu çıktı **metinden alıntı (extractive evidence)** niteliğindedir; üretken özetleme değildir, metinde yer almayan iddia üretmez. Konunun tamamını temsil ettiği varsayılmamalı; uzman tarafından kaynak bağlam kontrolü yapılmalıdır. Konu sonuçlarının özetleri duygu analizi veya metin sınıflandırması olarak sunulmaz.
