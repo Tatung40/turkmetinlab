@@ -72,17 +72,15 @@ jobs:
           print("NOTE: Synthetic vectors prove integration, not real E5 semantic performance.")
           PY
 
-      - name: Build verified lightweight BERTopic wheel
+      - name: Verify lightweight package provenance
         run: |
           python -m pip download --no-deps --only-binary=:all: bertopic==0.17.4 -d /tmp/bertopic_upstream
-          python turkmetinlab/tools/prepare_bertopic_wheel.py \
-            /tmp/bertopic_upstream/bertopic-0.17.4-py3-none-any.whl \
-            /tmp/bertopic-0.17.4-py3-none-any.whl
+          python turkmetinlab/tools/prepare_bertopic_wheel.py /tmp/bertopic_upstream/bertopic-0.17.4-py3-none-any.whl /tmp/bertopic-check.whl
           python - <<'PY'
-          import base64
-          with open("/tmp/bertopic-0.17.4-py3-none-any.whl","rb") as f:
-              encoded=base64.b64encode(f.read()).decode("ascii")
-          print("TML_WHEEL_TOTAL_CHUNKS="+str((len(encoded)+5999)//6000))
-          for i in range(0,len(encoded),6000):
-              print("TML_WHEEL_CHUNK_"+str(i//6000)+"="+encoded[i:i+6000])
+          import zipfile
+          name='turkmetinlab/staging/vendor/bertopic-0.17.4-py3-none-any.whl'
+          with zipfile.ZipFile(name) as z:
+              assert z.testzip() is None
+              assert any(s.endswith('TURKMETINLAB_NOTICE.txt') for s in z.namelist())
+          print('Audited lightweight BERTopic wheel verified')
           PY

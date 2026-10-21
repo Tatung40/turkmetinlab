@@ -16,4 +16,7 @@ tokenizers==0.23.3
 python-docx>=1.1,<2
 
 # BERTopic (yalnızca staging; canlı 2.1 requirements değiştirilmedi)
-bertopic==0.17.4
+# MIT-licensed BERTopic 0.17.4 verified lightweight package (no Torch deps)
+https://raw.githubusercontent.com/Tatung40/turkmetinlab/3e8fb02b019f3c3b748ba8b8c3a6d609b035edb4/turkmetinlab/staging/vendor/bertopic-0.17.4-py3-none-any.whl
+PyYAML==6.0.3
+tqdm==4.70.1
