@@ -11,7 +11,7 @@ def test_metric_boundaries():
 def test_validation_precedes_heavy_import():
     with pytest.raises(ValueError, match="10\\+"):
         compare(["çok kısa"]*9,np.zeros((9,4)),k=2)
-    with pytest.raises(ValueError, match="10\\\\+"):
+    with pytest.raises(ValueError, match="10\\+"):
         compare(["eğitim araştırması"]*501,np.zeros((501,4)),k=2)
     with pytest.raises(ValueError, match="Embedding"):
         compare(["eğitim bilimsel veri"]*12,np.zeros((11,4)),k=2)
