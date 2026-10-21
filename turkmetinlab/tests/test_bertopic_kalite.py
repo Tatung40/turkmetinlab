@@ -5,11 +5,14 @@ from tmlab.bertopic_kalite import _npmi, _diversity, compare
 def test_metric_boundaries():
     assert _diversity([["a","b"],["a","c"]]) == pytest.approx(0.75)
     assert _npmi([["a","b"]],["a b","a b","c"]) == pytest.approx(1.0)
-    assert _npmi([["a","c"]],["a","c","a"]) == pytest.approx(-1.0)
+    assert _npmi([["aa","cc"]],["aa","cc","aa"]) == pytest.approx(-1.0)
+    assert _npmi([["eğitim","öğretim"]],["Eğitim, öğretim.","Eğitim öğretim","araştırma"]) == pytest.approx(1.0)
 
 def test_validation_precedes_heavy_import():
     with pytest.raises(ValueError, match="10\\+"):
         compare(["çok kısa"]*9,np.zeros((9,4)),k=2)
+    with pytest.raises(ValueError, match="10\\\\+"):
+        compare(["eğitim araştırması"]*501,np.zeros((501,4)),k=2)
     with pytest.raises(ValueError, match="Embedding"):
         compare(["eğitim bilimsel veri"]*12,np.zeros((11,4)),k=2)
 
