@@ -9,3 +9,8 @@ def test_allows_precomputed_vectors():
 def test_rejects_missing_values():
     d=np.ones((20,384));d[0,0]=np.nan
     with pytest.raises(ValueError):validate(["metin"]*20,d,n_topics=4)
+
+def test_default_min_df_preserves_topic_specific_terms():
+    import inspect
+    from tmlab.bertopic_adapter import run
+    assert inspect.signature(run).parameters['min_df'].default == 1

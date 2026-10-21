@@ -23,7 +23,7 @@ def validate(documents, embeddings, n_topics=8):
         raise ValueError("Boş belge var")
     return documents, vectors
 
-def run(documents, embeddings, n_topics=8, min_df=2):
+def run(documents, embeddings, n_topics=8, min_df=1):
     """Call real BERTopic with precomputed E5 and transparent KMeans baseline.
 
     Returns model + per-document/topic tables. Not mock topic results.
