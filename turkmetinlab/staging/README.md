@@ -4,6 +4,8 @@ Bu klasör, canlı uygulamayı değiştirmeden **ayrı bir test uygulaması** ç
 
 - `app.py` aynen çalışır. Yalnızca `TML_DENEYSEL_ANLAMSAL=1` iken 🧪 **Anlamsal (deneysel)** sekmesi eklenir.
   `streamlit_app.py` bu bayrağı açar; canlı uygulama bu dosyayı kullanmaz.
+- 🧩 Konular bölümünde **BERTopic (E5 ONNX + KMeans + c-TF-IDF)** deneysel yöntemi eklidir; mevcut NMF/LDA korunur.
+- BERTopic 0.17.4, doğrulanmış resmi MIT kaynak kodu ve yalnızca düzenlenmiş bağımlılık metadata'sıyla hazırlanan hafif wheel üzerinden kurulur; gereksiz PyTorch, CUDA, UMAP ve HDBSCAN paketleri yüklenmez.
 - Model: `intfloat/multilingual-e5-small` (MIT), ONNX FP32, PyTorch yok.
   - INT8 kullanılmaz.
   - Ağırlıklar GitHub'a konmaz. Uygulama, modeli sizin Hugging Face deponuzdan **bir kez** indirir ve SHA-256
@@ -31,7 +33,7 @@ Bu klasör, canlı uygulamayı değiştirmeden **ayrı bir test uygulaması** ç
         TML_E5_ONNX_SHA256 = "<hf_yayin.json'daki TML_E5_ONNX_SHA256>"
         # HF_TOKEN = "..."   # yalnızca gizli depo için (okuma yetkili belirteç yeterli)
         ```
-   4. Bu klasördeki `requirements.txt` kullanılır: 2.1 bağımlılıkları + `onnxruntime` + `tokenizers`.
+   4. Bu klasördeki `requirements.txt` kullanılır: 2.1 bağımlılıkları + `onnxruntime` + `tokenizers` + hafif BERTopic.
    5. Canlı uygulama (`main`, `turkmetinlab.streamlit.app`) etkilenmez.
 
 ## Kaynak sınırları ve güvenlik
