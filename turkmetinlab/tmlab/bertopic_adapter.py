@@ -32,12 +32,13 @@ def run(documents, embeddings, n_topics=8, min_df=2):
     docs, vec = validate(documents, embeddings, n_topics)
     try:
         from bertopic import BERTopic
+        from bertopic.dimensionality import BaseDimensionalityReduction
     except ImportError as exc:
         raise RuntimeError("BERTopic isteğe bağlı ortamda kurulu değil") from exc
     from pandas import DataFrame
     model = BERTopic(
         embedding_model=None,
-        umap_model=None,  # Uses library default if None; see optional environment validation.
+        umap_model=BaseDimensionalityReduction(),  # E5 dimensions retained; no UMAP.
         hdbscan_model=KMeans(n_clusters=n_topics, random_state=42, n_init=10),
         vectorizer_model=CountVectorizer(lowercase=True, token_pattern=r"(?u)\b\w\w+\b",
                                          min_df=min_df),
