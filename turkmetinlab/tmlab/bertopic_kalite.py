@@ -5,35 +5,48 @@ Yalnızca araştırma/veri sahibi tarafından sağlanan gerçek E5 vektörleri i
 from __future__ import annotations
 import argparse
 import json
+import re
+from collections import Counter
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 def _npmi(topics, texts):
-    """Belge seviyesinde NPMI; görülmeyen çift -1, tekdüze eşlik eden çift +1."""
-    tokens = [set(t.lower().split()) for t in texts]
-    n = len(tokens)
-    vals = []
-    for words in topics:
+    """Belge-düzeyi NPMI; aynı Unicode sözcükleştirme tüm modeller için kullanılır."""
+    pattern = re.compile(r"(?u)\\b\\w\\w+\\b")
+    docs = [set(pattern.findall(t.casefold())) for t in texts]
+    n = len(docs)
+    if not n:
+        return None
+    vocab = set(w.casefold() for topic in topics for w in topic)
+    frequencies = Counter(w for doc in docs for w in doc if w in vocab)
+    cooccurrence = Counter()
+    for doc in docs:
+        found = sorted(doc & vocab)
+        for pos, a in enumerate(found):
+            for b in found[pos + 1:]:
+                cooccurrence[(a, b)] += 1
+    topic_scores = []
+    for topic in topics:
         scores = []
-        for i, a in enumerate(words):
-            for b in words[i+1:]:
-                da = sum(a in t for t in tokens)
-                db = sum(b in t for t in tokens)
-                dab = sum(a in t and b in t for t in tokens)
-                if not da or not db or not dab:
+        words = [w.casefold() for w in topic]
+        for pos, a in enumerate(words):
+            for b in words[pos + 1:]:
+                ab = cooccurrence[tuple(sorted((a, b)))]
+                if not ab or not frequencies[a] or not frequencies[b]:
                     scores.append(-1.0)
-                elif dab == n:
+                    continue
+                p_ab = ab / n
+                if p_ab == 1.0:
                     scores.append(1.0)
                 else:
-                    pab = dab / n
-                    scores.append(float(np.log(pab / ((da/n)*(db/n))) / -np.log(pab)))
+                    score = np.log(p_ab / ((frequencies[a]/n) * (frequencies[b]/n))) / -np.log(p_ab)
+                    scores.append(float(np.clip(score, -1.0, 1.0)))
         if scores:
-            vals.append(float(np.mean(scores)))
-    return float(np.mean(vals)) if vals else None
+            topic_scores.append(float(np.mean(scores)))
+    return float(np.mean(topic_scores)) if topic_scores else None
 
 def _diversity(topics):
     words = [w for t in topics for w in t]
@@ -44,7 +57,7 @@ def compare(texts, embeddings, k=5, seed=42, top_n=10):
     from .bertopic_adapter import run
     texts = list(texts)
     vec = np.asarray(embeddings, dtype=np.float32)
-    if len(texts) < 10 or not (2 <= k <= min(30,len(texts)//3)):
+    if not (10 <= len(texts) <= 500) or not (2 <= k <= min(30,len(texts)//3)):
         raise ValueError("10+ belge ve belge sayısına uygun konu sayısı gerekli")
     if vec.ndim != 2 or vec.shape[0] != len(texts) or not np.isfinite(vec).all():
         raise ValueError("Embedding matrisi geçersiz")
@@ -78,7 +91,7 @@ def compare(texts, embeddings, k=5, seed=42, top_n=10):
                          "topic_counts":{str(i):int((labels2==i).sum()) for i in range(k)},
                          "npmi":_npmi(words,texts),"diversity":_diversity(words)}
     return {"n":len(texts),"k":k,"seed":seed,
-            "evaluation":"Keşifsel; NPMI whitespace sözcükleştirmesi kullanır. Uzman geçerliği/kararlılık ayrıca gerekli.",
+            "evaluation":"Keşifsel belge-düzeyi NPMI; karşılaştırma eşit k/top_n ile yapılır. Uzman geçerliği/kararlılık ayrıca gerekli.",
             "models":results}
 
 def main():
