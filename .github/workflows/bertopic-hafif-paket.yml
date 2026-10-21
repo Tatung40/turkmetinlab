@@ -1,39 +1,31 @@
-name: BERTopic hafif paket hazırla
+name: BERTopic lightweight wheel verification
 on:
   push:
     branches: [gelistirme-2.5-staging]
     paths:
       - "turkmetinlab/tools/prepare_bertopic_wheel.py"
       - ".github/workflows/bertopic-hafif-paket.yml"
-  workflow_dispatch:
-permissions:
-  contents: write
 jobs:
   wheel:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: gelistirme-2.5-staging
-          persist-credentials: true
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Official release wheel download
+          python-version: "3.12"
+      - name: Official wheel
         run: python -m pip download --no-deps --only-binary=:all: bertopic==0.17.4 -d /tmp/bertopic_upstream
-      - name: Verify checksum and build lightweight copy
+      - name: Verify and create lightweight wheel
         run: |
           python turkmetinlab/tools/prepare_bertopic_wheel.py \
             /tmp/bertopic_upstream/bertopic-0.17.4-py3-none-any.whl \
-            turkmetinlab/staging/vendor/bertopic-0.17.4-py3-none-any.whl
-      - name: Commit lightweight wheel to staging only
+            /tmp/bertopic-0.17.4-py3-none-any.whl
+      - name: Export audited wheel content
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add turkmetinlab/staging/vendor/bertopic-0.17.4-py3-none-any.whl
-          if git diff --cached --quiet; then
-            echo "Wheel already identical"
-          else
-            git commit -m "Vendor verified lightweight BERTopic wheel for ONNX/KMeans staging"
-            git push origin HEAD:gelistirme-2.5-staging
-          fi
+          python - <<'PY'
+          import base64
+          with open("/tmp/bertopic-0.17.4-py3-none-any.whl", "rb") as f:
+              data=base64.b64encode(f.read()).decode("ascii")
+          for i in range(0,len(data),6000):
+              print("TML_BLOB64_"+str(i//6000)+"="+data[i:i+6000])
+          PY
