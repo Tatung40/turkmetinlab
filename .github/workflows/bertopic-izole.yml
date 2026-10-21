@@ -7,6 +7,8 @@ on:
       - "turkmetinlab/tmlab/bertopic_adapter.py"
       - "turkmetinlab/tests/test_bertopic_adapter.py"
       - ".github/workflows/bertopic-izole.yml"
+      - "turkmetinlab/staging/requirements.txt"
+      - "turkmetinlab/app.py"
 jobs:
   bertopic:
     runs-on: ubuntu-latest
@@ -21,7 +23,13 @@ jobs:
       - name: İsteğe bağlı paketleri kur
         run: |
           python -m pip install --upgrade pip
-          python -m pip install bertopic numpy pandas scikit-learn pytest
+          python -m pip install -r turkmetinlab/staging/requirements.txt pytest
+          python -m pip check
+          python - <<'PY'
+          import bertopic, numpy, sklearn, streamlit, onnxruntime
+          print("BERTopic version:", bertopic.__version__)
+          print("numpy:", numpy.__version__, "sklearn:", sklearn.__version__)
+          PY
       - name: Birim testleri
         working-directory: turkmetinlab
         run: python -m pytest tests/test_bertopic_adapter.py -q
