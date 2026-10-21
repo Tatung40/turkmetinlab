@@ -4,7 +4,7 @@ from tmlab.bertopic_kalite import _npmi, _diversity, compare
 
 def test_metric_boundaries():
     assert _diversity([["a","b"],["a","c"]]) == pytest.approx(0.75)
-    assert _npmi([["a","b"]],["a b","a b","c"]) == pytest.approx(1.0)
+    assert _npmi([["aa","bb"]],["aa bb","aa bb","cc"]) == pytest.approx(1.0)
     assert _npmi([["aa","cc"]],["aa","cc","aa"]) == pytest.approx(-1.0)
     assert _npmi([["eğitim","öğretim"]],["Eğitim, öğretim.","Eğitim öğretim","araştırma"]) == pytest.approx(1.0)
 
