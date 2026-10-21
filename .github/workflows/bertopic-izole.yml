@@ -6,6 +6,7 @@ on:
     paths:
       - "turkmetinlab/tmlab/bertopic_adapter.py"
       - "turkmetinlab/tests/test_bertopic_adapter.py"
+      - "turkmetinlab/tests/test_bertopic_arayuz.py"
       - ".github/workflows/bertopic-izole.yml"
       - "turkmetinlab/staging/requirements.txt"
       - "turkmetinlab/app.py"
@@ -32,7 +33,7 @@ jobs:
           PY
       - name: Birim testleri
         working-directory: turkmetinlab
-        run: python -m pytest tests/test_bertopic_adapter.py -q
+        run: python -m pytest tests/test_bertopic_adapter.py tests/test_bertopic_arayuz.py -q
       - name: Gerçek BERTopic hesaplama
         working-directory: turkmetinlab
         run: |
