@@ -1265,6 +1265,10 @@ def _konu_sekmesi(bg: dict):
                     st.success(f"{len(docs_b)} belge; {len(topics_b)} konu satırı üretildi.")
                     st.subheader("Konu bilgileri ve en önemli sözcükler")
                     st.dataframe(topics_b, use_container_width=True, hide_index=True)
+                    if "Count" in topics_b and "Name" in topics_b:
+                        st.markdown("**Konu başına belge frekansı**")
+                        st.bar_chart(topics_b.set_index("Name")["Count"], horizontal=True)
+                        st.caption("Grafik konuya atanan belge sayısını gösterir; olasılık veya tutarlılık puanı değildir.")
                     st.subheader("Belge düzeyinde konu atamaları")
                     st.dataframe(docs_b, use_container_width=True, hide_index=True)
                     st.download_button("BERTopic konu tablosunu CSV indir", csv_bayt(topics_b, ";", True),
