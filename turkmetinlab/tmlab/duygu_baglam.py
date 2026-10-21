@@ -8,7 +8,7 @@ import re
 import unicodedata
 import pandas as pd
 
-WORD = re.compile(r"[^\\W_]+", re.UNICODE)
+WORD = re.compile(r"[^\W_]+", re.UNICODE)
 TR = str.maketrans({"I": "ı", "İ": "i"})
 
 def norm(value):
