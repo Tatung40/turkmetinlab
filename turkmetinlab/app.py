@@ -642,6 +642,22 @@ def ana():
             from tmlab import anlamsal_sekme
             anlamsal_sekme.goster(baglam, _hesapla, _bul, _tablo_goster, _md)
 
+    # Shared experimental social text controls; original data never overwritten.
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.subheader("Sosyal medya / tweet temizliği")
+            st.caption("Bu seçenekler yalnızca duygu modüllerine gönderilen metne uygulanır; "
+                       "orijinal yorumlar korunur. Emoji ve olumsuzluk ifadeleri varsayılan olarak kalır.")
+            sosyal_ac=st.checkbox("Tweet metinlerini duygu analizinden önce temizle",True,key="duygu_sosyal_ac")
+            mention_ac=st.checkbox("@kullanıcı adlarını kaldır",True,key="duygu_mention")
+            url_ac=st.checkbox("Bağlantıları kaldır",True,key="duygu_url")
+            hashtag_ac=st.checkbox("# işaretini kaldır, hashtag sözcüğünü koru",True,key="duygu_hashtag")
+            emoji_ac=st.checkbox("Emojileri kaldır (duygu bilgisi kaybolabilir)",False,key="duygu_emoji")
+            from tmlab.duygu_sosyal import clean_tweet
+            sosyal_metinler=[clean_tweet(t,mention_ac,url_ac,hashtag_ac,emoji_ac)
+                             for t in metinler] if sosyal_ac else metinler
+            duygu_anahtar=ozet(hazirlik_anahtari,sosyal_ac,mention_ac,url_ac,hashtag_ac,emoji_ac)
+
     # --- Experimental SWNetTR++ sentiment tab (staging only) -----------------
     if DENEYSEL_ANLAMSAL:
         with sekmeler[-2]:
@@ -654,13 +670,13 @@ def ana():
                     from tmlab import duygu as du
                     with st.spinner("SWNetTR++ yükleniyor ve metinler değerlendiriliyor…"):
                         lex = du.load_lexicon()
-                        st.session_state["swtr_sonuc"] = du.analyze_corpus(metinler, adlar, lex)
-                        st.session_state["swtr_veri_anahtari"] = hazirlik_anahtari
+                        st.session_state["swtr_sonuc"] = du.analyze_corpus(sosyal_metinler, adlar, lex)
+                        st.session_state["swtr_veri_anahtari"] = duygu_anahtar
                         st.session_state["swtr_sozluk_boyutu"] = len(lex)
                 except (OSError, ValueError, TimeoutError) as exc:
                     st.session_state.pop("swtr_sonuc", None)
                     st.error("Duygu sözlüğüne ulaşılamadı veya dosya okunamadı. Tekrar deneyin.")
-            if st.session_state.get("swtr_veri_anahtari") == hazirlik_anahtari and "swtr_sonuc" in st.session_state:
+            if st.session_state.get("swtr_veri_anahtari") == duygu_anahtar and "swtr_sonuc" in st.session_state:
                 summary, detail = st.session_state["swtr_sonuc"]
                 st.caption(f"Yüklenen sözlük girdisi: {st.session_state.get('swtr_sozluk_boyutu', 0):,}. "
                            "Sözlükte bulunmayan sözcükler duygu açısından nötr kabul edilmez.")
@@ -718,23 +734,52 @@ def ana():
                     help="Sekiz duygu ayrı sütunlardaysa ilgili sütunları seçin. Boş, 0 ve Hayır değerleri sayılmaz.")
                 st.caption("TES-Lex 20.121 kayıtlık gerçek dosyasında duygu etiketi, yoğunluk ve polarite "
                            "alanları ayrı tanımlıdır. Varsayılan seçimleri kaynak sütunlarına göre kontrol edin.")
+                tes_filtre=st.checkbox("İşlev sözcüklerini filtrele (deneysel)",True,
+                    key="teslex_filtre",help="ve, için, en, çok gibi eşleşmeleri kaldırır; ham analiz de saklanır.")
                 if st.button("TES-Lex analizi çalıştır",key="teslex_go"):
                     from tmlab import teslex
                     try:
                         lex=teslex.compile_lexicon(frame,w,p,None if em=="(yok)" else em,
                                                     None if intensity=="(yok)" else intensity,
                                                     emotion_columns=emotion_columns)
-                        st.session_state["teslex_results"] = teslex.analyze_corpus(metinler,adlar,lex)
-                        st.session_state["teslex_result_key"] = hazirlik_anahtari
+                        from tmlab.duygu_sosyal import filtered_lexicon
+                        raw_results=teslex.analyze_corpus(sosyal_metinler,adlar,lex)
+                        clean_results=(teslex.analyze_corpus(sosyal_metinler,adlar,filtered_lexicon(lex))
+                                       if tes_filtre else raw_results)
+                        st.session_state["teslex_results_raw"] = raw_results
+                        st.session_state["teslex_results"] = clean_results
+                        st.session_state["teslex_filter_key"] = tes_filtre
+                        st.session_state["teslex_result_key"] = duygu_anahtar
                         st.session_state["teslex_entry_count"] = len(lex)
                     except ValueError as exc:
                         st.error("TES-Lex sütun eşleştirmesi geçerli değil.")
-                if st.session_state.get("teslex_result_key")==hazirlik_anahtari and "teslex_results" in st.session_state:
+                if st.session_state.get("teslex_result_key")==duygu_anahtar and "teslex_results" in st.session_state:
                     summary,details=st.session_state["teslex_results"]
                     st.caption(f"Çözümlenen sözlük girdisi: {st.session_state.get('teslex_entry_count',0):,}. "
                                "Bunlar bağlamsal duygu sınıfları değil, sözlük eşleşmeleridir.")
                     st.dataframe(pd.DataFrame(summary),use_container_width=True,hide_index=True)
                     st.dataframe(pd.DataFrame(details),use_container_width=True,hide_index=True)
+                    from tmlab.duygu_sosyal import contribution_table,excluded_contributions
+                    rawsum,rawdetail=st.session_state.get("teslex_results_raw",(summary,details))
+                    if st.session_state.get("teslex_filter_key"):
+                        st.markdown("**Ham / filtrelenmiş TES-Lex belge karşılaştırması**")
+                        st.dataframe(pd.DataFrame([{"Belge":x["Belge"],
+                            "Ham eşleşme":x["Eşleşen ifade"],"Filtreli eşleşme":y["Eşleşen ifade"],
+                            "Ham kapsama (%)":x["Kapsama (%)"],"Filtreli kapsama (%)":y["Kapsama (%)"]}
+                            for x,y in zip(rawsum,summary)]),use_container_width=True,hide_index=True)
+                        removed=excluded_contributions(rawdetail,details)
+                        if removed:
+                            st.dataframe(pd.DataFrame(removed),use_container_width=True,hide_index=True)
+                            st.download_button("Filtrelenen eşleşmeleri CSV indir",
+                                csv_bayt(pd.DataFrame(removed),";",True),"teslex_filtrelenen.csv","text/csv",
+                                key="teslex_removed_csv",on_click="ignore")
+                    contribution=contribution_table(details)
+                    if not contribution.empty:
+                        st.markdown("**Duyguya katkı yapan sözcükler (frekans / yüzde)**")
+                        st.dataframe(contribution,use_container_width=True,hide_index=True)
+                        st.download_button("Duygu katkısı CSV indir",csv_bayt(contribution,";",True),
+                            "teslex_duygu_katki.csv","text/csv",key="teslex_contrib_csv",on_click="ignore")
+
                     st.download_button("TES-Lex belge sonuçlarını indir",csv_bayt(pd.DataFrame(summary),";",True),
                         "teslex_belgeler.csv","text/csv",key="teslex_summary_csv",on_click="ignore")
                     if details:
@@ -754,14 +799,14 @@ def ana():
                     from tmlab import electra_duygu as el
                     with st.spinner("INT8 model indiriliyor / CPU üzerinde çalışıyor…"):
                         state=el.load_model()
-                        result=el.classify_corpus(metinler,adlar,state)
+                        result=el.classify_corpus(sosyal_metinler,adlar,state)
                         st.session_state["electra_results"] = result
-                        st.session_state["electra_data_key"] = hazirlik_anahtari
+                        st.session_state["electra_data_key"] = duygu_anahtar
                 except (ValueError, OSError, TimeoutError, ImportError) as exc:
                     st.session_state.pop("electra_results",None)
                     st.error("ELECTRA model dosyaları yüklenemedi veya ONNX çıkarımı yapılamadı. "
                              "Bu deneysel modül şu an kullanılamıyor.")
-            if st.session_state.get("electra_data_key")==hazirlik_anahtari and "electra_results" in st.session_state:
+            if st.session_state.get("electra_data_key")==duygu_anahtar and "electra_results" in st.session_state:
                 tab=pd.DataFrame(st.session_state["electra_results"])
                 st.dataframe(tab,use_container_width=True,hide_index=True)
                 st.download_button("ELECTRA sonuçlarını CSV indir",csv_bayt(tab,";",True),
@@ -777,7 +822,7 @@ def ana():
             st.subheader("Üç yöntemi karşılaştır · Belge düzeyi")
             st.caption("SWNetTR++ ve TES-Lex sözlük göstergeleri ile ELECTRA sınıflandırması "
                        "farklı ölçütlerdir; sayısal skorlar birbirleriyle eşdeğer değildir.")
-            has_sw=(st.session_state.get("swtr_veri_anahtari")==hazirlik_anahtari
+            has_sw=(st.session_state.get("swtr_veri_anahtari")==duygu_anahtar
                     and "swtr_sonuc" in st.session_state)
             has_tes=(st.session_state.get("teslex_result_key")==hazirlik_anahtari
                      and "teslex_results" in st.session_state)
