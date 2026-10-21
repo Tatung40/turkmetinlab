@@ -855,6 +855,42 @@ def ana():
                 except ValueError:
                     st.warning("Farklı veri sürümlerinin çıktıları karşılaştırılamıyor; analizleri yeniden çalıştırın.")
 
+    # --- Dataset-independent sentiment evidence audit (staging) ------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("Otomatik bağlam ve kanıt denetimi")
+            st.caption("Veri alanına göre sözcükleri elle seçmeyin. Sık eşleşmeler yalnızca "
+                       "incelemeye adaydır, otomatik silinmez. Eşikler deneysel ve kalibre edilmemiştir.")
+            from tmlab import duygu_baglam as db
+            active_sw = (st.session_state.get("swtr_veri_anahtari") == duygu_anahtar
+                         and "swtr_sonuc" in st.session_state)
+            active_tes = (st.session_state.get("teslex_result_key") == duygu_anahtar
+                          and "teslex_results" in st.session_state)
+            active_el = (st.session_state.get("electra_data_key") == duygu_anahtar
+                         and "electra_results" in st.session_state)
+            if active_sw or active_tes or active_el:
+                sw_data = st.session_state["swtr_sonuc"][0] if active_sw else None
+                tes_data = st.session_state["teslex_results"][0] if active_tes else None
+                el_data = st.session_state["electra_results"] if active_el else None
+                audit = db.evaluate(adlar, sw_data, tes_data, el_data)
+                st.dataframe(audit, use_container_width=True, hide_index=True)
+                st.download_button("Kanıt denetimini CSV indir", csv_bayt(audit, ";", True),
+                                   "duygu_kanit_denetimi.csv", "text/csv",
+                                   key="duygu_kanit_csv", on_click="ignore")
+                if active_tes:
+                    details = st.session_state["teslex_results"][1]
+                    candidates = db.frequent_evidence(sosyal_metinler, details)
+                    st.markdown("**Yaygın sözlük eşleşmeleri — inceleme listesi**")
+                    st.dataframe(candidates, use_container_width=True, hide_index=True)
+                    st.download_button("Yaygın eşleşmeleri CSV indir",
+                                       csv_bayt(candidates, ";", True),
+                                       "duygu_baglam_adaylari.csv", "text/csv",
+                                       key="duygu_aday_csv", on_click="ignore")
+            else:
+                st.info("Önce yukarıdan en az bir duygu yöntemini çalıştırın.")
+            st.markdown("[Ayrıntılı duygu analizi kılavuzu](https://github.com/Tatung40/turkmetinlab/blob/gelistirme-2.5-staging/turkmetinlab/docs/DUYGU_ANALIZI_KILAVUZU_2_5.md)")
+
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
         st.subheader("Kelime bulutu")
