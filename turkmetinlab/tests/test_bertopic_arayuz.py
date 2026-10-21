@@ -27,6 +27,13 @@ def test_bertopic_pipeline_in_staging(monkeypatch,tmp_path):
     for i in range(30):
         rows.append({"kimlik":f"yorum{i+1}", "metin":vocab[i%3]+f" araştırma {i%5}"})
     blob=pd.DataFrame(rows).to_csv(index=False).encode("utf-8")
+    # Debug the actual topic computation before Streamlit's generic error wrapper.
+    from tmlab.anlamsal import E5Kodlayici, BELGE_ONEKI
+    from tmlab.bertopic_adapter import run as topic_run
+    texts = [entry["metin"] for entry in rows]
+    vectors = E5Kodlayici(folder).kodla(texts, BELGE_ONEKI)
+    _, labels, info = topic_run(texts, vectors, n_topics=3, min_df=2)
+    assert len(labels) == len(texts)
     at=AppTest.from_file(ENTRY,default_timeout=300).run()
     assert not at.exception,[e.value for e in at.exception]
     at.radio(key="kaynak").set_value("Kendi dosyamı yükle").run()
