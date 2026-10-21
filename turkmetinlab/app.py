@@ -283,6 +283,11 @@ def ana():
         durak_genel = st.checkbox(f"Türkçe durak sözcükleri çıkar ({len(GENEL_DURAK_SOZCUKLER)} sözcük)", True,
                                   key="durak_genel",
                                   help="ve, ile, bu, için, olarak gibi tek başına anlam taşımayan sözcükler.")
+        durak_genisletilmis = st.checkbox(
+            "Genişletilmiş Türkçe durak sözcük adaylarını da çıkar (deneysel)",
+            False, key="durak_genisletilmis", disabled=not DENEYSEL_ANLAMSAL,
+            help="Staging'de ayrı bir deneme listesi. Olumsuzluk bildiren sözcükleri çıkarmaz; "
+                 "504 sözcüklük dış kaynağın tamamı değildir.")
         durak_akademik = st.checkbox("Akademik kalıp sözcükleri de çıkar", False, key="durak_akademik",
                                      help="çalışma, araştırma, amaç, bulgular, sonuç, yöntem gibi özetlerde çok sık "
                                           "geçen sözcükler. Araştırma sorunuza göre karar verin.")
@@ -334,7 +339,9 @@ def ana():
             kucuk_harf=kucuk_harf, kisaltmalari_koru=kisaltma and kucuk_harf, url_eposta_kaldir=url,
             sayilari_kaldir=sayilar, kesme_isareti=kesme, sapkali_harf_normallestir=sapka,
             tireli_birlesik_koru=tire, durak_sozcuk_genel=durak_genel, durak_sozcuk_akademik=durak_akademik,
-            ozel_durak_sozcukler=ozel_durak_sozcukleri_ayristir(ozel_metin, sapka), min_uzunluk=int(min_uzunluk),
+            ozel_durak_sozcukler=tuple(sorted(set(ozel_durak_sozcukleri_ayristir(ozel_metin, sapka)) |
+                (set(__import__("tmlab.stopwords_genis", fromlist=["EK_STOPWORD"]).EK_STOPWORD)
+                 if DENEYSEL_ANLAMSAL and durak_genisletilmis else set()))), min_uzunluk=int(min_uzunluk),
             bolutleme=bolutleme, satir_sonu_sinir=satir_sonu, lemmatizasyon=bool(lemma and lemma_var),
             durak_sozcuk_ingilizce=durak_ingilizce,
         )
