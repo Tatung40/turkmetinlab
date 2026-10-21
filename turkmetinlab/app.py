@@ -770,6 +770,46 @@ def ana():
                     st.warning("Bazı belgeler 64 tokenda kesildi. Uzun metinlerde bu etiketleri "
                                "belgenin tamamının duygu sınıfı olarak yorumlamayın.")
 
+    # --- Descriptive cross-method comparison (staging-only) ------------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("Üç yöntemi karşılaştır · Belge düzeyi")
+            st.caption("SWNetTR++ ve TES-Lex sözlük göstergeleri ile ELECTRA sınıflandırması "
+                       "farklı ölçütlerdir; sayısal skorlar birbirleriyle eşdeğer değildir.")
+            has_sw=(st.session_state.get("swtr_veri_anahtari")==hazirlik_anahtari
+                    and "swtr_sonuc" in st.session_state)
+            has_tes=(st.session_state.get("teslex_result_key")==hazirlik_anahtari
+                     and "teslex_results" in st.session_state)
+            has_el=(st.session_state.get("electra_data_key")==hazirlik_anahtari
+                    and "electra_results" in st.session_state)
+            available=sum((bool(has_sw),bool(has_tes),bool(has_el)))
+            st.caption(f"Hazır yöntem sayısı: {available}/3. Üstteki yöntemleri aynı veriyle "
+                       "hesaplayıp ardından bu karşılaştırmayı açın.")
+            if available:
+                from tmlab.duygu_karsilastirma import birlestir, ozetsayim
+                try:
+                    sw=st.session_state["swtr_sonuc"][0] if has_sw else None
+                    te=st.session_state["teslex_results"][0] if has_tes else None
+                    el=st.session_state["electra_results"] if has_el else None
+                    combined=birlestir(adlar,sw,te,el)
+                    st.dataframe(combined,use_container_width=True,hide_index=True)
+                    st.download_button("Karşılaştırmayı CSV indir",csv_bayt(combined,";",True),
+                                       "duygu_yontem_karsilastirma.csv", "text/csv",
+                                       key="duygu_kars_csv",on_click="ignore")
+                    freq=ozetsayim(combined)
+                    if not freq.empty:
+                        st.markdown("**ELECTRA tahmin dağılımı (gerçek etiketlerle doğruluk değil)**")
+                        st.dataframe(freq,use_container_width=True,hide_index=True)
+                        st.download_button("Frekans/yüzde CSV indir",csv_bayt(freq,";",True),
+                                           "electra_frekans_yuzde.csv","text/csv",
+                                           key="duygu_freq_csv",on_click="ignore")
+                    if has_sw and has_tes and has_el:
+                        st.info("Üç yöntem birlikte görüntüleniyor. Bu tablo yöntemler arası "
+                                "uyuşmayı bilimsel olarak kanıtlamaz; insan etiketli geçerlik çalışması gerekir.")
+                except ValueError:
+                    st.warning("Farklı veri sürümlerinin çıktıları karşılaştırılamıyor; analizleri yeniden çalıştırın.")
+
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
         st.subheader("Kelime bulutu")
