@@ -28,6 +28,9 @@ jobs:
           python -m pip check
           python - <<'PY'
           import bertopic, numpy, sklearn, streamlit, onnxruntime
+          import importlib.util
+          assert importlib.util.find_spec('torch') is None
+          assert importlib.util.find_spec('sentence_transformers') is None
           print("BERTopic version:", bertopic.__version__)
           print("numpy:", numpy.__version__, "sklearn:", sklearn.__version__)
           PY
