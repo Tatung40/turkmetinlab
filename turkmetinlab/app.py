@@ -696,11 +696,13 @@ def ana():
                 st.caption(f"Sözlük kaydı: {len(frame):,} · Sütunlar: {', '.join(map(str, fields))}")
                 def guess(keys):
                     for index,c in enumerate(fields):
-                        if any(key in str(c).casefold() for key in keys):
+                        title=str(c).replace("\\n", " ").replace("\n"," ").casefold()
+                        if any(key in title for key in keys):
                             return index
                     return 0
-                w=st.selectbox("Kelime sütunu",fields,index=guess(["word","kelime","sözcük"]),key="teslex_word")
-                p=st.selectbox("Polarite sütunu",fields,index=guess(["polar","sentiment","yönelim"]),key="teslex_pol")
+                w=st.selectbox("Kelime sütunu",fields,index=guess(["kelime (word)","word","kelime"]),key="teslex_word")
+                p=st.selectbox("Polarite sütunu",fields,
+                    index=guess(["sentiment labeling -", "pozitif/negatif/nötr", "polarite"]),key="teslex_pol")
                 optional=["(yok)"]+fields
                 em=st.selectbox("Sekiz duyguyu içeren sütun",optional,
                     index=1+guess(["emotion","duygu"]) if any(
@@ -714,8 +716,8 @@ def ana():
                     "Ayrı duygu sütunları (varsa)", fields, default=[],
                     key="teslex_emotion_columns",
                     help="Sekiz duygu ayrı sütunlardaysa ilgili sütunları seçin. Boş, 0 ve Hayır değerleri sayılmaz.")
-                st.caption("Sütun adlarını kontrol edin; yanlış eşleştirme sonuçları geçersiz kılar. "
-                           "Ayrı duygu sütunları seçildiğinde hepsi birlikte değerlendirilir.")
+                st.caption("TES-Lex 20.121 kayıtlık gerçek dosyasında duygu etiketi, yoğunluk ve polarite "
+                           "alanları ayrı tanımlıdır. Varsayılan seçimleri kaynak sütunlarına göre kontrol edin.")
                 if st.button("TES-Lex analizi çalıştır",key="teslex_go"):
                     from tmlab import teslex
                     try:
