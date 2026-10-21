@@ -5,11 +5,8 @@ Model card: 13.7M parameters, 3 classes, 64-token training limit.
 No user text sent to external services. We download public model artifacts only.
 """
 from __future__ import annotations
-from pathlib import Path
 import json
-import os
 import urllib.request
-import tempfile
 import numpy as np
 from functools import lru_cache
 
@@ -38,8 +35,7 @@ def load_model():
     metadata = json.loads(_fetch("config.json",MAX_SIZES["config.json"]))
     labels = {int(k):str(v) for k,v in metadata.get("id2label",{}).items()}
     if not labels: labels = dict(enumerate(DEFAULT_LABELS))
-    # A temp model file is needed by ORT on some CPUs. It stores public weights, never user text.
-    # Use bytes in-memory first.
+    # Load public model weights entirely in memory; no disk writes.
     model_bytes=_fetch("onnx/model_quantized.onnx",MAX_SIZES["onnx/model_quantized.onnx"])
     try:
         session=ort.InferenceSession(model_bytes,providers=["CPUExecutionProvider"])
