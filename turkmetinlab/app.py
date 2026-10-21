@@ -1233,9 +1233,9 @@ def _konu_sekmesi(bg: dict):
                         st.error("BERTopic sunucuya henüz kurulmamış. İzole gerçek çalışma testi ve "
                                  "bağımlılık doğrulaması tamamlanmadan etkinleştirilmeyecek.")
                     else:
-                        kaynak = an.ModelKaynagi.varsayilan() if hasattr(an.ModelKaynagi, "varsayilan") else None
-                        if kaynak is None:
-                            st.error("E5 kaynak ayarları henüz BERTopic sekmesine bağlanamadı.")
+                        kaynak = an.ModelKaynagi.ortamdan()
+                        if kaynak.eksik():
+                            st.error(kaynak.eksik())
                         else:
                             kod = ans._model(kaynak)
                             if kod is not None:
