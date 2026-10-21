@@ -388,6 +388,7 @@ def ana():
             with st.expander("🔒 Verileriniz nasıl işleniyor?"):
                 st.markdown(GIZLILIK)
             st.markdown(KILAVUZ)
+            st.markdown("[Tüm analizlerin ayrıntılı yöntem kılavuzu](https://github.com/Tatung40/turkmetinlab/blob/gelistirme-2.5-staging/turkmetinlab/docs/ANALIZ_YONTEMLERI_KILAVUZU_2_5.md)")
         for i, sk in enumerate(sekmeler[1:], start=1):
             with sk:
                 if veri_goster and i == 1:
