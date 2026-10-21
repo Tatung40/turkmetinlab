@@ -1,6 +1,12 @@
 name: BERTopic izole fizibilite
 on:
   workflow_dispatch:
+  push:
+    branches: [gelistirme-2.5-staging]
+    paths:
+      - "turkmetinlab/tmlab/bertopic_adapter.py"
+      - "turkmetinlab/tests/test_bertopic_adapter.py"
+      - ".github/workflows/bertopic-izole.yml"
 jobs:
   bertopic:
     runs-on: ubuntu-latest
