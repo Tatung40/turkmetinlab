@@ -27,7 +27,7 @@ def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 9
                        "temperature": 0, "max_tokens": max_tokens, "stream": False}).encode("utf-8")
     if len(body) > 60000:
         raise ValueError("Model istemi çok uzun.")
-    if thinking is False:
+    if thinking is False and 'qwen3' in model.lower():
         # Qwen3 için düşünme metnini kapat; desteklemeyen sunucular bu alanı yok sayabilir.
         payload = json.loads(body)
         payload["messages"][0]["content"] = "/no_think\n" + prompt
