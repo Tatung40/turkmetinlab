@@ -145,6 +145,17 @@ if accepted:
         with st.expander("Tek çağrılık kategori/tema komutu", expanded=True):
             st.code(st.session_state.nitel_hierarchy_prompt)
             st.caption("Bu istem özgün görüşmeleri değil, yalnızca kod adları ve sayıları içerir. Kod adları yine hassas bilgi barındırabilir.")
+        if st.button("Yerel modelle kategori ve temaları otomatik öner"):
+            try:
+                response_auto = local_completion(st.session_state.nitel_hierarchy_prompt,
+                                                 local_url, local_name)
+                grouping_auto = validate_hierarchy_response(
+                    response_auto, {r["code"] for r in accepted})
+                st.session_state.nitel_accepted = apply_hierarchy(accepted, grouping_auto)
+                st.success("Kategori ve temalar model tarafından önerildi. Araştırmacı onayı gereklidir.")
+                st.rerun()
+            except Exception:
+                st.error("Yerel model kategorileri/temaları uygun JSON biçiminde döndürmedi veya erişilemedi.")
         st.caption("Model cevabını buraya yapıştırın; tüm kodlar korunmadan yeni hiyerarşi kabul edilmez.")
         response = st.text_area("Modelden gelen hiyerarşi JSON", key="nitel_hierarchy_response")
         if st.button("Hiyerarşi önerisini uygula", disabled=not bool(response.strip())):
