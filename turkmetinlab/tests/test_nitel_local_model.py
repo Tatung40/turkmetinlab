@@ -44,4 +44,4 @@ def test_qwen3_no_think_and_other_models_unchanged(monkeypatch):
     endpoint="http://127.0.0.1:11434/v1/chat/completions"
     mod.local_completion("Deneme",endpoint,"qwen3:4b")
     mod.local_completion("Deneme",endpoint,"another-model")
-    assert captured==["/no_think\\nDeneme","Deneme"]
+    assert captured==["/no_think\nDeneme","Deneme"]
