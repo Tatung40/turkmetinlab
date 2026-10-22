@@ -21,6 +21,7 @@ on:
       - 'turkmetinlab/scripts/nitel_gercek_model_pilot.py'
       - 'turkmetinlab/tests/fixtures/nitel_20_gorusme.csv'
       - 'turkmetinlab/tmlab/nitel_local_model.py'
+      - 'turkmetinlab/tests/test_nitel_local_model.py'
       - 'turkmetinlab/tests/test_nitel_semantik.py'
       - 'turkmetinlab/tests/test_nitel_ucretsiz.py'
       - 'turkmetinlab/tests/test_nitel_hiyerarsi.py'
