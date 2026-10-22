@@ -29,6 +29,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--input",default="tests/fixtures/nitel_20_gorusme.csv")
     ap.add_argument("--model",required=True)
+    ap.add_argument("--limit",type=int,default=20,help="Önce 1 kayıtla bağlantıyı deneyin; en çok 20.")
     ap.add_argument("--output",default="nitel_pilot_kodlar.csv")
     ap.add_argument("--endpoint",default="http://127.0.0.1:11434/v1/chat/completions")
     args=ap.parse_args()
@@ -39,7 +40,9 @@ def main():
     def complete(prompt,*,hierarchy=False):
         return local_completion(prompt,args.endpoint,args.model,
             timeout=180,max_tokens=3072 if hierarchy else 768)
-    report=run([(r["katilimci_id"],r["metin"]) for r in rows],complete)
+    if not (1 <= args.limit <= 20):
+        raise SystemExit("--limit 1 ile 20 arasında olmalı.")
+    report=run([(r["katilimci_id"],r["metin"]) for r in rows[:args.limit]],complete)
     output=Path(args.output)
     output.parent.mkdir(parents=True,exist_ok=True)
     columns=("participant_id","quote","code","category","theme","start","end")
