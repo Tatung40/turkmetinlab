@@ -11,6 +11,7 @@ from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_res
 from tmlab.nitel_local_model import local_completion
 from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
 from tmlab.nitel_semantik import from_e5
+from tmlab.nitel_toplu import batch_analyze, regroup_once
 from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
@@ -45,6 +46,46 @@ if uploaded is not None:
                 st.caption(f"Geçerli kayıt: {len(records)}. Metinleri üçüncü taraf hizmetlere göndermiyoruz.")
     except Exception:
         st.error("CSV okunamadı; UTF-8 kodlama ve sütunları denetleyin.")
+
+if records:
+    with st.expander("Toplu otomatik nitel kod önerileri — ücretsiz yerel model"):
+        st.caption("Bir işlemde en çok 200 benzersiz katılımcı. Yerel model her kaydı bir kez işler; öneriler insan onayı gerektirir. "
+                   "Streamlit Cloud bilgisayarınızdaki yerel modele bağlanamaz.")
+        n_batch = st.number_input("Bu işlemde işlenecek ilk kayıt sayısı", min_value=1,
+                                  max_value=min(200,len(records)), value=min(20,len(records)))
+        if st.button("Seçilen kayıtları otomatik kodla"):
+            bar = st.progress(0.0)
+            def _advance(done,total):
+                bar.progress(done/total)
+            try:
+                subset = records[:int(n_batch)]
+                outcome = batch_analyze(
+                    subset, lambda p: local_completion(p, local_url, local_name),
+                    codebook.splitlines(), progress=_advance)
+                st.session_state.nitel_batch_result = outcome
+                st.success(f"{outcome['processed']} kayıt işlendi; {len(outcome['proposals'])} öneri ve "
+                           f"{len(outcome['errors'])} uyarı üretildi.")
+            except (ValueError, TypeError) as exc:
+                st.error(str(exc))
+        report = st.session_state.get("nitel_batch_result")
+        if report:
+            st.dataframe(pd.DataFrame(report["proposals"]), use_container_width=True)
+            if report["errors"]:
+                st.dataframe(pd.DataFrame(report["errors"]), use_container_width=True)
+            if st.button("Kodlardan otomatik kategori ve tema öner (tek model çağrısı)",
+                         disabled=not bool(report["proposals"])):
+                try:
+                    st.session_state.nitel_batch_result = regroup_once(
+                        report,lambda p: local_completion(p,local_url,local_name))
+                    st.success("Toplu kategori ve tema önerileri oluşturuldu.")
+                    st.rerun()
+                except Exception:
+                    st.error("Model hiyerarşiyi eksik ya da geçersiz döndürdü; eski sonuçlar korundu.")
+            if st.button("Tüm toplu önerileri araştırmacı denetimine ekle"):
+                st.session_state.nitel_pending = list(report["proposals"])
+                st.success("Öneriler denetim kuyruğuna eklendi. Onaylanmadan raporlanmaz.")
+            st.download_button("Toplu önerileri CSV indir", pd.DataFrame(report["proposals"]).to_csv(
+                index=False).encode("utf-8-sig"), file_name="nitel_toplu_taslak.csv", mime="text/csv")
 
 if records:
     ids = [r[0] for r in records]
