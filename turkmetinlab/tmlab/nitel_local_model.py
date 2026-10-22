@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 MAX_RESPONSE_BYTES = 65536
 
-def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 90, max_tokens: int = 650) -> str:
+def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 90, max_tokens: int = 650, thinking: bool = False) -> str:
     parsed = urlparse(endpoint)
     if parsed.scheme != "http" or parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValueError("Yerel model adresi yalnızca http://127.0.0.1:PORT/v1/chat/completions olabilir.")
@@ -27,6 +27,11 @@ def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 9
                        "temperature": 0, "max_tokens": max_tokens, "stream": False}).encode("utf-8")
     if len(body) > 60000:
         raise ValueError("Model istemi çok uzun.")
+    if thinking is False:
+        # Qwen3 için düşünme metnini kapat; desteklemeyen sunucular bu alanı yok sayabilir.
+        payload = json.loads(body)
+        payload["messages"][0]["content"] = "/no_think\n" + prompt
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = Request(endpoint, data=body, headers={"Content-Type": "application/json"}, method="POST")
     with urlopen(req, timeout=timeout) as response:
         payload = response.read(MAX_RESPONSE_BYTES + 1)
