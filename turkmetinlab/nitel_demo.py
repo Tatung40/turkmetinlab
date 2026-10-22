@@ -101,7 +101,8 @@ if accepted:
     st.dataframe(pd.DataFrame(accepted), use_container_width=True)
     rows = [EvidenceCode(**r) for r in accepted]
     st.subheader("Kodların katılımcı frekansı")
-    st.dataframe(pd.DataFrame(frequencies(rows)), use_container_width=True)
+    universe = [pid for pid, _ in records] if records else sorted({row.participant_id for row in rows})
+    st.dataframe(pd.DataFrame(frequencies(rows, universe)), use_container_width=True)
     st.download_button("Onaylı kayıtları CSV indir",
         data=pd.DataFrame(accepted).to_csv(index=False).encode("utf-8-sig"),
         file_name="nitel_onayli_kodlar.csv",mime="text/csv")
