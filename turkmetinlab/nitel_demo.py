@@ -59,9 +59,11 @@ else:
     pid = st.text_input("Katılımcı ID", "T01")
     source = st.text_area("Katılımcının özgün ifadesi", height=135)
 
+detail = st.selectbox("Kodlama ayrıntı düzeyi", ["Dengeli", "Ayrıntılı", "Özetleyici"], index=0,
+    help="Yöntemsel doğruluk garantisi değildir; modelden istenen kodlama ayrıntısını değiştirir.")
 codebook = st.text_area("İsteğe bağlı kod kitabı (her satırda bir kod)", "")
 try:
-    prompt = prepare_prompt(source, codebook.splitlines()) if source.strip() else ""
+    prompt = prepare_prompt(source, codebook.splitlines(), detail=detail) if source.strip() else ""
 except ValueError as ex:
     st.warning(str(ex))
     prompt = ""
@@ -100,7 +102,7 @@ if records:
                 subset = records[:int(n_batch)]
                 outcome = batch_analyze(
                     subset, lambda p: local_completion(p, local_url, local_name),
-                    codebook.splitlines(), progress=_advance)
+                    codebook.splitlines(), progress=_advance, detail=detail)
                 st.session_state.nitel_batch_result = outcome
                 st.success(f"{outcome['processed']} kayıt işlendi; {len(outcome['proposals'])} öneri ve "
                            f"{len(outcome['errors'])} uyarı üretildi.")
