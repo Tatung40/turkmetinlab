@@ -48,6 +48,44 @@ if uploaded is not None:
         st.error("CSV okunamadı; UTF-8 kodlama ve sütunları denetleyin.")
 
 if records:
+    ids = [r[0] for r in records]
+    if len(ids) != len(set(ids)):
+        st.warning("Aynı katılımcı birden fazla satırda bulunuyor; frekanslar benzersiz kimliğe göre hesaplanacak.")
+    chosen = st.selectbox("Analiz edilecek kayıt", range(len(records)),
+                          format_func=lambda i: f"{records[i][0]} — {records[i][1][:75]}")
+    pid, source = records[chosen]
+else:
+    pid = st.text_input("Katılımcı ID", "T01")
+    source = st.text_area("Katılımcının özgün ifadesi", height=135)
+
+codebook = st.text_area("İsteğe bağlı kod kitabı (her satırda bir kod)", "")
+try:
+    prompt = prepare_prompt(source, codebook.splitlines()) if source.strip() else ""
+except ValueError as ex:
+    st.warning(str(ex))
+    prompt = ""
+if prompt:
+    with st.expander("Model için kısa komutu görüntüle / kopyala"):
+        st.code(prompt, language="text")
+        st.caption("Üçüncü taraf modele kişisel veri göndermeden önce anonimleştirin ve gerekli izinleri alın.")
+
+with st.expander("İsteğe bağlı yerel model bağlantısı — ücretsiz / özel"):
+    st.caption("Yalnızca uygulama ile model AYNI bilgisayarda çalışıyorsa kullanılabilir. "
+               "Streamlit Cloud bu bağlantıyla sizin bilgisayarınızdaki modele erişemez. "
+               "Üçüncü taraf API'ye veri gönderilmez.")
+    local_url = st.text_input("Yerel model adresi", "http://127.0.0.1:11434/v1/chat/completions")
+    local_name = st.text_input("Yerel model adı", "turkish-llama")
+    if st.button("Yerel modelden kod öner", disabled=not bool(prompt)):
+        try:
+            result_text = local_completion(prompt,local_url,local_name)
+            result = analyze_model_response(pid,source,result_text,codebook.splitlines() if codebook.strip() else None)
+            st.session_state.nitel_pending = result["codes"]
+            if result["rejected"]:
+                st.warning("Kanıt denetiminde reddedilen: " + "; ".join(result["rejected"]))
+            st.success(f"{len(result['codes'])} kanıtı doğrulanmış öneri alındı.")
+        except Exception as ex:
+            st.error("Yerel model çağrısı başarısız. Adres, model ve JSON biçimini kontrol edin.")
+if records:
     with st.expander("Toplu otomatik nitel kod önerileri — ücretsiz yerel model"):
         st.caption("Bir işlemde en çok 200 benzersiz katılımcı. Yerel model her kaydı bir kez işler; öneriler insan onayı gerektirir. "
                    "Streamlit Cloud bilgisayarınızdaki yerel modele bağlanamaz.")
@@ -87,44 +125,6 @@ if records:
             st.download_button("Toplu önerileri CSV indir", pd.DataFrame(report["proposals"]).to_csv(
                 index=False).encode("utf-8-sig"), file_name="nitel_toplu_taslak.csv", mime="text/csv")
 
-if records:
-    ids = [r[0] for r in records]
-    if len(ids) != len(set(ids)):
-        st.warning("Aynı katılımcı birden fazla satırda bulunuyor; frekanslar benzersiz kimliğe göre hesaplanacak.")
-    chosen = st.selectbox("Analiz edilecek kayıt", range(len(records)),
-                          format_func=lambda i: f"{records[i][0]} — {records[i][1][:75]}")
-    pid, source = records[chosen]
-else:
-    pid = st.text_input("Katılımcı ID", "T01")
-    source = st.text_area("Katılımcının özgün ifadesi", height=135)
-
-codebook = st.text_area("İsteğe bağlı kod kitabı (her satırda bir kod)", "")
-try:
-    prompt = prepare_prompt(source, codebook.splitlines()) if source.strip() else ""
-except ValueError as ex:
-    st.warning(str(ex))
-    prompt = ""
-if prompt:
-    with st.expander("Model için kısa komutu görüntüle / kopyala"):
-        st.code(prompt, language="text")
-        st.caption("Üçüncü taraf modele kişisel veri göndermeden önce anonimleştirin ve gerekli izinleri alın.")
-
-with st.expander("İsteğe bağlı yerel model bağlantısı — ücretsiz / özel"):
-    st.caption("Yalnızca uygulama ile model AYNI bilgisayarda çalışıyorsa kullanılabilir. "
-               "Streamlit Cloud bu bağlantıyla sizin bilgisayarınızdaki modele erişemez. "
-               "Üçüncü taraf API'ye veri gönderilmez.")
-    local_url = st.text_input("Yerel model adresi", "http://127.0.0.1:11434/v1/chat/completions")
-    local_name = st.text_input("Yerel model adı", "turkish-llama")
-    if st.button("Yerel modelden kod öner", disabled=not bool(prompt)):
-        try:
-            result_text = local_completion(prompt,local_url,local_name)
-            result = analyze_model_response(pid,source,result_text,codebook.splitlines() if codebook.strip() else None)
-            st.session_state.nitel_pending = result["codes"]
-            if result["rejected"]:
-                st.warning("Kanıt denetiminde reddedilen: " + "; ".join(result["rejected"]))
-            st.success(f"{len(result['codes'])} kanıtı doğrulanmış öneri alındı.")
-        except Exception as ex:
-            st.error("Yerel model çağrısı başarısız. Adres, model ve JSON biçimini kontrol edin.")
 raw = st.text_area("Modelden gelen JSON (veya aşağıdaki örnek)", height=150,
     placeholder='{"codes":[{"quote":"özgün metindeki birebir parça","code":"kod","category":"kategori","theme":"tema"}]}')
 if st.button("Önerileri denetle", disabled=not bool(source.strip() and raw.strip())):
