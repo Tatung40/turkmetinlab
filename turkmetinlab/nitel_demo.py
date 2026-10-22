@@ -10,6 +10,7 @@ import streamlit as st
 from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_response, frequencies
 from tmlab.nitel_local_model import local_completion
 from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
+from tmlab.nitel_semantik import from_e5
 from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
@@ -188,3 +189,38 @@ if accepted:
                 st.info("Belirlenen eşikte benzer kod adı bulunmadı.")
         except ValueError as exc:
             st.warning(str(exc))
+
+if accepted:
+    with st.expander("E5 ile ücretsiz anlamsal kod eşleştirme — isteğe bağlı"):
+        st.caption("Var olan E5 ONNX modelini kullanır; yeni ücretli API gerektirmez. "
+                   "İlk model yüklemesi yapılandırılmışsa indirilebilir; bellek kullanır. "
+                   "Yalnızca kod adları analiz edilir; kanıt metinleri modele gönderilmez.")
+        semantic_threshold = st.slider("Anlamsal benzerlik eşiği", 0.60, 0.99, 0.84, 0.01)
+        if st.button("E5 kod benzerliğini hesapla"):
+            try:
+                from tmlab.anlamsal import ModelKaynagi, model_hazirla, E5Kodlayici
+                source_model = ModelKaynagi.ortamdan()
+                if source_model.eksik():
+                    st.error(source_model.eksik())
+                else:
+                    with st.spinner("Mevcut E5 ONNX modeli ile kodlar eşleştiriliyor"):
+                        folder = model_hazirla(source_model)
+                        encoder = E5Kodlayici(folder)
+                        suggestions = from_e5([r["code"] for r in accepted], encoder,
+                                              threshold=semantic_threshold)
+                    st.session_state.nitel_semantic_suggestions = suggestions
+            except Exception:
+                st.error("E5 kod benzerliği hesaplanamadı; model ayarlarını kontrol edin.")
+        proposals = st.session_state.get("nitel_semantic_suggestions", [])
+        if proposals:
+            st.dataframe(pd.DataFrame(proposals), use_container_width=True)
+            choice = st.selectbox("Birleştirilecek anlamsal kod çifti", range(len(proposals)),
+                format_func=lambda i: proposals[i]["code_a"] + " → " + proposals[i]["code_b"])
+            if st.button("Anlamsal kod birleştirmesini onayla"):
+                pair = proposals[choice]
+                st.session_state.nitel_accepted = merge_approved_codes(
+                    accepted, {pair["code_a"]: pair["code_b"]})
+                st.session_state.nitel_semantic_suggestions = []
+                st.rerun()
+        elif "nitel_semantic_suggestions" in st.session_state:
+            st.info("Bu eşikte benzer kod adayı bulunmadı.")
