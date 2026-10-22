@@ -28,6 +28,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install pytest
+      - run: python -m pip install pytest numpy
       - run: python -m py_compile nitel_demo.py tmlab/nitel_cekirdek.py tmlab/nitel_local_model.py tmlab/nitel_hiyerarsi.py tmlab/nitel_ucretsiz.py tmlab/nitel_semantik.py
       - run: python -m pytest -q tests/test_nitel_cekirdek.py tests/test_nitel_local_model.py tests/test_nitel_hiyerarsi.py tests/test_nitel_ucretsiz.py tests/test_nitel_semantik.py
