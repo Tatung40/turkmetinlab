@@ -32,7 +32,7 @@ def batch_analyze(records, completion, *, codebook=(), progress=None):
             progress(index + 1, len(items))
     hierarchy = build_hierarchy(accepted, ids)
     return {"proposals":accepted, "errors":failures, "hierarchy":hierarchy,
-            "processed":len(items), "requires_researcher_approval":True}
+            "processed":len(items), "participant_ids":ids, "requires_researcher_approval":True}
 
 def regroup_once(batch_result, completion):
     """Ham metinleri tekrar göndermeden tüm kodlar için yalnızca BİR model çağrısı."""
@@ -45,5 +45,5 @@ def regroup_once(batch_result, completion):
     result = dict(batch_result)
     result["proposals"] = apply_hierarchy(codes, mapping)
     result["hierarchy"] = build_hierarchy(result["proposals"],
-                                          [r["participant_id"] for r in codes])
+                                          batch_result["participant_ids"])
     return result
