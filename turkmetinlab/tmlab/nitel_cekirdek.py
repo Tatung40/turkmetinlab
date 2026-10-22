@@ -51,7 +51,9 @@ def prepare_prompt(text: str, codebook: Iterable[str] = ()) -> str:
     )
     if codes:
         instruction += " Yalnızca verilen kod kitabından kod seç: " + json.dumps(codes, ensure_ascii=False)
-    return instruction + "\nKAYNAK:\n" + text
+    return instruction + "
+KAYNAK:
+" + text
 
 
 def parse_response(raw: str) -> list[dict]:
@@ -66,11 +68,13 @@ def parse_response(raw: str) -> list[dict]:
     return result["codes"]
 
 
-def validate_codes(participant_id: str, source: str, candidates: list[dict],\n                   allowed_codes: Iterable[str] | None = None) -> tuple[list[EvidenceCode], list[str]]:
+def validate_codes(participant_id: str, source: str, candidates: list[dict],
+                   allowed_codes: Iterable[str] | None = None) -> tuple[list[EvidenceCode], list[str]]:
     """Yanlış/uydurma kanıtları kesin biçimde ayır; insan onayı yine zorunlu."""
     if not isinstance(source, str) or not isinstance(participant_id, str):
         raise ValueError("Katılımcı ve metin zorunludur.")
-    permitted = set(allowed_codes) if allowed_codes is not None else None\n    valid: list[EvidenceCode] = []
+    permitted = set(allowed_codes) if allowed_codes is not None else None
+    valid: list[EvidenceCode] = []
     rejected: list[str] = []
     for index, item in enumerate(candidates):
         if not isinstance(item, dict):
@@ -80,7 +84,10 @@ def validate_codes(participant_id: str, source: str, candidates: list[dict],\n  
                    for k in ("quote", "code", "category", "theme")):
             rejected.append(f"{index}: eksik alan")
             continue
-        if permitted is not None and item["code"].strip() not in permitted:\n            rejected.append(f"{index}: kod kitabı dışında öneri")\n            continue\n        quote = item["quote"]
+        if permitted is not None and item["code"].strip() not in permitted:
+            rejected.append(f"{index}: kod kitabı dışında öneri")
+            continue
+        quote = item["quote"]
         start = source.find(quote)
         if start < 0:
             rejected.append(f"{index}: kanıt özgün metinde birebir bulunamadı")
