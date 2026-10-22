@@ -6,8 +6,10 @@ on:
       - 'turkmetinlab/tmlab/nitel_cekirdek.py'
       - 'turkmetinlab/tests/test_nitel_cekirdek.py'
       - 'turkmetinlab/nitel_demo.py'
-      - 'turkmetinlab/tmlab/nitel_local_model.py'
-      - 'turkmetinlab/tests/test_nitel_local_model.py'
+      - 'turkmetinlab/tmlab/nitel_local_model.py tmlab/nitel_hiyerarsi.py'
+      - 'turkmetinlab/tests/test_nitel_local_model.py tests/test_nitel_hiyerarsi.py'
+      - 'turkmetinlab/tmlab/nitel_hiyerarsi.py'
+      - 'turkmetinlab/tests/test_nitel_hiyerarsi.py'
       - '.github/workflows/nitel-cekirdek.yml'
   workflow_dispatch:
 permissions:
