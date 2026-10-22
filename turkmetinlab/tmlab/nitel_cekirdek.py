@@ -13,6 +13,11 @@ from typing import Iterable
 
 MAX_CHARS = 12000
 MAX_CODES = 12
+DETAIL_LEVELS = {
+    'Dengeli': 'Anlamca ayrı birimler varsa birden çok kod kullan; salt bağlam ifadelerini gereksiz kodlama. Kodları açıklayıcı ama tutumlu seç.',
+    'Ayrıntılı': 'Kanıtla desteklenen farklı anlam birimlerini ayrı kodla. Sebep ve sonucu gerekçeli biçimde ayır; gereksiz kod uydurma.',
+    'Özetleyici': 'Öncelikle baskın anlamı kodla; yakın anlamları tutarlı ortak kod etiketlerinde birleştir. Önemli karşıt anlamları kaybetme.',
+}
 
 
 @dataclass(frozen=True)
@@ -35,13 +40,15 @@ def document_fingerprint(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def prepare_prompt(text: str, codebook: Iterable[str] = ()) -> str:
+def prepare_prompt(text: str, codebook: Iterable[str] = (), *, detail: str = 'Dengeli') -> str:
     """Sınırlı, düşük token maliyetli Türkçe nitel analiz talimatı."""
     if not isinstance(text, str) or not text.strip() or len(text) > MAX_CHARS:
         raise ValueError("Metin boş veya izin verilen sınırı aşıyor.")
     codes = [str(c).strip() for c in codebook if str(c).strip()]
     if len(codes) > 50:
         raise ValueError("Kod kitabı en çok 50 kod içerebilir.")
+    if detail not in DETAIL_LEVELS:
+        raise ValueError("Geçersiz kodlama ayrıntı düzeyi.")
     instruction = (
         "Yalnızca JSON döndür; açıklama ekleme. Türkçe nitel veri için en çok 12 "
         "anlamlı kod öner. Her kodda quote, code, category, theme alanları olsun. "
@@ -49,6 +56,7 @@ def prepare_prompt(text: str, codebook: Iterable[str] = ()) -> str:
         "Metinde olmayan kanıt veya görüş uydurma. Belirsizse boş liste döndür. "
         'Şema: {"codes":[{"quote":"...","code":"...","category":"...","theme":"..."}]}.'
     )
+    instruction += " Kodlama yaklaşımı: " + DETAIL_LEVELS[detail]
     if codes:
         instruction += " Yalnızca verilen kod kitabından kod seç: " + json.dumps(codes, ensure_ascii=False)
     return instruction + "\nKAYNAK:\n" + text
