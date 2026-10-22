@@ -101,10 +101,12 @@ def analyze_model_response(participant_id: str, source: str, raw: str) -> dict:
             "rejected": rejected, "requires_human_review": True}
 
 
-def frequencies(records: Iterable[EvidenceCode]) -> list[dict]:
+def frequencies(records: Iterable[EvidenceCode], participant_ids: Iterable[str] | None = None) -> list[dict]:
     """Yüzdeyi benzersiz katılımcı sayısına göre hesapla."""
     rows = list(records)
-    all_participants = {r.participant_id for r in rows}
+    all_participants = set(participant_ids) if participant_ids is not None else {r.participant_id for r in rows}
+    if any(r.participant_id not in all_participants for r in rows):
+        raise ValueError("Kodlanmış katılımcı, katılımcı evreninde yok.")
     by_code: dict[str, set[str]] = {}
     for row in rows:
         by_code.setdefault(row.code, set()).add(row.participant_id)
