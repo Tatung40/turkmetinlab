@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_response, frequencies
 from tmlab.nitel_local_model import local_completion
+from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
 from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
@@ -166,3 +167,24 @@ if accepted:
                 st.rerun()
             except (ValueError, TypeError, json.JSONDecodeError) as exc:
                 st.error(f"Hiyerarşi uygulanmadı: {exc}")
+
+if accepted:
+    with st.expander("Ücretsiz kod birleştirme önerileri — API gerekmez"):
+        st.caption("Sadece yazım/sözcük benzerliğine göre aday önerilir. Anlamsal eşdeğerlik araştırmacı tarafından belirlenir.")
+        threshold = st.slider("Kod adı benzerlik eşiği", 0.50, 1.00, 0.80, 0.05)
+        try:
+            candidates = suggest_merges([r["code"] for r in accepted], threshold=threshold)
+            if candidates:
+                st.dataframe(pd.DataFrame(candidates), use_container_width=True)
+                choices = [f'{x["code_a"]} → {x["code_b"]}' for x in candidates]
+                selection = st.selectbox("İncelenecek kod önerisi", range(len(choices)), format_func=lambda i: choices[i])
+                if st.button("Seçilen kod birleştirmesini onayla"):
+                    item = candidates[selection]
+                    st.session_state.nitel_accepted = merge_approved_codes(
+                        accepted, {item["code_a"]: item["code_b"]})
+                    st.success("Kod adı birleştirildi; özgün kanıt alıntıları korundu.")
+                    st.rerun()
+            else:
+                st.info("Belirlenen eşikte benzer kod adı bulunmadı.")
+        except ValueError as exc:
+            st.warning(str(exc))
