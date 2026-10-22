@@ -1,0 +1,61 @@
+"""Gerçek yerel modelle 20 görüş pilotu; yalnızca kullanıcının bilgisayarında çalışır.
+
+Kullanım (repo içindeki turkmetinlab dizininde):
+    python scripts/nitel_gercek_model_pilot.py --model qwen3:4b --output pilot_gercek.csv
+Önce Ollama kurulmalı ve model kullanıcı tarafından yerelde indirilmelidir.
+"""
+from __future__ import annotations
+import argparse
+import csv
+import json
+from pathlib import Path
+from tmlab.nitel_local_model import local_completion
+from tmlab.nitel_toplu import batch_analyze, regroup_once
+from tmlab.nitel_rapor import frequency_tables
+from tmlab.nitel_kalite import audit_hierarchy
+
+def run(records, complete):
+    result=batch_analyze(records,complete,detail="Dengeli")
+    if result["proposals"]:
+        try:
+            result=regroup_once(result,lambda prompt:complete(prompt, hierarchy=True))
+        except (ValueError,KeyError,TypeError,json.JSONDecodeError) as exc:
+            result["errors"].append({"participant_id":"_hierarchy","reason":type(exc).__name__})
+    result["frequencies"]=frequency_tables(result["proposals"],result["participant_ids"])
+    result["quality"]=audit_hierarchy(result["proposals"],result["participant_ids"])
+    return result
+
+def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument("--input",default="tests/fixtures/nitel_20_gorusme.csv")
+    ap.add_argument("--model",required=True)
+    ap.add_argument("--output",default="nitel_pilot_kodlar.csv")
+    ap.add_argument("--endpoint",default="http://127.0.0.1:11434/v1/chat/completions")
+    args=ap.parse_args()
+    with open(args.input,encoding="utf-8-sig",newline="") as f:
+        rows=list(csv.DictReader(f))
+    if not rows or any(not r.get("katilimci_id") or not r.get("metin") for r in rows):
+        raise SystemExit("CSV katilimci_id ve metin sütunlarını içermeli.")
+    def complete(prompt,*,hierarchy=False):
+        return local_completion(prompt,args.endpoint,args.model,
+            timeout=180,max_tokens=3072 if hierarchy else 768)
+    report=run([(r["katilimci_id"],r["metin"]) for r in rows],complete)
+    output=Path(args.output)
+    output.parent.mkdir(parents=True,exist_ok=True)
+    columns=("participant_id","quote","code","category","theme","start","end")
+    with output.open("w",encoding="utf-8-sig",newline="") as f:
+        writer=csv.DictWriter(f,fieldnames=columns)
+        writer.writeheader()
+        writer.writerows({k:r.get(k,"") for k in columns} for r in report["proposals"])
+    json_path=output.with_suffix(".report.json")
+    json_path.write_text(json.dumps({
+        "summary":report["frequencies"]["summary"],"codes":report["frequencies"]["codes"],
+        "categories":report["frequencies"]["categories"],"themes":report["frequencies"]["themes"],
+        "warnings":report["quality"]["warnings"],"errors":report["errors"],
+        "requires_researcher_approval":True,
+    },ensure_ascii=False,indent=2),encoding="utf-8")
+    print(json.dumps({"processed":report["processed"],"proposals":len(report["proposals"]),
+                      "errors":len(report["errors"]),"csv":str(output),"report":str(json_path)},
+                     ensure_ascii=False))
+if __name__=="__main__":
+    main()
