@@ -13,6 +13,7 @@ from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
 from tmlab.nitel_semantik import from_e5
 from tmlab.nitel_toplu import batch_analyze, regroup_once
 from tmlab.nitel_kalite import audit_hierarchy
+from tmlab.nitel_rapor import frequency_tables
 from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
@@ -167,6 +168,28 @@ if accepted:
     st.subheader("Kodların katılımcı frekansı")
     universe = [pid for pid, _ in records] if records else sorted({row.participant_id for row in rows})
     st.dataframe(pd.DataFrame(frequencies(rows, universe)), use_container_width=True)
+    stats = frequency_tables(accepted, universe)
+    st.subheader("Katılımcı temelli kod, kategori ve tema frekansları")
+    st.caption("Payda benzersiz katılımcı sayısıdır; çoklu kodlamada yüzdeler toplamı %100'ü aşabilir. "
+               "Frekansları yapay zekâ değil, uygulama hesaplar.")
+    st.json(stats["summary"], expanded=False)
+    for label, key in (("Kod", "codes"), ("Kategori", "categories"), ("Tema", "themes")):
+        st.markdown("**" + label + " frekansları**")
+        st.dataframe(pd.DataFrame(stats[key]), use_container_width=True)
+    from io import BytesIO
+    output = BytesIO()
+    try:
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame(accepted).to_excel(writer, sheet_name="Onayli_Kodlar", index=False)
+            for sheet, key in (("Kod_Frekans", "codes"),("Kategori_Frekans", "categories"),
+                               ("Tema_Frekans", "themes")):
+                pd.DataFrame(stats[key]).to_excel(writer, sheet_name=sheet, index=False)
+            pd.DataFrame([stats["summary"]]).to_excel(writer, sheet_name="Ozet", index=False)
+        st.download_button("Onaylı analiz raporunu Excel indir", output.getvalue(),
+                           file_name="turkmetinlab_nitel_rapor.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except ImportError:
+        st.warning("Excel dışa aktarımı için openpyxl kurulu olmalı; CSV indirme kullanılabilir.")
     st.download_button("Onaylı kayıtları CSV indir",
         data=pd.DataFrame(accepted).to_csv(index=False).encode("utf-8-sig"),
         file_name="nitel_onayli_kodlar.csv",mime="text/csv")
