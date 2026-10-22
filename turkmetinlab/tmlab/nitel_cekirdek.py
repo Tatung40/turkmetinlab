@@ -102,8 +102,9 @@ def validate_codes(participant_id: str, source: str, candidates: list[dict],
     return valid, rejected
 
 
-def analyze_model_response(participant_id: str, source: str, raw: str) -> dict:
-    codes, rejected = validate_codes(participant_id, source, parse_response(raw))
+def analyze_model_response(participant_id: str, source: str, raw: str,
+                           allowed_codes: Iterable[str] | None = None) -> dict:
+    codes, rejected = validate_codes(participant_id, source, parse_response(raw), allowed_codes)
     return {"participant_id": participant_id, "codes": [asdict(c) for c in codes],
             "rejected": rejected, "requires_human_review": True}
 
