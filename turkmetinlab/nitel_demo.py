@@ -8,6 +8,7 @@ from dataclasses import asdict
 import pandas as pd
 import streamlit as st
 from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_response, frequencies
+from tmlab.nitel_local_model import local_completion
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
 st.title("TürkMetinLab 3.0 — Nitel Veri Analizi (Pilot)")
@@ -64,6 +65,22 @@ if prompt:
         st.code(prompt, language="text")
         st.caption("Üçüncü taraf modele kişisel veri göndermeden önce anonimleştirin ve gerekli izinleri alın.")
 
+with st.expander("İsteğe bağlı yerel model bağlantısı — ücretsiz / özel"):
+    st.caption("Yalnızca uygulama ile model AYNI bilgisayarda çalışıyorsa kullanılabilir. "
+               "Streamlit Cloud bu bağlantıyla sizin bilgisayarınızdaki modele erişemez. "
+               "Üçüncü taraf API'ye veri gönderilmez.")
+    local_url = st.text_input("Yerel model adresi", "http://127.0.0.1:11434/v1/chat/completions")
+    local_name = st.text_input("Yerel model adı", "turkish-llama")
+    if st.button("Yerel modelden kod öner", disabled=not bool(prompt)):
+        try:
+            result_text = local_completion(prompt,local_url,local_name)
+            result = analyze_model_response(pid,source,result_text)
+            st.session_state.nitel_pending = result["codes"]
+            if result["rejected"]:
+                st.warning("Kanıt denetiminde reddedilen: " + "; ".join(result["rejected"]))
+            st.success(f"{len(result['codes'])} kanıtı doğrulanmış öneri alındı.")
+        except Exception as ex:
+            st.error("Yerel model çağrısı başarısız. Adres, model ve JSON biçimini kontrol edin.")
 raw = st.text_area("Modelden gelen JSON (veya aşağıdaki örnek)", height=150,
     placeholder='{"codes":[{"quote":"özgün metindeki birebir parça","code":"kod","category":"kategori","theme":"tema"}]}')
 if st.button("Önerileri denetle", disabled=not bool(source.strip() and raw.strip())):
