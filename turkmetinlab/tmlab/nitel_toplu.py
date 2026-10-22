@@ -5,7 +5,7 @@ from .nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate
 
 MAX_BATCH = 200
 
-def batch_analyze(records, completion, *, codebook=(), progress=None):
+def batch_analyze(records, completion, *, codebook=(), progress=None, detail='Dengeli'):
     """Her kayıt için tek model isteği. Hatalı kayıtları ayrı raporlar, sessizce silmez.
 
     completion(prompt) -> JSON metni. Doğrudan yerel adapter veya test sahte fonksiyonu.
@@ -20,7 +20,7 @@ def batch_analyze(records, completion, *, codebook=(), progress=None):
     accepted, failures = [], []
     for index, (pid, source) in enumerate(items):
         try:
-            prompt = prepare_prompt(source, labels)
+            prompt = prepare_prompt(source, labels, detail=detail)
             result = analyze_model_response(pid, source, completion(prompt),
                                             labels if labels else None)
             accepted.extend(result["codes"])
