@@ -51,9 +51,7 @@ def prepare_prompt(text: str, codebook: Iterable[str] = ()) -> str:
     )
     if codes:
         instruction += " Yalnızca verilen kod kitabından kod seç: " + json.dumps(codes, ensure_ascii=False)
-    return instruction + "
-KAYNAK:
-" + text
+    return instruction + "\nKAYNAK:\n" + text
 
 
 def parse_response(raw: str) -> list[dict]:
