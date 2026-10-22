@@ -7,6 +7,8 @@ on:
       - 'turkmetinlab/tests/test_nitel_cekirdek.py'
       - 'turkmetinlab/nitel_demo.py'
       - 'turkmetinlab/tmlab/nitel_hiyerarsi.py'
+      - 'turkmetinlab/tmlab/nitel_ucretsiz.py'
+      - 'turkmetinlab/tests/test_nitel_ucretsiz.py'
       - 'turkmetinlab/tests/test_nitel_hiyerarsi.py'
       - '.github/workflows/nitel-cekirdek.yml'
   workflow_dispatch:
