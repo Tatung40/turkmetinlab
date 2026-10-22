@@ -12,6 +12,7 @@ from tmlab.nitel_local_model import local_completion
 from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
 from tmlab.nitel_semantik import from_e5
 from tmlab.nitel_toplu import batch_analyze, regroup_once
+from tmlab.nitel_kalite import audit_hierarchy
 from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
@@ -265,3 +266,11 @@ if accepted:
                 st.rerun()
         elif "nitel_semantic_suggestions" in st.session_state:
             st.info("Bu eşikte benzer kod adayı bulunmadı.")
+
+if accepted:
+    with st.expander("Nitel analiz kalite denetimi — ücretsiz"):
+        audit = audit_hierarchy(accepted, universe)
+        st.caption(f"Kod ataması: {audit['assignments']} | Farklı kod: {audit['unique_codes']} | "
+                   f"Kategori: {audit['categories']} | Tema: {audit['themes']}")
+        st.dataframe(pd.DataFrame(audit["warnings"]), use_container_width=True)
+        st.caption("Bunlar yöntemsel inceleme uyarılarıdır; kanıt–kod anlam uyumunu tek başına ölçmez.")
