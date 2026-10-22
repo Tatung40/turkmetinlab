@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 MAX_RESPONSE_BYTES = 65536
 
-def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 90) -> str:
+def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 90, max_tokens: int = 650) -> str:
     parsed = urlparse(endpoint)
     if parsed.scheme != "http" or parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValueError("Yerel model adresi yalnızca http://127.0.0.1:PORT/v1/chat/completions olabilir.")
@@ -21,10 +21,10 @@ def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 9
         raise ValueError("IP adresi açıkça belirtilmiş olmalı.") from exc
     if not address.is_loopback or parsed.port is None or parsed.path != "/v1/chat/completions":
         raise ValueError("Yalnızca yerel loopback model sunucusuna izin verilir.")
-    if not model or len(model) > 150 or not (1 <= timeout <= 180):
+    if not model or len(model) > 150 or not (1 <= timeout <= 180) or not (128 <= max_tokens <= 4096):
         raise ValueError("Model adı veya zaman aşımı geçersiz.")
     body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}],
-                       "temperature": 0, "max_tokens": 650, "stream": False}).encode("utf-8")
+                       "temperature": 0, "max_tokens": max_tokens, "stream": False}).encode("utf-8")
     if len(body) > 60000:
         raise ValueError("Model istemi çok uzun.")
     req = Request(endpoint, data=body, headers={"Content-Type": "application/json"}, method="POST")
