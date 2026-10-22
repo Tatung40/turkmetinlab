@@ -7,10 +7,11 @@
 1. Ollama'yı resmî adresinden kurun: https://ollama.com/download
 2. PowerShell'de `ollama pull qwen3:4b` komutunu çalıştırın. Modelin boyutu, bellek ve cihaz uyumu makinenize bağlıdır. Bu bir ön seçimdir, Türkçe nitel analiz başarısı doğrulanmış değildir.
 3. Bu geliştirme dalını bilgisayarınıza alın ve `turkmetinlab` alt dizinine geçin.
-4. Komutu çalıştırın:
+4. Önce yalnızca **bir görüşte bağlantı/JSON testi** yapın; ardından 20 görüşü çalıştırın:
 
 ```powershell
-python scripts/nitel_gercek_model_pilot.py --model qwen3:4b --input tests/fixtures/nitel_20_gorusme.csv --output nitel_pilot_kodlar.csv
+python scripts/nitel_gercek_model_pilot.py --model qwen3:4b --limit 1 --output nitel_deneme.csv
+python scripts/nitel_gercek_model_pilot.py --model qwen3:4b --limit 20 --input tests/fixtures/nitel_20_gorusme.csv --output nitel_pilot_kodlar.csv
 ```
 
 5. `nitel_pilot_kodlar.csv` önerilen kod–kategori–tema–kanıtları, `nitel_pilot_kodlar.report.json` frekanslar, kalite uyarıları ve hata kayıtlarını içerir.
