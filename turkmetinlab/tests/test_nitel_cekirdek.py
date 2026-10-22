@@ -60,3 +60,17 @@ def test_end_to_end_no_model_cost():
     assert result["requires_human_review"]
     assert len(result["codes"]) == 1
     assert len(document_fingerprint(source)) == 64
+
+def test_deductive_codebook_blocks_unapproved_codes():
+    text = "Ders hazırlamak daha kısa sürüyor."
+    payload = '{"codes":[{"quote":"Ders hazırlamak","code":"Rastgele","category":"İş","theme":"Süre"}]}'
+    result = analyze_model_response("T04", text, payload, ["Zaman tasarrufu"])
+    assert result["codes"] == []
+    assert len(result["rejected"]) == 1
+
+
+def test_frequency_includes_uncoded_participants():
+    rows = [EvidenceCode("T01","evet","Fayda","Değer","Yarar",0,4)]
+    report = frequencies(rows, ["T01","T02","T03","T04"])
+    assert report[0]["n_participants"] == 1
+    assert report[0]["percent"] == 25.0
