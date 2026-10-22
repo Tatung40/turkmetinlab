@@ -1,0 +1,25 @@
+name: Nitel analiz cekirdek testleri
+on:
+  push:
+    branches: [gelistirme-3-0-nitel-mvp]
+    paths:
+      - 'turkmetinlab/tmlab/nitel_cekirdek.py'
+      - 'turkmetinlab/tests/test_nitel_cekirdek.py'
+      - '.github/workflows/nitel-cekirdek.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: turkmetinlab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest
+      - run: python -m pytest -q tests/test_nitel_cekirdek.py
