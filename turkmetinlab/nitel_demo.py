@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_response, frequencies
 from tmlab.nitel_local_model import local_completion
+from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
 st.title("TürkMetinLab 3.0 — Nitel Veri Analizi (Pilot)")
@@ -123,3 +124,34 @@ if accepted:
     st.download_button("Onaylı kayıtları CSV indir",
         data=pd.DataFrame(accepted).to_csv(index=False).encode("utf-8-sig"),
         file_name="nitel_onayli_kodlar.csv",mime="text/csv")
+
+if accepted:
+    st.divider()
+    st.subheader("Derlem genelinde otomatik kategori–tema düzenleme")
+    st.caption("Başlangıç hiyerarşisi doğrulanmış kod önerilerinden derlenir; araştırmacı isterse modelle tüm kodları TEK ÇAĞRIDA yeniden gruplar.")
+    hierarchy = build_hierarchy(accepted, universe)
+    if hierarchy["conflicting_codes"]:
+        st.warning("Birden fazla üst kategori/tema altında bulunan kodlar: " + ", ".join(hierarchy["conflicting_codes"]))
+    st.dataframe(pd.DataFrame(hierarchy["mapping"]), use_container_width=True)
+    st.download_button("Kod–kategori–tema hiyerarşisi CSV indir",
+        pd.DataFrame(hierarchy["mapping"]).to_csv(index=False).encode("utf-8-sig"),
+        file_name="nitel_hiyerarsi.csv", mime="text/csv")
+    if st.button("Kodları gruplayacak kısa model komutunu hazırla"):
+        try:
+            st.session_state.nitel_hierarchy_prompt = prepare_hierarchy_prompt(accepted)
+        except ValueError as exc:
+            st.warning(str(exc))
+    if st.session_state.get("nitel_hierarchy_prompt"):
+        with st.expander("Tek çağrılık kategori/tema komutu", expanded=True):
+            st.code(st.session_state.nitel_hierarchy_prompt)
+            st.caption("Bu istem özgün görüşmeleri değil, yalnızca kod adları ve sayıları içerir. Kod adları yine hassas bilgi barındırabilir.")
+        st.caption("Model cevabını buraya yapıştırın; tüm kodlar korunmadan yeni hiyerarşi kabul edilmez.")
+        response = st.text_area("Modelden gelen hiyerarşi JSON", key="nitel_hierarchy_response")
+        if st.button("Hiyerarşi önerisini uygula", disabled=not bool(response.strip())):
+            try:
+                grouping = validate_hierarchy_response(response, {r["code"] for r in accepted})
+                st.session_state.nitel_accepted = apply_hierarchy(accepted, grouping)
+                st.success("Tüm kodlar korundu; kategori ve tema önerileri uygulandı. Sonuçları araştırmacı olarak denetleyin.")
+                st.rerun()
+            except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                st.error(f"Hiyerarşi uygulanmadı: {exc}")
