@@ -74,7 +74,7 @@ with st.expander("İsteğe bağlı yerel model bağlantısı — ücretsiz / öz
     if st.button("Yerel modelden kod öner", disabled=not bool(prompt)):
         try:
             result_text = local_completion(prompt,local_url,local_name)
-            result = analyze_model_response(pid,source,result_text)
+            result = analyze_model_response(pid,source,result_text,codebook.splitlines() if codebook.strip() else None)
             st.session_state.nitel_pending = result["codes"]
             if result["rejected"]:
                 st.warning("Kanıt denetiminde reddedilen: " + "; ".join(result["rejected"]))
@@ -85,7 +85,7 @@ raw = st.text_area("Modelden gelen JSON (veya aşağıdaki örnek)", height=150,
     placeholder='{"codes":[{"quote":"özgün metindeki birebir parça","code":"kod","category":"kategori","theme":"tema"}]}')
 if st.button("Önerileri denetle", disabled=not bool(source.strip() and raw.strip())):
     try:
-        result = analyze_model_response(pid,source,raw)
+        result = analyze_model_response(pid,source,raw,codebook.splitlines() if codebook.strip() else None)
         st.session_state.nitel_pending = result["codes"]
         if result["rejected"]:
             st.warning("Reddedilen öneriler: " + "; ".join(result["rejected"]))
