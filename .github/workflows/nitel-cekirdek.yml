@@ -15,6 +15,8 @@ on:
       - 'turkmetinlab/tmlab/nitel_kalite.py'
       - 'turkmetinlab/tests/test_nitel_kalite.py'
       - 'turkmetinlab/tests/test_nitel_ayrinti.py'
+      - 'turkmetinlab/tmlab/nitel_rapor.py'
+      - 'turkmetinlab/tests/test_nitel_rapor.py'
       - 'turkmetinlab/tests/test_nitel_semantik.py'
       - 'turkmetinlab/tests/test_nitel_ucretsiz.py'
       - 'turkmetinlab/tests/test_nitel_hiyerarsi.py'
@@ -35,5 +37,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install pytest numpy
-      - run: python -m py_compile nitel_demo.py tmlab/nitel_cekirdek.py tmlab/nitel_local_model.py tmlab/nitel_hiyerarsi.py tmlab/nitel_ucretsiz.py tmlab/nitel_semantik.py tmlab/nitel_toplu.py tmlab/nitel_kalite.py
-      - run: python -m pytest -q tests/test_nitel_cekirdek.py tests/test_nitel_local_model.py tests/test_nitel_hiyerarsi.py tests/test_nitel_ucretsiz.py tests/test_nitel_semantik.py tests/test_nitel_toplu.py tests/test_nitel_20_gorusme_pilot.py tests/test_nitel_kalite.py tests/test_nitel_ayrinti.py
+      - run: python -m py_compile nitel_demo.py tmlab/nitel_cekirdek.py tmlab/nitel_local_model.py tmlab/nitel_hiyerarsi.py tmlab/nitel_ucretsiz.py tmlab/nitel_semantik.py tmlab/nitel_toplu.py tmlab/nitel_kalite.py tmlab/nitel_rapor.py
+      - run: python -m pytest -q tests/test_nitel_cekirdek.py tests/test_nitel_local_model.py tests/test_nitel_hiyerarsi.py tests/test_nitel_ucretsiz.py tests/test_nitel_semantik.py tests/test_nitel_toplu.py tests/test_nitel_20_gorusme_pilot.py tests/test_nitel_kalite.py tests/test_nitel_ayrinti.py tests/test_nitel_rapor.py
