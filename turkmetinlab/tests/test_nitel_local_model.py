@@ -28,3 +28,20 @@ def test_loopback_protocol_with_mock(monkeypatch):
         return Fake()
     monkeypatch.setattr(mod,"urlopen",mocked)
     assert mod.local_completion("hello","http://127.0.0.1:11434/v1/chat/completions","local-model")=='{"codes":[]}'
+
+def test_qwen3_no_think_and_other_models_unchanged(monkeypatch):
+    import json
+    import tmlab.nitel_local_model as mod
+    captured=[]
+    class Fake:
+        def __enter__(self): return self
+        def __exit__(self,*args): pass
+        def read(self,size): return b'{"choices":[{"message":{"content":"{}"}}]}'
+    def mocked(req,timeout):
+        captured.append(json.loads(req.data)["messages"][0]["content"])
+        return Fake()
+    monkeypatch.setattr(mod,"urlopen",mocked)
+    endpoint="http://127.0.0.1:11434/v1/chat/completions"
+    mod.local_completion("Deneme",endpoint,"qwen3:4b")
+    mod.local_completion("Deneme",endpoint,"another-model")
+    assert captured==["/no_think\\nDeneme","Deneme"]
