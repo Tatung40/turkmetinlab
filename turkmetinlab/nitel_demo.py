@@ -80,8 +80,13 @@ with st.expander("İsteğe bağlı yerel model bağlantısı — ücretsiz / öz
     local_url = st.text_input("Yerel model adresi", "http://127.0.0.1:11434/v1/chat/completions")
     local_name = st.text_input("Yerel model adı", "qwen3:4b")
     local_timeout = st.number_input("Model zaman aşımı (saniye)", min_value=1, max_value=900, value=180)
+    local_max_tokens = st.number_input("Yanıt token sınırı (Ollama num_predict)",
+        min_value=128, max_value=4096, value=1024, step=128)
+    st.caption("Qwen3.5:4b için model adını qwen3.5:4b yazın. Güncel Ollama üzerinde "
+               "düşünme reasoning_effort=none ile kapatılır; otomatik tekrar yapılmaz.")
     def _local_complete(text):
-        return local_completion(text, local_url, local_name, timeout=int(local_timeout))
+        return local_completion(text, local_url, local_name, timeout=int(local_timeout),
+                                max_tokens=int(local_max_tokens))
     if st.button("Yerel modelden kod öner", disabled=not bool(prompt)):
         try:
             result_text = _local_complete(prompt)

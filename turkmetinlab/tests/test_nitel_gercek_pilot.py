@@ -184,3 +184,20 @@ def test_duplicate_csv_does_not_overwrite_input_or_existing_outputs(tmp_path, mo
     assert source.read_text(encoding="utf-8") == data
     assert output.read_text(encoding="utf-8") == "previous csv"
     assert report.read_text(encoding="utf-8") == "previous report"
+
+def test_cli_qwen35_explicit_token_limits(tmp_path, monkeypatch, capsys):
+    source = tmp_path / "input.csv"
+    source.write_text("katilimci_id,metin\nT01,Kaynak\n",encoding="utf-8")
+    output = tmp_path / "result.csv"
+    calls = []
+    def complete(prompt, endpoint, model, **kwargs):
+        calls.append((model, kwargs))
+        return '{"codes":[]}'
+    monkeypatch.setattr(pilot,"local_completion",complete)
+    monkeypatch.setattr("sys.argv",["pilot","--input",str(source),"--output",str(output),
+        "--model","qwen3.5:4b","--max-tokens","1536","--hierarchy-max-tokens","2048","--limit","1"])
+    assert pilot.main() == 0
+    assert calls == [("qwen3.5:4b",{"timeout":180,"max_tokens":1536})]
+    report = json.loads(output.with_suffix(".report.json").read_text(encoding="utf-8"))
+    assert report["max_tokens"] == 1536 and report["hierarchy_max_tokens"] == 2048
+    assert report["status"] == "no_codes"

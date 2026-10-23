@@ -51,7 +51,11 @@ def main():
     ap.add_argument("--output",default="nitel_pilot_kodlar.csv")
     ap.add_argument("--endpoint",default="http://127.0.0.1:11434/v1/chat/completions")
     ap.add_argument("--timeout",type=int,default=180,help="CPU için 1–900 saniye; otomatik tekrar yok.")
+    ap.add_argument("--max-tokens",type=int,default=1024,help="Görüş yanıtı sınırı: 128–4096; Ollama num_predict karşılığı.")
+    ap.add_argument("--hierarchy-max-tokens",type=int,default=3072,help="Hiyerarşi yanıtı sınırı: 128–4096.")
     args=ap.parse_args()
+    if not all(128 <= n <= 4096 for n in (args.max_tokens,args.hierarchy_max_tokens)):
+        ap.error("Token sınırları 128 ile 4096 arasında olmalı.")
     if not 1 <= args.timeout <= 900:
         ap.error("--timeout 1 ile 900 arasında olmalı.")
     with open(args.input,encoding="utf-8-sig",newline="") as f:
@@ -60,7 +64,7 @@ def main():
         raise SystemExit("CSV katilimci_id ve metin sütunlarını içermeli.")
     def complete(prompt,*,hierarchy=False):
         return local_completion(prompt,args.endpoint,args.model,
-            timeout=args.timeout,max_tokens=3072 if hierarchy else 768)
+            timeout=args.timeout,max_tokens=args.hierarchy_max_tokens if hierarchy else args.max_tokens)
     if not (1 <= args.limit <= 20):
         raise SystemExit("--limit 1 ile 20 arasında olmalı.")
     try:
@@ -78,6 +82,7 @@ def main():
     json_path.write_text(json.dumps({
         "processed":report["processed"],"succeeded":report["succeeded"],"failed":report["failed"],
         "model":args.model,"endpoint":args.endpoint,
+        "max_tokens":args.max_tokens,"hierarchy_max_tokens":args.hierarchy_max_tokens,
         "requested":min(args.limit,len(rows)),
         "status":"incomplete" if report["failed"] or report["errors"] else
                  ("validated_proposals" if report["proposals"] else "no_codes"),
