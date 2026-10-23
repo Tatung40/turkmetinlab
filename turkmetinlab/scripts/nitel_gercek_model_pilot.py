@@ -10,12 +10,12 @@ import csv
 import json
 from pathlib import Path
 from tmlab.nitel_local_model import local_completion, LocalModelError
-from tmlab.nitel_toplu import batch_analyze, regroup_once
+from tmlab.nitel_toplu import batch_analyze, regroup_once, validate_records
 from tmlab.nitel_rapor import frequency_tables
 from tmlab.nitel_kalite import audit_hierarchy
 
 def run(records, complete, *, verify_first=False):
-    records = list(records)
+    records, _ = validate_records(records)
     if verify_first and len(records) > 1:
         result = batch_analyze(records[:1], complete, detail="Dengeli")
         if result["failed"] or not result["proposals"]:
@@ -63,7 +63,10 @@ def main():
             timeout=args.timeout,max_tokens=3072 if hierarchy else 768)
     if not (1 <= args.limit <= 20):
         raise SystemExit("--limit 1 ile 20 arasında olmalı.")
-    report=run([(r["katilimci_id"],r["metin"]) for r in rows[:args.limit]],complete,verify_first=True)
+    try:
+        report=run([(r["katilimci_id"],r["metin"]) for r in rows[:args.limit]],complete,verify_first=True)
+    except ValueError as exc:
+        ap.error(str(exc))
     output=Path(args.output)
     output.parent.mkdir(parents=True,exist_ok=True)
     columns=("participant_id","quote","code","category","theme","start","end")

@@ -6,6 +6,16 @@ from .nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate
 
 MAX_BATCH = 200
 
+def validate_records(records):
+    """Tüm girdiyi model çağrısından önce doğrula; silme/birleştirme yapma."""
+    items = list(records)
+    if not items or len(items) > MAX_BATCH:
+        raise ValueError("Tek toplu işlem 1–200 kayıt içermelidir.")
+    ids = [str(pid).strip() for pid, _ in items]
+    if any(not pid for pid in ids) or len(set(ids)) != len(ids):
+        raise ValueError("Toplu işlem için dolu, benzersiz kayıt numaraları gerekir.")
+    return items, ids
+
 def batch_analyze(records, completion, *, codebook=(), progress=None, detail='Dengeli'):
     """Her kayıt için tek model isteği. processed=denenen kayıt sayısıdır.
 
@@ -16,12 +26,7 @@ def batch_analyze(records, completion, *, codebook=(), progress=None, detail='De
 
     completion(prompt) -> JSON metni. Doğrudan yerel adapter veya test sahte fonksiyonu.
     """
-    items = list(records)
-    if not items or len(items) > MAX_BATCH:
-        raise ValueError("Tek toplu işlem 1–200 kayıt içermelidir.")
-    ids = [str(pid).strip() for pid, _ in items]
-    if any(not pid for pid in ids) or len(set(ids)) != len(ids):
-        raise ValueError("Toplu işlem için dolu, benzersiz kayıt numaraları gerekir.")
+    items, ids = validate_records(records)
     labels = tuple(codebook)
     accepted, failures = [], []
     succeeded = failed = 0

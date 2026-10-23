@@ -62,3 +62,26 @@ burada gerçek Qwen3 üretimi veya 20 görüş sonucu doğrulanmış değildir.
 kesilmiş/geçersiz yanıt, sayaçlar, ilk kayıt kapısı, hiyerarşi hatasında çıktı
 koruma ve Streamlit toplu kodlama/araştırmacı onayı akışı. Tamamı simülasyondur.
 Tam regresyon PR CI'ında izlenir; gerçek Qwen3 çıkarımından ayrı değerlendirilir.
+
+## Yinelenen katılımcı kimlikleri
+
+Pilot ve toplu analiz seçili kayıtların tamamında dolu, benzersiz ID ister.
+İlk görüş kontrolü açıkken de kontrol bölme ve model çağrısından önce yapılır.
+Baş/son boşlukları dışında ID'ler aynen karşılaştırılır. Yinelenen ID altında
+aynı metin de farklı metin de olsa tüm işlem reddedilir; hiçbir satır sessizce
+silinmez, birleştirilmez veya yeniden numaralandırılmaz. Bu girdi hatası model
+başarısızlığı değildir: model çağrısı/sayaç/frekans çıktısı üretilmez. CLI 2 ile
+çıkar; giriş CSV'si ve varsa eski çıktı dosyaları değiştirilmez.
+
+Gerçek tekrarları araştırmacı kaynak veriye bakarak çözmelidir. Kazara çoğaltılan
+satırların aslı yedekte tutulup karar kayıt altına alınır. Aynı kişinin gerçek,
+farklı ifadeleri tek katılımcı kaydında metinleri kaybetmeden bir araya
+getirilebilir. Farklı kişilere yanlışlıkla aynı ID verilmişse kimlikler kaynakla
+doğrulanarak düzeltilir. Aynı kişiye sırf kontrolü aşmak için farklı ID vermek
+katılımcı sayısını/yüzde paydasını bozar; otomatik çözüm uygulanmaz.
+
+Bu düzeltmenin hedefli testleri (pilot + Streamlit toplu akış): 27 geçti.
+Sınırın iki tarafındaki ve kalan gruptaki tekrarlar, aynı/farklı metinler,
+boşluklu ID, dosyaların korunması ve geçerli 3 kayıtta bir model hatası için
+processed/succeeded/failed=3/2/1 ile kod/kategori/tema frekansı 2/3 (%66,67)
+doğrulandı. Test yanıtları simülasyondur; gerçek model üretimi değildir.
