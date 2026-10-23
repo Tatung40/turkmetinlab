@@ -36,17 +36,25 @@ def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 9
         raise ValueError("IP adresi açıkça belirtilmiş olmalı.") from exc
     if not address.is_loopback or parsed.port is None or parsed.path != "/v1/chat/completions":
         raise ValueError("Yalnızca yerel loopback model sunucusuna izin verilir.")
-    if not model or len(model) > 150 or not (1 <= timeout <= 900) or not (128 <= max_tokens <= 4096):
+    if not model or len(model) > 150 or not (1 <= timeout <= 900) or type(max_tokens) is not int or not (128 <= max_tokens <= 4096):
         raise ValueError("Model adı veya zaman aşımı geçersiz.")
-    body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}],
-                       "temperature": 0, "max_tokens": max_tokens, "stream": False, "response_format": {"type": "json_object"}}).encode("utf-8")
+    payload = {"model": model, "messages": [{"role": "user", "content": prompt}],
+               "temperature": 0, "max_tokens": max_tokens, "stream": False,
+               "response_format": {"type": "json_object"}}
+    if "qwen3.5" in model.lower():
+        # Ollama /v1: reasoning_effort=none maps to think=false.
+        # Do not send native /api/chat-only think/options fields here.
+        if thinking is False:
+            payload["reasoning_effort"] = "none"
+        payload["messages"][0]["content"] = (
+            "Yalnızca istenen şemaya uygun kısa JSON nesnesi döndür. "
+            "Açıklama, düşünme metni veya Markdown ekleme. Etiketleri kısa tut; "
+            "kanıt alıntısını değiştirme.\n" + prompt)
+    elif thinking is False and "qwen3" in model.lower():
+        payload["messages"][0]["content"] = "/no_think\n" + prompt
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     if len(body) > 60000:
         raise ValueError("Model istemi çok uzun.")
-    if thinking is False and 'qwen3' in model.lower():
-        # Qwen3 için düşünme metnini kapat; desteklemeyen sunucular bu alanı yok sayabilir.
-        payload = json.loads(body)
-        payload["messages"][0]["content"] = "/no_think\n" + prompt
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = Request(endpoint, data=body, headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urlopen(req, timeout=timeout) as response:
@@ -72,9 +80,16 @@ def local_completion(prompt: str, endpoint: str, model: str, *, timeout: int = 9
         choice = data["choices"][0]
         answer = choice["message"]["content"]
         if choice.get("finish_reason") == "length":
-            raise LocalModelError("Model yanıtı token sınırında kesildi; kodlama tamamlanmadı.")
+            raise LocalModelError("Model yanıtı token sınırında kesildi; kodlama tamamlanmadı. "
+                                  "Ollama sürümünü/düşünme ayarını kontrol edin; gerekirse yanıt token "
+                                  "sınırını kontrollü artırıp tek görüşü yeniden deneyin.")
     except (ValueError, KeyError, IndexError, TypeError) as exc:
         raise LocalModelError("Sunucu geçerli chat completions JSON yanıtı döndürmedi.") from exc
     if not isinstance(answer, str) or not answer.strip():
         raise LocalModelError("Model yanıtı boş veya metin değil.")
+    try:
+        if not isinstance(json.loads(answer), dict):
+            raise ValueError("JSON object required")
+    except (ValueError, TypeError) as exc:
+        raise LocalModelError("Model yanıtı eksik veya geçersiz JSON nesnesi; kodlama kabul edilmedi.") from exc
     return answer

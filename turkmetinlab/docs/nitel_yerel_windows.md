@@ -60,3 +60,42 @@ Adres `http://127.0.0.1:8080/v1/chat/completions` olur; CLI'da --endpoint ile
 verilir. Sunucu sürümü Qwen3 sohbet şablonunu ve JSON response_format'ını
 desteklemelidir. GGUF dosya adı örnektir. Bu alternatif burada çalıştırılmadı.
 
+
+## Qwen3.5:4b: düşünme ve tek görüş doğrulaması
+
+Zaten kurulu `qwen3.5:4b` kullanılıyorsa yeniden model indirmeyin. Arayüzde model
+adını `qwen3.5:4b` olarak girin; adres aynı /v1/chat/completions adresidir.
+Yanıt token sınırı başlangıçta 1024'tür; CPU için zaman aşımı ayrı ayardır.
+
+[Ollama OpenAI uyumluluk belgesi](https://docs.ollama.com/api/openai-compatibility)
+ve [kaynak kodundaki](https://github.com/ollama/ollama/blob/main/openai/openai.go)
+ThinkingFromReasoningEffort/FromChatRequest dönüşümleri 23 Ekim 2026'da incelendi:
+`reasoning_effort: "none"` → `think: false`;
+`max_tokens` → `options.num_predict`. Adapter /v1 isteğine yalnızca desteklenen
+OpenAI uyumlu alanları gönderir; native /api/chat alanlarını karıştırmaz.
+Qwen3.5 için /no_think metnine güvenilmez. Klasik Qwen3 davranışı korunur.
+
+Yerel kurulu Ollama sürümü/modeli bu kontrolü desteklemelidir. Gerekirse
+`ollama --version` ve yerel `/api/show` cevabındaki `thinking.values` kontrol edilir:
+false bulunması kapatma desteğini gösterir; metadata eksikse destek varsayılmaz.
+[Ollama düşünme belgesi](https://docs.ollama.com/capabilities/thinking).
+Desteklemeyen sürümde otomatik parametre kaldırma, tekrar veya ücretli API'ye geçiş yoktur.
+Bu ortamda kurulu sunucuyla destek/gerçek üretim doğrulanmış değildir.
+
+İlk test (nitel_demo.py bulunan klasörde; mevcut örnek verinin ilk görüşü):
+```powershell
+.\.venv\Scripts\python.exe -m scripts.nitel_gercek_model_pilot --model qwen3.5:4b --limit 1 --max-tokens 1024 --timeout 600 --output qwen35_tek.csv
+```
+Kendi veriniz için --input ile katilimci_id,metin sütunlu UTF-8 CSV verin.
+Hiyerarşi çağrısının ayrı sınırı `--hierarchy-max-tokens 3072`'dir.
+Her iki sınır 128–4096 arasındadır; sınırsız num_predict kullanılmaz.
+Otomatik büyütme/tekrar yoktur. Kesilirse düşünme kontrolü ve sürümü incelendikten
+sonra yalnızca tek görüş için bilinçli olarak 1536/2048 seçilebilir.
+
+CSV'de kaynakla birebir alıntıları, JSON'da succeeded=1, failed=0, boş errors,
+status=validated_proposals ve kaydedilen token sınırlarını inceleyin; kod–kanıt
+anlam uyumunu araştırmacı değerlendirsin. no_codes bağlantı/biçim başarısı olabilir,
+nitel bulgu değildir. finish_reason=length, boş yanıt, eksik/geçersiz JSON
+(Markdown dahil) veya kanıt uyuşmazlığı başarı sayılmaz; yanıt onarılmaz/uydurulmaz.
+Tek görüş gerçekten doğrulanmadan 20 görüşe geçmeyin. Bu değişikliğin 59 hedefli
+testi sahte transport/yanıt kullanır; gerçek Qwen3.5 sonuçları değildir.

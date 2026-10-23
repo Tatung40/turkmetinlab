@@ -18,7 +18,7 @@ def test_local_batch_settings_and_review(tmp_path, monkeypatch):
     assert not app.exception
     next(b for b in app.button if b.label == "Seçilen kayıtları otomatik kodla").click().run()
     assert not app.exception
-    assert calls == [("http://127.0.0.1:11434/v1/chat/completions", "qwen3:4b", {"timeout":180})]
+    assert calls == [("http://127.0.0.1:11434/v1/chat/completions", "qwen3:4b", {"timeout":180, "max_tokens":1024})]
     outcome = app.session_state["nitel_batch_result"]
     assert (outcome["processed"],outcome["succeeded"],outcome["failed"]) == (1,1,0)
     assert app.session_state["nitel_accepted"] == []
