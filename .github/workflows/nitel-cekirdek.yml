@@ -1,0 +1,46 @@
+name: Nitel analiz cekirdek testleri
+on:
+  push:
+    branches: [gelistirme-3-0-nitel-mvp]
+    paths:
+      - 'turkmetinlab/tmlab/nitel_cekirdek.py'
+      - 'turkmetinlab/tests/test_nitel_cekirdek.py'
+      - 'turkmetinlab/nitel_demo.py'
+      - 'turkmetinlab/tmlab/nitel_hiyerarsi.py'
+      - 'turkmetinlab/tmlab/nitel_ucretsiz.py'
+      - 'turkmetinlab/tmlab/nitel_semantik.py'
+      - 'turkmetinlab/tmlab/nitel_toplu.py'
+      - 'turkmetinlab/tests/test_nitel_toplu.py'
+      - 'turkmetinlab/tests/test_nitel_20_gorusme_pilot.py'
+      - 'turkmetinlab/tmlab/nitel_kalite.py'
+      - 'turkmetinlab/tests/test_nitel_kalite.py'
+      - 'turkmetinlab/tests/test_nitel_ayrinti.py'
+      - 'turkmetinlab/tmlab/nitel_rapor.py'
+      - 'turkmetinlab/tests/test_nitel_rapor.py'
+      - 'turkmetinlab/tests/test_nitel_gercek_pilot.py'
+      - 'turkmetinlab/scripts/nitel_gercek_model_pilot.py'
+      - 'turkmetinlab/tests/fixtures/nitel_20_gorusme.csv'
+      - 'turkmetinlab/tmlab/nitel_local_model.py'
+      - 'turkmetinlab/tests/test_nitel_local_model.py'
+      - 'turkmetinlab/tests/test_nitel_semantik.py'
+      - 'turkmetinlab/tests/test_nitel_ucretsiz.py'
+      - 'turkmetinlab/tests/test_nitel_hiyerarsi.py'
+      - '.github/workflows/nitel-cekirdek.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: turkmetinlab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest numpy
+      - run: python -m py_compile nitel_demo.py tmlab/nitel_cekirdek.py tmlab/nitel_local_model.py tmlab/nitel_hiyerarsi.py tmlab/nitel_ucretsiz.py tmlab/nitel_semantik.py tmlab/nitel_toplu.py tmlab/nitel_kalite.py tmlab/nitel_rapor.py scripts/nitel_gercek_model_pilot.py
+      - run: python -m pytest -q tests/test_nitel_cekirdek.py tests/test_nitel_local_model.py tests/test_nitel_hiyerarsi.py tests/test_nitel_ucretsiz.py tests/test_nitel_semantik.py tests/test_nitel_toplu.py tests/test_nitel_20_gorusme_pilot.py tests/test_nitel_kalite.py tests/test_nitel_ayrinti.py tests/test_nitel_rapor.py tests/test_nitel_gercek_pilot.py
