@@ -1,9 +1,20 @@
 """Ücretsiz yerel model ile toplu nitel kod önerisi. Ağ ücretli API'ye açılmaz."""
 from __future__ import annotations
+from .nitel_local_model import LocalModelError
 from .nitel_cekirdek import prepare_prompt, analyze_model_response
 from .nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
 MAX_BATCH = 200
+
+def validate_records(records):
+    """Tüm girdiyi model çağrısından önce doğrula; silme/birleştirme yapma."""
+    items = list(records)
+    if not items or len(items) > MAX_BATCH:
+        raise ValueError("Tek toplu işlem 1–200 kayıt içermelidir.")
+    ids = [str(pid).strip() for pid, _ in items]
+    if any(not pid for pid in ids) or len(set(ids)) != len(ids):
+        raise ValueError("Toplu işlem için dolu, benzersiz kayıt numaraları gerekir.")
+    return items, ids
 
 def batch_analyze(records, completion, *, codebook=(), progress=None, detail='Dengeli'):
     """Her kayıt için tek model isteği. processed=denenen kayıt sayısıdır.
@@ -15,12 +26,7 @@ def batch_analyze(records, completion, *, codebook=(), progress=None, detail='De
 
     completion(prompt) -> JSON metni. Doğrudan yerel adapter veya test sahte fonksiyonu.
     """
-    items = list(records)
-    if not items or len(items) > MAX_BATCH:
-        raise ValueError("Tek toplu işlem 1–200 kayıt içermelidir.")
-    ids = [str(pid).strip() for pid, _ in items]
-    if any(not pid for pid in ids) or len(set(ids)) != len(ids):
-        raise ValueError("Toplu işlem için dolu, benzersiz kayıt numaraları gerekir.")
+    items, ids = validate_records(records)
     labels = tuple(codebook)
     accepted, failures = [], []
     succeeded = failed = 0
@@ -38,7 +44,10 @@ def batch_analyze(records, completion, *, codebook=(), progress=None, detail='De
                 failures.append({"participant_id":pid,"reason":reason})
         except Exception as exc:
             failed += 1
-            failures.append({"participant_id":pid,"reason":type(exc).__name__})
+            error = {"participant_id":pid,"reason":type(exc).__name__}
+            if isinstance(exc, LocalModelError):
+                error["message"] = str(exc)
+            failures.append(error)
         if progress is not None:
             progress(index + 1, len(items))
     hierarchy = build_hierarchy(accepted, ids)

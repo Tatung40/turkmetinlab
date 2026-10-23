@@ -1,14 +1,14 @@
 """TürkMetinLab 3.0 — bağımsız nitel analiz pilot ekranı.
 
 Çalıştırma: streamlit run nitel_demo.py
-LLM/API yok; veriler yalnızca Streamlit oturumunda, dışa aktarım kullanıcı isteğiyle.
+Yerel LLM isteğe bağlıdır; Streamlit ve model aynı bilgisayarda çalışmalıdır.
 """
 import json
 from dataclasses import asdict
 import pandas as pd
 import streamlit as st
 from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_response, frequencies
-from tmlab.nitel_local_model import local_completion
+from tmlab.nitel_local_model import local_completion, LocalModelError
 from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
 from tmlab.nitel_semantik import from_e5
 from tmlab.nitel_toplu import batch_analyze, regroup_once
@@ -18,8 +18,8 @@ from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, val
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
 st.title("TürkMetinLab 3.0 — Nitel Veri Analizi (Pilot)")
-st.info("Deneysel ekran. Otomatik kodlama henüz modele bağlı değil; "
-        "taslak kodlar araştırmacı onayı olmadan bilimsel sonuç sayılmaz.")
+st.info("Yerel modelle deneysel nitel kodlama. Streamlit ve model aynı bilgisayarda çalışmalıdır. "
+        "Taslak kodlar araştırmacı onayı olmadan bilimsel sonuç sayılmaz.")
 if "nitel_accepted" not in st.session_state:
     st.session_state.nitel_accepted = []
 if "nitel_pending" not in st.session_state:
@@ -78,17 +78,22 @@ with st.expander("İsteğe bağlı yerel model bağlantısı — ücretsiz / öz
                "Streamlit Cloud bu bağlantıyla sizin bilgisayarınızdaki modele erişemez. "
                "Üçüncü taraf API'ye veri gönderilmez.")
     local_url = st.text_input("Yerel model adresi", "http://127.0.0.1:11434/v1/chat/completions")
-    local_name = st.text_input("Yerel model adı", "turkish-llama")
+    local_name = st.text_input("Yerel model adı", "qwen3:4b")
+    local_timeout = st.number_input("Model zaman aşımı (saniye)", min_value=1, max_value=900, value=180)
+    def _local_complete(text):
+        return local_completion(text, local_url, local_name, timeout=int(local_timeout))
     if st.button("Yerel modelden kod öner", disabled=not bool(prompt)):
         try:
-            result_text = local_completion(prompt,local_url,local_name)
+            result_text = _local_complete(prompt)
             result = analyze_model_response(pid,source,result_text,codebook.splitlines() if codebook.strip() else None)
             st.session_state.nitel_pending = result["codes"]
             if result["rejected"]:
                 st.warning("Kanıt denetiminde reddedilen: " + "; ".join(result["rejected"]))
             st.success(f"{len(result['codes'])} kanıtı doğrulanmış öneri alındı.")
-        except Exception as ex:
-            st.error("Yerel model çağrısı başarısız. Adres, model ve JSON biçimini kontrol edin.")
+        except LocalModelError as ex:
+            st.error(str(ex))
+        except Exception:
+            st.error("Yerel model yanıtı doğrulanamadı. Adres, model ve JSON biçimini kontrol edin.")
 if records:
     with st.expander("Toplu otomatik nitel kod önerileri — ücretsiz yerel model"):
         st.caption("Bir işlemde en çok 200 benzersiz katılımcı. Yerel model her kaydı bir kez işler; öneriler insan onayı gerektirir. "
@@ -102,11 +107,12 @@ if records:
             try:
                 subset = records[:int(n_batch)]
                 outcome = batch_analyze(
-                    subset, lambda p: local_completion(p, local_url, local_name),
-                    codebook.splitlines(), progress=_advance, detail=detail)
+                    subset, _local_complete,
+                    codebook=codebook.splitlines(), progress=_advance, detail=detail)
                 st.session_state.nitel_batch_result = outcome
-                st.success(f"{outcome['processed']} kayıt işlendi; {len(outcome['proposals'])} öneri ve "
-                           f"{len(outcome['errors'])} uyarı üretildi.")
+                st.info(f"Denenen: {outcome['processed']} | Doğrulanan: {outcome['succeeded']} | "
+                        f"Başarısız: {outcome['failed']} | Öneri: {len(outcome['proposals'])}. "
+                        "Doğrulanan boş yanıt kod bulunduğu anlamına gelmez.")
             except (ValueError, TypeError) as exc:
                 st.error(str(exc))
         report = st.session_state.get("nitel_batch_result")
@@ -118,9 +124,11 @@ if records:
                          disabled=not bool(report["proposals"])):
                 try:
                     st.session_state.nitel_batch_result = regroup_once(
-                        report,lambda p: local_completion(p,local_url,local_name))
+                        report,_local_complete)
                     st.success("Toplu kategori ve tema önerileri oluşturuldu.")
                     st.rerun()
+                except LocalModelError as ex:
+                    st.error(str(ex))
                 except Exception:
                     st.error("Model hiyerarşiyi eksik ya da geçersiz döndürdü; eski sonuçlar korundu.")
             if st.button("Tüm toplu önerileri araştırmacı denetimine ekle"):
@@ -216,13 +224,14 @@ if accepted:
             st.caption("Bu istem özgün görüşmeleri değil, yalnızca kod adları ve sayıları içerir. Kod adları yine hassas bilgi barındırabilir.")
         if st.button("Yerel modelle kategori ve temaları otomatik öner"):
             try:
-                response_auto = local_completion(st.session_state.nitel_hierarchy_prompt,
-                                                 local_url, local_name)
+                response_auto = _local_complete(st.session_state.nitel_hierarchy_prompt)
                 grouping_auto = validate_hierarchy_response(
                     response_auto, {r["code"] for r in accepted})
                 st.session_state.nitel_accepted = apply_hierarchy(accepted, grouping_auto)
                 st.success("Kategori ve temalar model tarafından önerildi. Araştırmacı onayı gereklidir.")
                 st.rerun()
+            except LocalModelError as ex:
+                st.error(str(ex))
             except Exception:
                 st.error("Yerel model kategorileri/temaları uygun JSON biçiminde döndürmedi veya erişilemedi.")
         st.caption("Model cevabını buraya yapıştırın; tüm kodlar korunmadan yeni hiyerarşi kabul edilmez.")

@@ -90,3 +90,97 @@ def test_cli_persists_counts_and_returns_failure(tmp_path, monkeypatch, capsys, 
     saved = json.loads(output.with_suffix(".report.json").read_text(encoding="utf-8"))
     for report in (console, saved):
         assert (report["processed"], report["succeeded"], report["failed"]) == (1, int(not fails), int(fails))
+
+@pytest.mark.parametrize("first", ['{"codes":[]}', 'not json', response("invented")])
+def test_first_record_gate_stops_without_retries(first):
+    calls = []
+    def complete(*a, **kw):
+        calls.append(kw)
+        return first
+    result = run([("T01", "Kaynak"), ("T02", "Başka")], complete, verify_first=True)
+    assert len(calls) == 1
+    assert result["processed"] == 1
+    assert result["errors"][-1]["reason"] == "FirstRecordNotVerified"
+
+def test_first_record_gate_reuses_first_result():
+    calls = []
+    def complete(prompt, *, hierarchy=False):
+        calls.append(hierarchy)
+        if hierarchy:
+            return json.dumps({"mapping":[{"code":"Kod","category":"Kategori","theme":"Tema"}]})
+        return response(prompt.split("KAYNAK:\n")[1])
+    result = run([("T01","Kaynak"), ("T02","Başka")], complete, verify_first=True)
+    assert calls == [False, False, True]
+    assert (result["processed"], result["succeeded"], result["failed"]) == (2,2,0)
+    assert len(result["proposals"]) == 2
+
+def test_hierarchy_transport_error_preserves_outputs():
+    from tmlab.nitel_local_model import LocalModelError
+    def complete(prompt, *, hierarchy=False):
+        if hierarchy: raise LocalModelError("Yerel modele erişilemedi.")
+        return response("Kaynak")
+    result = run([("T01","Kaynak")], complete)
+    assert result["succeeded"] == 1 and result["failed"] == 0
+    assert result["errors"] == [{"participant_id":"_hierarchy","reason":"LocalModelError",
+        "message":"Yerel modele erişilemedi."}]
+    assert len(result["proposals"]) == 1
+
+@pytest.mark.parametrize("verify_first", [False, True])
+@pytest.mark.parametrize("records", [
+    [("T01","Aynı metin"), ("T01","Aynı metin")],
+    [("T01","İlk görüş"), ("T01","Farklı görüş")],
+    [("T01","İlk"), ("T02","İkinci"), ("T01","Üçüncü")],
+    [("T01","İlk"), ("T02","İkinci"), ("T02","Üçüncü")],
+    [(" T01 ","İlk"), ("T01","İkinci")],
+])
+def test_duplicate_ids_rejected_before_any_model_call(records, verify_first):
+    original = list(records)
+    def forbidden(*a, **kw):
+        pytest.fail("Invalid batch must not call the model")
+    with pytest.raises(ValueError, match="benzersiz"):
+        run(records, forbidden, verify_first=verify_first)
+    assert records == original  # Neither identical nor different texts are dropped.
+
+def test_verified_batch_counts_and_percentages_after_one_failure():
+    calls = []
+    def complete(prompt, *, hierarchy=False):
+        calls.append(hierarchy)
+        if hierarchy:
+            return json.dumps({"mapping":[{"code":"Kod","category":"Kategori","theme":"Tema"}]})
+        source = prompt.split("KAYNAK:\n")[1]
+        if source == "Hatalı":
+            raise URLError("simulated failure")
+        return response(source)
+    result = run([("T01","Birinci"), ("T02","Hatalı"), ("T03","Üçüncü")],
+                 complete, verify_first=True)
+    assert (result["processed"], result["succeeded"], result["failed"]) == (3,2,1)
+    assert result["participant_ids"] == ["T01","T02","T03"]
+    assert calls == [False,False,False,True]
+    assert len(result["proposals"]) == 2
+    assert result["errors"] == [{"participant_id":"T02","reason":"URLError"}]
+    assert result["quality"]["participants"] == 3
+    assert result["quality"]["assignments"] == 2
+    for level in ("codes","categories","themes"):
+        row = result["frequencies"][level][0]
+        assert (row["n_participants"], row["n_evidence"], row["percentage"]) == (2,2,66.67)
+
+def test_duplicate_csv_does_not_overwrite_input_or_existing_outputs(tmp_path, monkeypatch, capsys):
+    source = tmp_path / "input.csv"
+    data = "katilimci_id,metin\nT01,Birinci\nT01,İkinci\n"
+    source.write_text(data, encoding="utf-8")
+    output = tmp_path / "output.csv"
+    report = output.with_suffix(".report.json")
+    output.write_text("previous csv", encoding="utf-8")
+    report.write_text("previous report", encoding="utf-8")
+    def forbidden(*a, **kw):
+        pytest.fail("Duplicate CSV must not call the model")
+    monkeypatch.setattr(pilot, "local_completion", forbidden)
+    monkeypatch.setattr("sys.argv", ["pilot","--model","qwen3:4b","--limit","20",
+        "--input",str(source),"--output",str(output)])
+    with pytest.raises(SystemExit) as error:
+        pilot.main()
+    assert error.value.code == 2
+    assert "benzersiz" in capsys.readouterr().err
+    assert source.read_text(encoding="utf-8") == data
+    assert output.read_text(encoding="utf-8") == "previous csv"
+    assert report.read_text(encoding="utf-8") == "previous report"
