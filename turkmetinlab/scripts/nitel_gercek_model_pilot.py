@@ -29,6 +29,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--input",default="tests/fixtures/nitel_20_gorusme.csv")
     ap.add_argument("--model",required=True)
+    ap.description = "processed=denenen, succeeded=doğrulanan, failed=hatalı görüş; boş kod listesi geçerlidir."
     ap.add_argument("--limit",type=int,default=20,help="Önce 1 kayıtla bağlantıyı deneyin; en çok 20.")
     ap.add_argument("--output",default="nitel_pilot_kodlar.csv")
     ap.add_argument("--endpoint",default="http://127.0.0.1:11434/v1/chat/completions")
@@ -52,13 +53,17 @@ def main():
         writer.writerows({k:r.get(k,"") for k in columns} for r in report["proposals"])
     json_path=output.with_suffix(".report.json")
     json_path.write_text(json.dumps({
+        "processed":report["processed"],"succeeded":report["succeeded"],"failed":report["failed"],
+        "model":args.model,"endpoint":args.endpoint,
         "summary":report["frequencies"]["summary"],"codes":report["frequencies"]["codes"],
         "categories":report["frequencies"]["categories"],"themes":report["frequencies"]["themes"],
         "warnings":report["quality"]["warnings"],"errors":report["errors"],
         "requires_researcher_approval":True,
     },ensure_ascii=False,indent=2),encoding="utf-8")
-    print(json.dumps({"processed":report["processed"],"proposals":len(report["proposals"]),
+    print(json.dumps({"processed":report["processed"],
+                      "succeeded":report["succeeded"],"failed":report["failed"],"proposals":len(report["proposals"]),
                       "errors":len(report["errors"]),"csv":str(output),"report":str(json_path)},
                      ensure_ascii=False))
+    return 1 if report["failed"] or report["errors"] else 0
 if __name__=="__main__":
-    main()
+    raise SystemExit(main())

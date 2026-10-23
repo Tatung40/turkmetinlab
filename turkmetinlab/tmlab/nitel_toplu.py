@@ -6,7 +6,12 @@ from .nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate
 MAX_BATCH = 200
 
 def batch_analyze(records, completion, *, codebook=(), progress=None, detail='Dengeli'):
-    """Her kayıt için tek model isteği. Hatalı kayıtları ayrı raporlar, sessizce silmez.
+    """Her kayıt için tek model isteği. processed=denenen kayıt sayısıdır.
+
+    succeeded: yanıtı ayrıştırılan ve hiçbir önerisi reddedilmeyen kayıtlar
+    (geçerli boş kod listesi dahil). failed: çağrı/ayrıştırma/doğrulama hatalı
+    kayıtlar; aynı kaydın birden fazla hatası sayacı artırmaz. Kısmen geçerli
+    öneriler korunur. Hiyerarşi çağrısı bu görüş sayaçlarına dahil değildir.
 
     completion(prompt) -> JSON metni. Doğrudan yerel adapter veya test sahte fonksiyonu.
     """
@@ -18,21 +23,28 @@ def batch_analyze(records, completion, *, codebook=(), progress=None, detail='De
         raise ValueError("Toplu işlem için dolu, benzersiz kayıt numaraları gerekir.")
     labels = tuple(codebook)
     accepted, failures = [], []
+    succeeded = failed = 0
     for index, (pid, source) in enumerate(items):
         try:
             prompt = prepare_prompt(source, labels, detail=detail)
             result = analyze_model_response(pid, source, completion(prompt),
                                             labels if labels else None)
             accepted.extend(result["codes"])
+            if result["rejected"]:
+                failed += 1
+            else:
+                succeeded += 1
             for reason in result["rejected"]:
                 failures.append({"participant_id":pid,"reason":reason})
         except Exception as exc:
+            failed += 1
             failures.append({"participant_id":pid,"reason":type(exc).__name__})
         if progress is not None:
             progress(index + 1, len(items))
     hierarchy = build_hierarchy(accepted, ids)
     return {"proposals":accepted, "errors":failures, "hierarchy":hierarchy,
-            "processed":len(items), "participant_ids":ids, "requires_researcher_approval":True}
+            "processed":len(items), "succeeded":succeeded, "failed":failed,
+            "participant_ids":ids, "requires_researcher_approval":True}
 
 def regroup_once(batch_result, completion):
     """Ham metinleri tekrar göndermeden tüm kodlar için yalnızca BİR model çağrısı."""
