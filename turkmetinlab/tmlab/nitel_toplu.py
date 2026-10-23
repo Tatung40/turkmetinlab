@@ -1,5 +1,6 @@
 """Ücretsiz yerel model ile toplu nitel kod önerisi. Ağ ücretli API'ye açılmaz."""
 from __future__ import annotations
+from .nitel_local_model import LocalModelError
 from .nitel_cekirdek import prepare_prompt, analyze_model_response
 from .nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
 
@@ -38,7 +39,10 @@ def batch_analyze(records, completion, *, codebook=(), progress=None, detail='De
                 failures.append({"participant_id":pid,"reason":reason})
         except Exception as exc:
             failed += 1
-            failures.append({"participant_id":pid,"reason":type(exc).__name__})
+            error = {"participant_id":pid,"reason":type(exc).__name__}
+            if isinstance(exc, LocalModelError):
+                error["message"] = str(exc)
+            failures.append(error)
         if progress is not None:
             progress(index + 1, len(items))
     hierarchy = build_hierarchy(accepted, ids)

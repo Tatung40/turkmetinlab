@@ -45,3 +45,44 @@ def test_qwen3_no_think_and_other_models_unchanged(monkeypatch):
     mod.local_completion("Deneme",endpoint,"qwen3:4b")
     mod.local_completion("Deneme",endpoint,"another-model")
     assert captured==["/no_think\nDeneme","Deneme"]
+
+# All transport tests below use mocks; no local or external server is contacted.
+import json
+from urllib.error import URLError, HTTPError
+import tmlab.nitel_local_model as mod
+
+def test_local_transport_has_no_proxy_or_redirect():
+    from urllib.request import ProxyHandler
+    opener = mod.urlopen.__self__
+    assert not any(isinstance(h, ProxyHandler) and h.proxies for h in opener.handlers)
+    guard = next(h for h in opener.handlers if isinstance(h, mod._NoRedirect))
+    assert guard.redirect_request(None, None, 307, "", {}, "https://example.org") is None
+
+@pytest.mark.parametrize("exc,fragment", [
+    (URLError("private server data"), "aynı"),
+    (PermissionError("private server data"), "aynı"),
+    (TimeoutError(), "süre"),
+    (HTTPError("http://127.0.0.1", 404, "", {}, None), "bulunamadı"),
+    (HTTPError("http://127.0.0.1", 307, "", {}, None), "yönlendirmesi"),
+])
+def test_actionable_safe_errors(monkeypatch, exc, fragment):
+    def fail(*a, **kw): raise exc
+    monkeypatch.setattr(mod, "urlopen", fail)
+    with pytest.raises(mod.LocalModelError, match=fragment) as error:
+        mod.local_completion("sensitive participant text", "http://127.0.0.1:11434/v1/chat/completions", "qwen3:4b")
+    assert "private server data" not in str(error.value)
+    assert "sensitive participant text" not in str(error.value)
+
+@pytest.mark.parametrize("payload", [
+    b"not json", b"{}", b'{"choices":[]}',
+    b'{"choices":[{"message":{"content":""}}]}',
+    b'{"choices":[{"finish_reason":"length","message":{"content":"{}"}}]}',
+])
+def test_invalid_or_truncated_server_response(monkeypatch, payload):
+    class Fake:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, size): return payload
+    monkeypatch.setattr(mod, "urlopen", lambda *a, **kw: Fake())
+    with pytest.raises(mod.LocalModelError):
+        mod.local_completion("source", "http://127.0.0.1:11434/v1/chat/completions", "qwen3:4b")

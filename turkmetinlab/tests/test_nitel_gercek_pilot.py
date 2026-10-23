@@ -90,3 +90,37 @@ def test_cli_persists_counts_and_returns_failure(tmp_path, monkeypatch, capsys, 
     saved = json.loads(output.with_suffix(".report.json").read_text(encoding="utf-8"))
     for report in (console, saved):
         assert (report["processed"], report["succeeded"], report["failed"]) == (1, int(not fails), int(fails))
+
+@pytest.mark.parametrize("first", ['{"codes":[]}', 'not json', response("invented")])
+def test_first_record_gate_stops_without_retries(first):
+    calls = []
+    def complete(*a, **kw):
+        calls.append(kw)
+        return first
+    result = run([("T01", "Kaynak"), ("T02", "Başka")], complete, verify_first=True)
+    assert len(calls) == 1
+    assert result["processed"] == 1
+    assert result["errors"][-1]["reason"] == "FirstRecordNotVerified"
+
+def test_first_record_gate_reuses_first_result():
+    calls = []
+    def complete(prompt, *, hierarchy=False):
+        calls.append(hierarchy)
+        if hierarchy:
+            return json.dumps({"mapping":[{"code":"Kod","category":"Kategori","theme":"Tema"}]})
+        return response(prompt.split("KAYNAK:\n")[1])
+    result = run([("T01","Kaynak"), ("T02","Başka")], complete, verify_first=True)
+    assert calls == [False, False, True]
+    assert (result["processed"], result["succeeded"], result["failed"]) == (2,2,0)
+    assert len(result["proposals"]) == 2
+
+def test_hierarchy_transport_error_preserves_outputs():
+    from tmlab.nitel_local_model import LocalModelError
+    def complete(prompt, *, hierarchy=False):
+        if hierarchy: raise LocalModelError("Yerel modele erişilemedi.")
+        return response("Kaynak")
+    result = run([("T01","Kaynak")], complete)
+    assert result["succeeded"] == 1 and result["failed"] == 0
+    assert result["errors"] == [{"participant_id":"_hierarchy","reason":"LocalModelError",
+        "message":"Yerel modele erişilemedi."}]
+    assert len(result["proposals"]) == 1
