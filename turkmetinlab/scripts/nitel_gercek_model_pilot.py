@@ -8,7 +8,13 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
+
+# `python scripts/...` puts scripts/ (not the project root) on sys.path; make tmlab importable.
+KOK = str(Path(__file__).resolve().parents[1])
+if KOK not in sys.path:
+    sys.path.insert(0, KOK)
 from tmlab.nitel_local_model import local_completion, LocalModelError
 from tmlab.nitel_toplu import batch_analyze, regroup_once, validate_records
 from tmlab.nitel_rapor import frequency_tables
