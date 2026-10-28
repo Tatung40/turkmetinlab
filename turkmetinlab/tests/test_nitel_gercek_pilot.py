@@ -201,3 +201,14 @@ def test_cli_qwen35_explicit_token_limits(tmp_path, monkeypatch, capsys):
     report = json.loads(output.with_suffix(".report.json").read_text(encoding="utf-8"))
     assert report["max_tokens"] == 1536 and report["hierarchy_max_tokens"] == 2048
     assert report["status"] == "no_codes"
+
+
+def test_script_runs_as_documented_file_path():
+    """`python scripts/nitel_gercek_model_pilot.py` must import tmlab (no model call: --help only)."""
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).parents[1]
+    done = subprocess.run([sys.executable, "scripts/nitel_gercek_model_pilot.py", "--help"], cwd=root,
+                          capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
