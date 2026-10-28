@@ -1,0 +1,24 @@
+name: ELECTRA Gercek Model CPU Dogrulamasi
+on:
+  push:
+    branches: [gelistirme-2.5-staging]
+    paths:
+      - 'turkmetinlab/tmlab/electra_duygu.py'
+      - 'turkmetinlab/tests/electra_gercek_smoke.py'
+      - '.github/workflows/electra-gercek.yml'
+  workflow_dispatch:
+jobs:
+  gercek-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: CPU bagimliliklari
+        run: python -m pip install --disable-pip-version-check numpy onnxruntime tokenizers
+      - name: Hugging Face uzerinden gercek model indir ve cikarim yap
+        env:
+          PYTHONPATH: turkmetinlab
+        run: python turkmetinlab/tests/electra_gercek_smoke.py

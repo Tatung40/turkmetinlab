@@ -37,7 +37,8 @@ def _kaynak_dosyalar():
 
 def test_cache_data_yalnizca_ornek_veri_icin():
     """st.cache_data / st.cache_resource yalnızca izin verilen, kullanıcı verisi almayan işlevlerde."""
-    izinli = {"_ornek_oku"}
+    # 2.5: _kodlayici yalnızca model klasörünü alır (model ağırlıkları; kullanıcı verisi değil)
+    izinli = {"_ornek_oku": ["baslik_satiri"], "_kodlayici": ["kimlik", "klasor"]}
     for yol in _kaynak_dosyalar():
         agac = ast.parse(open(yol, encoding="utf-8").read())
         for dugum in ast.walk(agac):
@@ -48,7 +49,11 @@ def test_cache_data_yalnizca_ornek_veri_icin():
                         assert dugum.name in izinli, f"{yol}: {dugum.name} paylaşılan önbellek kullanıyor"
                         # İzinli işlev bayt/dosya gibi kullanıcı verisi parametresi almamalı
                         parametreler = [a.arg for a in dugum.args.args]
-                        assert parametreler == ["baslik_satiri"], parametreler
+                        assert parametreler == izinli[dugum.name], parametreler
+
+
+# 2.5 istisnası: yalnızca model dosyalarını (ağırlık, belirteçleyici, künye) önbelleğe indiren işlev diske yazar.
+MODEL_INDIREN = ("anlamsal.py", "model_hazirla")
 
 
 def test_diske_yazan_kod_yok():
@@ -56,7 +61,13 @@ def test_diske_yazan_kod_yok():
     for yol in _kaynak_dosyalar():
         kaynak = open(yol, encoding="utf-8").read()
         agac = ast.parse(kaynak)
+        istisna = set()
+        for f in ast.walk(agac):
+            if isinstance(f, ast.FunctionDef) and (os.path.basename(yol), f.name) == MODEL_INDIREN:
+                istisna = {id(d) for d in ast.walk(f)}
         for dugum in ast.walk(agac):
+            if id(dugum) in istisna:
+                continue
             if isinstance(dugum, ast.Call) and isinstance(dugum.func, ast.Name) and dugum.func.id == "open":
                 kip = dugum.args[1].value if len(dugum.args) > 1 and isinstance(dugum.args[1], ast.Constant) else "r"
                 for k in dugum.keywords:

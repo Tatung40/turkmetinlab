@@ -1,0 +1,22 @@
+streamlit==1.65.0
+pandas==3.0.5
+numpy==2.5.3
+scikit-learn==1.9.1
+scipy==1.18.1
+networkx==3.6.1
+plotly==7.1.0
+wordcloud==1.9.6
+matplotlib==3.11.2
+openpyxl==3.1.5
+xlsxwriter==3.2.9
+simplemma==2.0.0
+# 2.5 deneysel anlamsal analiz (E5 ONNX FP32)
+onnxruntime==1.31.0
+tokenizers==0.23.3
+python-docx>=1.1,<2
+
+# BERTopic (yalnızca staging; canlı 2.1 requirements değiştirilmedi)
+# MIT-licensed BERTopic 0.17.4 verified lightweight package (no Torch deps)
+https://raw.githubusercontent.com/Tatung40/turkmetinlab/3e8fb02b019f3c3b748ba8b8c3a6d609b035edb4/turkmetinlab/staging/vendor/bertopic-0.17.4-py3-none-any.whl
+PyYAML==6.0.3
+tqdm==4.70.1

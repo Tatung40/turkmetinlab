@@ -1,0 +1,24 @@
+name: TES-Lex Gercek Veri Dogrulamasi
+on:
+  push:
+    branches: [gelistirme-2.5-staging]
+    paths:
+      - 'turkmetinlab/tmlab/teslex.py'
+      - 'turkmetinlab/tests/teslex_gercek_smoke.py'
+      - '.github/workflows/teslex-gercek.yml'
+  workflow_dispatch:
+jobs:
+  veri:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gerekli kutuphaneler
+        run: python -m pip install --disable-pip-version-check pandas openpyxl
+      - name: Gercek TES-Lex Excel kontrolu
+        env:
+          PYTHONPATH: turkmetinlab
+        run: python turkmetinlab/tests/teslex_gercek_smoke.py

@@ -1,0 +1,89 @@
+name: BERTopic izole fizibilite
+on:
+  workflow_dispatch:
+  push:
+    branches: [gelistirme-2.5-staging]
+    paths:
+      - "turkmetinlab/tmlab/bertopic_adapter.py"
+      - "turkmetinlab/tests/test_bertopic_adapter.py"
+      - "turkmetinlab/tests/test_bertopic_arayuz.py"
+      - ".github/workflows/bertopic-izole.yml"
+      - "turkmetinlab/staging/requirements.txt"
+      - "turkmetinlab/app.py"
+jobs:
+  bertopic:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: İsteğe bağlı paketleri kur
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r turkmetinlab/staging/requirements.txt pytest onnx
+          python -m pip check
+          python - <<'PY'
+          import bertopic, numpy, sklearn, streamlit, onnxruntime
+          import importlib.util
+          assert importlib.util.find_spec('torch') is None
+          assert importlib.util.find_spec('sentence_transformers') is None
+          print("BERTopic version:", bertopic.__version__)
+          print("numpy:", numpy.__version__, "sklearn:", sklearn.__version__)
+          PY
+      - name: Birim testleri
+        working-directory: turkmetinlab
+        run: python -m pytest tests/test_bertopic_adapter.py tests/test_bertopic_arayuz.py -q
+      - name: Gerçek BERTopic hesaplama
+        working-directory: turkmetinlab
+        run: |
+          python - <<'PY'
+          import numpy as np
+          from tmlab.bertopic_adapter import run
+          samples=[
+          "İklim değişikliği ve kuraklık tarımı etkiliyor",
+          "Yağış azlığı su kaynaklarını tehlikeye atıyor",
+          "Dünya ısınıyor ve kuraklık büyüyor",
+          "Atmosferde sera gazı birikiyor",
+          "İklim krizi tarımsal verimliliği düşürüyor",
+          "Kuraklık sebebiyle barajlar boşalıyor",
+          "Öğrenciler matematik sınavına hazırlanıyor",
+          "Eğitim programı ve öğretim yöntemleri tartışılıyor",
+          "Öğretmenler sınıfta ölçme değerlendirme yapıyor",
+          "Öğrencilerin sınav başarısı analiz ediliyor",
+          "Okullarda öğretmen eğitimi sürüyor",
+          "Matematik dersinde öğrenciler soru çözüyor",
+          "Hastaneler sağlık hizmeti sunuyor",
+          "Doktorlar hastalara tedavi uyguluyor",
+          "Sağlık araştırmaları hastalıkları inceliyor",
+          "Tıp alanında hastalık teşhisi ilerliyor",
+          "Hastalar doktor randevusu alıyor",
+          "Tedavi yöntemleri hastanelerde uygulanıyor",
+          ] * 2
+          rng=np.random.default_rng(42)
+          x=np.concatenate([
+             rng.normal(0,0.01,(12,16))+np.eye(16)[0],
+             rng.normal(0,0.01,(12,16))+np.eye(16)[1],
+             rng.normal(0,0.01,(12,16))+np.eye(16)[2]
+          ])
+          model,docs,topics=run(samples,x,n_topics=3,min_df=1)
+          assert len(docs)==36 and len(topics)>=3
+          print(topics.to_string(index=False))
+          print("NOTE: Synthetic vectors prove integration, not real E5 semantic performance.")
+          PY
+
+      - name: Verify lightweight package provenance
+        run: |
+          python -m pip download --no-deps --only-binary=:all: bertopic==0.17.4 -d /tmp/bertopic_upstream
+          python turkmetinlab/tools/prepare_bertopic_wheel.py /tmp/bertopic_upstream/bertopic-0.17.4-py3-none-any.whl /tmp/bertopic-check.whl
+          python - <<'PY'
+          import zipfile
+          name='turkmetinlab/staging/vendor/bertopic-0.17.4-py3-none-any.whl'
+          with zipfile.ZipFile(name) as z:
+              assert z.testzip() is None
+              assert any(s.endswith('TURKMETINLAB_NOTICE.txt') for s in z.namelist())
+          print('Audited lightweight BERTopic wheel verified')
+          PY

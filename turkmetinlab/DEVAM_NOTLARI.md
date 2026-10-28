@@ -1,3 +1,30 @@
+# TürkMetinLab 2.5 staging — Devam notları (20 Ekim 2026)
+
+Dal: `gelistirme-2.5-staging`. `main` ve canlı uygulama **değişmedi**. Ayrıntı: `staging/README.md`.
+
+- **Yeni modüller:**
+  - `tmlab/anlamsal.py`: ONNX FP32 kodlayıcı, indirme ve SHA-256 doğrulaması, TF-IDF sorgu vektörü, hibrit.
+  - `tmlab/anlamsal_sekme.py`: arayüz.
+- **Uygulama değişikliği:** `app.py` içinde yalnızca bayrakla açılan sekme (+8 satır). Bayrak kapalıyken sekmeler
+  2.1 ile aynı (test edildi).
+- **Testler (küçük sınama modeli):**
+  - `tests/test_anlamsal.py` (13) ve `tests/test_anlamsal_arayuz.py` (9).
+  - Tüm paket: 480+ test.
+  - `tests/test_gizlilik.py`'ye iki dar istisna eklendi:
+    - `_kodlayici` önbelleği yalnızca model klasörünü alır;
+    - `model_hazirla` yalnızca model dosyası yazar.
+- **Gerçek E5 ile doğrulanmadı.** `onnx-2.5.yml` *staging* kipi `staging/entegrasyon_testi.py`'yi çalıştırır:
+  - uygulama kodlayıcısı ↔ fizibilite kodlayıcısı (20 belge);
+  - 100/500 belge ölçek ve bellek ölçümü;
+  - n=500 görev B'de ONNX #3 değerlerini yeniden üretme (±0,002);
+  - AppTest.
+
+  Geçerse model Hugging Face'e yüklenir (HF_TOKEN varsa).
+- **Sıradaki adımlar:**
+  1. İş akışını *staging* kipinde çalıştır.
+  2. Streamlit'te ayrı staging uygulaması kur ve bellek/süreyi gözlemle.
+  3. Üretim kararı ancak bundan sonra verilmeli.
+
 # TürkMetinLab 2.1 — Devam notları
 
 Son güncelleme: 16 Ekim 2026 · Dal: `gelistirme-2.1` · `main` dalına ve canlı Streamlit uygulamasına

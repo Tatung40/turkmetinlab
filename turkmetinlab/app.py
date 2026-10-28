@@ -28,6 +28,7 @@ from tmlab import birliktelik as ba
 from tmlab import grup as gr
 from tmlab import konu as km
 from tmlab import terimler as tm
+from tmlab.akademik_terimler import load_lexicon
 from tmlab.analysis import (TfidfHatasi, derlem_ozeti, ngram_sikligi, sozcuk_sikligi,
                             tfidf_hesapla, turkce_sirala_anahtari)
 from tmlab.export import EXCEL_SATIR_SINIRI, csv_bayt, excel_bayt_ve_uyarilar, sozluk_tablosu
@@ -45,6 +46,8 @@ from tmlab.stopwords import AKADEMIK_KALIP_SOZCUKLER, GENEL_DURAK_SOZCUKLER
 from tmlab.visualize import kelime_bulutu_png, tfidf_isi_haritasi, yatay_cubuk
 
 KOK = os.path.dirname(os.path.abspath(__file__))
+# 2.5 deneysel anlamsal analiz yalnızca bu ortam değişkeniyle açılır (staging/streamlit_app.py); varsayılan kapalı.
+DENEYSEL_ANLAMSAL = os.environ.get("TML_DENEYSEL_ANLAMSAL") == "1"
 ORNEK_CSV = os.path.join(KOK, "ornek_veri", "ornek_akademik_ozetler.csv")
 
 st.set_page_config(page_title="TürkMetinLab", page_icon="📚", layout="wide")
@@ -280,6 +283,11 @@ def ana():
         durak_genel = st.checkbox(f"Türkçe durak sözcükleri çıkar ({len(GENEL_DURAK_SOZCUKLER)} sözcük)", True,
                                   key="durak_genel",
                                   help="ve, ile, bu, için, olarak gibi tek başına anlam taşımayan sözcükler.")
+        durak_genisletilmis = st.checkbox(
+            "Genişletilmiş Türkçe durak sözcük adaylarını da çıkar (deneysel)",
+            False, key="durak_genisletilmis", disabled=not DENEYSEL_ANLAMSAL,
+            help="Staging'de ayrı bir deneme listesi. Olumsuzluk bildiren sözcükleri çıkarmaz; "
+                 "504 sözcüklük dış kaynağın tamamı değildir.")
         durak_akademik = st.checkbox("Akademik kalıp sözcükleri de çıkar", False, key="durak_akademik",
                                      help="çalışma, araştırma, amaç, bulgular, sonuç, yöntem gibi özetlerde çok sık "
                                           "geçen sözcükler. Araştırma sorunuza göre karar verin.")
@@ -331,7 +339,9 @@ def ana():
             kucuk_harf=kucuk_harf, kisaltmalari_koru=kisaltma and kucuk_harf, url_eposta_kaldir=url,
             sayilari_kaldir=sayilar, kesme_isareti=kesme, sapkali_harf_normallestir=sapka,
             tireli_birlesik_koru=tire, durak_sozcuk_genel=durak_genel, durak_sozcuk_akademik=durak_akademik,
-            ozel_durak_sozcukler=ozel_durak_sozcukleri_ayristir(ozel_metin, sapka), min_uzunluk=int(min_uzunluk),
+            ozel_durak_sozcukler=tuple(sorted(set(ozel_durak_sozcukleri_ayristir(ozel_metin, sapka)) |
+                (set(__import__("tmlab.stopwords_genis", fromlist=["EK_STOPWORD"]).EK_STOPWORD)
+                 if DENEYSEL_ANLAMSAL and durak_genisletilmis else set()))), min_uzunluk=int(min_uzunluk),
             bolutleme=bolutleme, satir_sonu_sinir=satir_sonu, lemmatizasyon=bool(lemma and lemma_var),
             durak_sozcuk_ingilizce=durak_ingilizce,
         )
@@ -365,7 +375,7 @@ def ana():
     # -----------------------------------------------------------------------
     sekmeler = st.tabs(["🏠 Başlarken", "📄 Veri", "🧹 Ön İşleme", "📚 Terimler", "📊 Sözcük Sıklığı", "🔗 N-gram",
                         "⚖️ TF-IDF", "🧭 Benzerlik", "🕸️ Sözcük Ağı", "🧩 Konular", "👥 Gruplar", "☁️ Kelime Bulutu",
-                        "⬇️ İndir"])
+                        *(["🧪 Anlamsal (deneysel)", "💬 Duygu Analizi (deneysel)"] if DENEYSEL_ANLAMSAL else []), "⬇️ İndir"])
 
     def bos_sekmeler(mesaj: str, hata_metni=None, veri_goster: bool = False):
         with sekmeler[0]:
@@ -378,6 +388,7 @@ def ana():
             with st.expander("🔒 Verileriniz nasıl işleniyor?"):
                 st.markdown(GIZLILIK)
             st.markdown(KILAVUZ)
+            st.markdown("[Tüm analizlerin ayrıntılı yöntem kılavuzu](https://github.com/Tatung40/turkmetinlab/blob/gelistirme-2.5-staging/turkmetinlab/docs/ANALIZ_YONTEMLERI_KILAVUZU_2_5.md)")
         for i, sk in enumerate(sekmeler[1:], start=1):
             with sk:
                 if veri_goster and i == 1:
@@ -627,6 +638,261 @@ def ana():
         _konu_sekmesi(baglam)
     with sekmeler[10]:
         _grup_sekmesi(baglam)
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[12]:
+            from tmlab import anlamsal_sekme
+            anlamsal_sekme.goster(baglam, _hesapla, _bul, _tablo_goster, _md)
+
+    # Shared experimental social text controls; original data never overwritten.
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.subheader("Sosyal medya / tweet temizliği")
+            st.caption("Bu seçenekler yalnızca duygu modüllerine gönderilen metne uygulanır; "
+                       "orijinal yorumlar korunur. Emoji ve olumsuzluk ifadeleri varsayılan olarak kalır.")
+            sosyal_ac=st.checkbox("Tweet metinlerini duygu analizinden önce temizle",True,key="duygu_sosyal_ac")
+            mention_ac=st.checkbox("@kullanıcı adlarını kaldır",True,key="duygu_mention")
+            url_ac=st.checkbox("Bağlantıları kaldır",True,key="duygu_url")
+            hashtag_ac=st.checkbox("# işaretini kaldır, hashtag sözcüğünü koru",True,key="duygu_hashtag")
+            emoji_ac=st.checkbox("Emojileri kaldır (duygu bilgisi kaybolabilir)",False,key="duygu_emoji")
+            from tmlab.duygu_sosyal import clean_tweet
+            sosyal_metinler=[clean_tweet(t,mention_ac,url_ac,hashtag_ac,emoji_ac)
+                             for t in metinler] if sosyal_ac else metinler
+            duygu_anahtar=ozet(hazirlik_anahtari,sosyal_ac,mention_ac,url_ac,hashtag_ac,emoji_ac)
+
+    # --- Experimental SWNetTR++ sentiment tab (staging only) -----------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.subheader("SWNetTR++ · Türkçe sözlük tabanlı duygu göstergeleri")
+            st.caption("Deneysel. Duygu etiketleri değildir; olumsuzluk, ironi, bağlam ve sözcük anlam ayrımını "
+                       "tam çözümlemez. Kaynak: Sağlam, Genç ve Sever (2019; 2016).")
+            st.markdown("[SWNetTR++ kaynak sözlüğü](https://github.com/swnettr/SWNetTR)")
+            if st.button("Duygu göstergelerini hesapla", key="swtr_calistir"):
+                try:
+                    from tmlab import duygu as du
+                    with st.spinner("SWNetTR++ yükleniyor ve metinler değerlendiriliyor…"):
+                        lex = du.load_lexicon()
+                        st.session_state["swtr_sonuc"] = du.analyze_corpus(sosyal_metinler, adlar, lex)
+                        st.session_state["swtr_veri_anahtari"] = duygu_anahtar
+                        st.session_state["swtr_sozluk_boyutu"] = len(lex)
+                except (OSError, ValueError, TimeoutError) as exc:
+                    st.session_state.pop("swtr_sonuc", None)
+                    st.error("Duygu sözlüğüne ulaşılamadı veya dosya okunamadı. Tekrar deneyin.")
+            if st.session_state.get("swtr_veri_anahtari") == duygu_anahtar and "swtr_sonuc" in st.session_state:
+                summary, detail = st.session_state["swtr_sonuc"]
+                st.caption(f"Yüklenen sözlük girdisi: {st.session_state.get('swtr_sozluk_boyutu', 0):,}. "
+                           "Sözlükte bulunmayan sözcükler duygu açısından nötr kabul edilmez.")
+                st.dataframe(pd.DataFrame(summary), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(detail), use_container_width=True, hide_index=True)
+                st.download_button("Belge göstergelerini CSV indir", csv_bayt(pd.DataFrame(summary), ";", True),
+                                   "duygu_belge.csv", "text/csv", on_click="ignore", key="swtr_csv1")
+                if detail:
+                    st.download_button("Eşleşmeleri CSV indir", csv_bayt(pd.DataFrame(detail), ";", True),
+                                       "duygu_eslesme.csv", "text/csv", on_click="ignore", key="swtr_csv2")
+                st.info("Düşük kapsama oranında sonuçlar özellikle belirsizdir. "
+                        "Sözlük puanı araştırmacının/katılımcının gerçek duygusunu kanıtlamaz.")
+
+    # --- TES-Lex: academic/research lexicon, independent of SWNetTR++ -------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("TES-Lex · Sekiz temel duygu (deneysel)")
+            st.caption("Kumova Metin ve Aka Uymaz (2025). Veri akademik/araştırma kullanımıyla sınırlı "
+                       "olarak açıklanmıştır. Diğer kullanım için hak sahiplerinden izin alın.")
+            st.markdown("[TES-Lex veri kaynağı](https://github.com/HandeAkaUymaz/TES-Lex)")
+            if st.button("TES-Lex sözlüğünü yükle", key="teslex_load"):
+                try:
+                    from tmlab import teslex
+                    with st.spinner("TES-Lex Excel sözlüğü indiriliyor…"):
+                        st.session_state["teslex_data"] = teslex.load_source()
+                    st.success("Sözlük yüklendi; aşağıda sütunları eşleştirin.")
+                except (OSError, ValueError, TimeoutError, ImportError) as exc:
+                    st.error("TES-Lex kaynağı okunamadı. Sözlük indirilebilirliğini kontrol edin.")
+            frame=st.session_state.get("teslex_data")
+            if frame is not None:
+                fields=list(frame.columns)
+                st.caption(f"Sözlük kaydı: {len(frame):,} · Sütunlar: {', '.join(map(str, fields))}")
+                def guess(keys):
+                    for index,c in enumerate(fields):
+                        title=str(c).replace("\\n", " ").replace("\n"," ").casefold()
+                        if any(key in title for key in keys):
+                            return index
+                    return 0
+                w=st.selectbox("Kelime sütunu",fields,index=guess(["kelime (word)","word","kelime"]),key="teslex_word")
+                p=st.selectbox("Polarite sütunu",fields,
+                    index=guess(["sentiment labeling -", "pozitif/negatif/nötr", "polarite"]),key="teslex_pol")
+                optional=["(yok)"]+fields
+                em=st.selectbox("Sekiz duyguyu içeren sütun",optional,
+                    index=1+guess(["emotion","duygu"]) if any(
+                        any(z in str(c).casefold() for z in ("emotion","duygu")) for c in fields) else 0,
+                    key="teslex_em")
+                intensity=st.selectbox("Yoğunluk sütunu",optional,
+                    index=1+guess(["intensity","yoğunluk"]) if any(
+                        any(z in str(c).casefold() for z in ("intensity","yoğunluk")) for c in fields) else 0,
+                    key="teslex_intensity")
+                emotion_columns=st.multiselect(
+                    "Ayrı duygu sütunları (varsa)", fields, default=[],
+                    key="teslex_emotion_columns",
+                    help="Sekiz duygu ayrı sütunlardaysa ilgili sütunları seçin. Boş, 0 ve Hayır değerleri sayılmaz.")
+                st.caption("TES-Lex 20.121 kayıtlık gerçek dosyasında duygu etiketi, yoğunluk ve polarite "
+                           "alanları ayrı tanımlıdır. Varsayılan seçimleri kaynak sütunlarına göre kontrol edin.")
+                tes_filtre=st.checkbox("İşlev sözcüklerini filtrele (deneysel)",True,
+                    key="teslex_filtre",help="ve, için, en, çok gibi eşleşmeleri kaldırır; ham analiz de saklanır.")
+                if st.button("TES-Lex analizi çalıştır",key="teslex_go"):
+                    from tmlab import teslex
+                    try:
+                        lex=teslex.compile_lexicon(frame,w,p,None if em=="(yok)" else em,
+                                                    None if intensity=="(yok)" else intensity,
+                                                    emotion_columns=emotion_columns)
+                        from tmlab.duygu_sosyal import filtered_lexicon
+                        raw_results=teslex.analyze_corpus(sosyal_metinler,adlar,lex)
+                        clean_results=(teslex.analyze_corpus(sosyal_metinler,adlar,filtered_lexicon(lex))
+                                       if tes_filtre else raw_results)
+                        st.session_state["teslex_results_raw"] = raw_results
+                        st.session_state["teslex_results"] = clean_results
+                        st.session_state["teslex_filter_key"] = tes_filtre
+                        st.session_state["teslex_result_key"] = duygu_anahtar
+                        st.session_state["teslex_entry_count"] = len(lex)
+                    except ValueError as exc:
+                        st.error("TES-Lex sütun eşleştirmesi geçerli değil.")
+                if st.session_state.get("teslex_result_key")==duygu_anahtar and "teslex_results" in st.session_state:
+                    summary,details=st.session_state["teslex_results"]
+                    st.caption(f"Çözümlenen sözlük girdisi: {st.session_state.get('teslex_entry_count',0):,}. "
+                               "Bunlar bağlamsal duygu sınıfları değil, sözlük eşleşmeleridir.")
+                    st.dataframe(pd.DataFrame(summary),use_container_width=True,hide_index=True)
+                    st.dataframe(pd.DataFrame(details),use_container_width=True,hide_index=True)
+                    from tmlab.duygu_sosyal import contribution_table,excluded_contributions
+                    rawsum,rawdetail=st.session_state.get("teslex_results_raw",(summary,details))
+                    if st.session_state.get("teslex_filter_key"):
+                        st.markdown("**Ham / filtrelenmiş TES-Lex belge karşılaştırması**")
+                        st.dataframe(pd.DataFrame([{"Belge":x["Belge"],
+                            "Ham eşleşme":x["Eşleşen ifade"],"Filtreli eşleşme":y["Eşleşen ifade"],
+                            "Ham kapsama (%)":x["Kapsama (%)"],"Filtreli kapsama (%)":y["Kapsama (%)"]}
+                            for x,y in zip(rawsum,summary)]),use_container_width=True,hide_index=True)
+                        removed=excluded_contributions(rawdetail,details)
+                        if removed:
+                            st.dataframe(pd.DataFrame(removed),use_container_width=True,hide_index=True)
+                            st.download_button("Filtrelenen eşleşmeleri CSV indir",
+                                csv_bayt(pd.DataFrame(removed),";",True),"teslex_filtrelenen.csv","text/csv",
+                                key="teslex_removed_csv",on_click="ignore")
+                    contribution=contribution_table(details)
+                    if not contribution.empty:
+                        st.markdown("**Duyguya katkı yapan sözcükler (frekans / yüzde)**")
+                        st.dataframe(contribution,use_container_width=True,hide_index=True)
+                        st.download_button("Duygu katkısı CSV indir",csv_bayt(contribution,";",True),
+                            "teslex_duygu_katki.csv","text/csv",key="teslex_contrib_csv",on_click="ignore")
+
+                    st.download_button("TES-Lex belge sonuçlarını indir",csv_bayt(pd.DataFrame(summary),";",True),
+                        "teslex_belgeler.csv","text/csv",key="teslex_summary_csv",on_click="ignore")
+                    if details:
+                        st.download_button("TES-Lex eşleşmelerini indir",csv_bayt(pd.DataFrame(details),";",True),
+                            "teslex_eslesmeler.csv","text/csv",key="teslex_detail_csv",on_click="ignore")
+
+    # --- ELECTRA-small sentiment classifier: opt-in, staging only -------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("ELECTRA-small · Bağlamsal duygu sınıflandırma (deneysel)")
+            st.caption("Olumlu / nötr / olumsuz. Modelin eğitim bağlamı Türkçe kısa metinlerdir; "
+                       "akademik tez özetlerinde geçerliği gösterilmedi. İlk 64 token kullanılır. "
+                       "Model sürümü sabit commit'e bağlı değildir (main) ve lisansı uygulama tarafından "
+                       "doğrulanmamıştır; çıktıyı yayın öncesi bulgu olarak kullanmayın.")
+            st.markdown("[Model kartı](https://huggingface.co/ayse-solmaz/turkish-sentiment-electra-small)")
+            if st.button("ELECTRA sınıflandırmasını çalıştır (en fazla 100 belge)",key="electra_go"):
+                try:
+                    from tmlab import electra_duygu as el
+                    with st.spinner("INT8 model indiriliyor / CPU üzerinde çalışıyor…"):
+                        state=el.load_model()
+                        result=el.classify_corpus(sosyal_metinler,adlar,state)
+                        st.session_state["electra_results"] = result
+                        st.session_state["electra_data_key"] = duygu_anahtar
+                except (ValueError, OSError, TimeoutError, ImportError) as exc:
+                    st.session_state.pop("electra_results",None)
+                    st.error("ELECTRA model dosyaları yüklenemedi veya ONNX çıkarımı yapılamadı. "
+                             "Bu deneysel modül şu an kullanılamıyor.")
+            if st.session_state.get("electra_data_key")==duygu_anahtar and "electra_results" in st.session_state:
+                tab=pd.DataFrame(st.session_state["electra_results"])
+                st.dataframe(tab,use_container_width=True,hide_index=True)
+                st.download_button("ELECTRA sonuçlarını CSV indir",csv_bayt(tab,";",True),
+                                   "electra_duygu.csv","text/csv",key="electra_csv",on_click="ignore")
+                if bool(tab["Kesildi mi"].any()):
+                    st.warning("Bazı belgeler 64 tokenda kesildi. Uzun metinlerde bu etiketleri "
+                               "belgenin tamamının duygu sınıfı olarak yorumlamayın.")
+
+    # --- Descriptive cross-method comparison (staging-only) ------------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("Üç yöntemi karşılaştır · Belge düzeyi")
+            st.caption("SWNetTR++ ve TES-Lex sözlük göstergeleri ile ELECTRA sınıflandırması "
+                       "farklı ölçütlerdir; sayısal skorlar birbirleriyle eşdeğer değildir.")
+            has_sw=(st.session_state.get("swtr_veri_anahtari")==duygu_anahtar
+                    and "swtr_sonuc" in st.session_state)
+            has_tes=(st.session_state.get("teslex_result_key")==hazirlik_anahtari
+                     and "teslex_results" in st.session_state)
+            has_el=(st.session_state.get("electra_data_key")==hazirlik_anahtari
+                    and "electra_results" in st.session_state)
+            available=sum((bool(has_sw),bool(has_tes),bool(has_el)))
+            st.caption(f"Hazır yöntem sayısı: {available}/3. Üstteki yöntemleri aynı veriyle "
+                       "hesaplayıp ardından bu karşılaştırmayı açın.")
+            if available:
+                from tmlab.duygu_karsilastirma import birlestir, ozetsayim
+                try:
+                    sw=st.session_state["swtr_sonuc"][0] if has_sw else None
+                    te=st.session_state["teslex_results"][0] if has_tes else None
+                    el=st.session_state["electra_results"] if has_el else None
+                    combined=birlestir(adlar,sw,te,el)
+                    st.dataframe(combined,use_container_width=True,hide_index=True)
+                    st.download_button("Karşılaştırmayı CSV indir",csv_bayt(combined,";",True),
+                                       "duygu_yontem_karsilastirma.csv", "text/csv",
+                                       key="duygu_kars_csv",on_click="ignore")
+                    freq=ozetsayim(combined)
+                    if not freq.empty:
+                        st.markdown("**ELECTRA tahmin dağılımı (gerçek etiketlerle doğruluk değil)**")
+                        st.dataframe(freq,use_container_width=True,hide_index=True)
+                        st.download_button("Frekans/yüzde CSV indir",csv_bayt(freq,";",True),
+                                           "electra_frekans_yuzde.csv","text/csv",
+                                           key="duygu_freq_csv",on_click="ignore")
+                    if has_sw and has_tes and has_el:
+                        st.info("Üç yöntem birlikte görüntüleniyor. Bu tablo yöntemler arası "
+                                "uyuşmayı bilimsel olarak kanıtlamaz; insan etiketli geçerlik çalışması gerekir.")
+                except ValueError:
+                    st.warning("Farklı veri sürümlerinin çıktıları karşılaştırılamıyor; analizleri yeniden çalıştırın.")
+
+    # --- Dataset-independent sentiment evidence audit (staging) ------------
+    if DENEYSEL_ANLAMSAL:
+        with sekmeler[-2]:
+            st.divider()
+            st.subheader("Otomatik bağlam ve kanıt denetimi")
+            st.caption("Veri alanına göre sözcükleri elle seçmeyin. Sık eşleşmeler yalnızca "
+                       "incelemeye adaydır, otomatik silinmez. Eşikler deneysel ve kalibre edilmemiştir.")
+            from tmlab import duygu_baglam as db
+            active_sw = (st.session_state.get("swtr_veri_anahtari") == duygu_anahtar
+                         and "swtr_sonuc" in st.session_state)
+            active_tes = (st.session_state.get("teslex_result_key") == duygu_anahtar
+                          and "teslex_results" in st.session_state)
+            active_el = (st.session_state.get("electra_data_key") == duygu_anahtar
+                         and "electra_results" in st.session_state)
+            if active_sw or active_tes or active_el:
+                sw_data = st.session_state["swtr_sonuc"][0] if active_sw else None
+                tes_data = st.session_state["teslex_results"][0] if active_tes else None
+                el_data = st.session_state["electra_results"] if active_el else None
+                audit = db.evaluate(adlar, sw_data, tes_data, el_data)
+                st.dataframe(audit, use_container_width=True, hide_index=True)
+                st.download_button("Kanıt denetimini CSV indir", csv_bayt(audit, ";", True),
+                                   "duygu_kanit_denetimi.csv", "text/csv",
+                                   key="duygu_kanit_csv", on_click="ignore")
+                if active_tes:
+                    details = st.session_state["teslex_results"][1]
+                    candidates = db.frequent_evidence(sosyal_metinler, details)
+                    st.markdown("**Yaygın sözlük eşleşmeleri — inceleme listesi**")
+                    st.dataframe(candidates, use_container_width=True, hide_index=True)
+                    st.download_button("Yaygın eşleşmeleri CSV indir",
+                                       csv_bayt(candidates, ";", True),
+                                       "duygu_baglam_adaylari.csv", "text/csv",
+                                       key="duygu_aday_csv", on_click="ignore")
+            else:
+                st.info("Önce yukarıdan en az bir duygu yöntemini çalıştırın.")
+            st.markdown("[Ayrıntılı duygu analizi kılavuzu](https://github.com/Tatung40/turkmetinlab/blob/gelistirme-2.5-staging/turkmetinlab/docs/DUYGU_ANALIZI_KILAVUZU_2_5.md)")
 
     # --- Kelime bulutu ------------------------------------------------------
     with sekmeler[11]:
@@ -658,7 +924,7 @@ def ana():
                        "seferinde aynıdır (sabit tohum değeri).")
 
     # --- İndir --------------------------------------------------------------
-    with sekmeler[12]:
+    with sekmeler[-1]:
         st.subheader("Sonuçları indir")
         zaman = datetime.now().strftime("%Y-%m-%d_%H-%M")
         ayar_tablosu = sozluk_tablosu({
@@ -950,6 +1216,79 @@ def _ag_sekmesi(bg: dict):
 def _konu_sekmesi(bg: dict):
     st.subheader("Konu modellemesi")
     st.info(km.UYARI_METNI, icon="ℹ️")
+    if DENEYSEL_ANLAMSAL:
+        with st.expander("BERTopic — E5-small ile anlamsal konu modelleme (deneysel)"):
+            st.caption("BERTopic 0.17.4; E5-small ONNX FP32 belge vektörleri + KMeans (tohum=42) + "
+                       "c-TF-IDF. UMAP kullanılmaz. NMF/LDA aynen korunur.")
+            from tmlab import bertopic_adapter as bta
+            from tmlab import anlamsal as an
+            from tmlab import anlamsal_sekme as ans
+            metinler_b = list(bg["metinler"])
+            adlar_b = list(bg["adlar"])
+            if not 10 <= len(metinler_b) <= bta.MAX_DOCUMENTS:
+                st.warning("BERTopic deneysel sınır: 10–500 belge. Lütfen daha küçük bir veri kümesi yükleyin.")
+            else:
+                upper_b = min(25, len(metinler_b) // 3)
+                k_b = st.slider("BERTopic konu sayısı", 2, upper_b, min(5, upper_b), key="bertopic_n")
+                min_df_b = 1  # c-TF-IDF: entries are merged topic documents; higher min_df hides unique topic keywords.
+                st.caption("c-TF-IDF için minimum konu-belge frekansı 1: konuya özgü sözcükler korunur.")
+                b_key = ozet(bg["hazirlik_anahtari"], "bertopic_e5_fp32_examples_v2", k_b, min_df_b)
+                b_result = _bul("bertopic", b_key)
+                if b_result is None:
+                    if st.button("BERTopic analizi çalıştır", key="bertopic_run", type="primary"):
+                        try:
+                            from bertopic import BERTopic
+                            kaynak = an.ModelKaynagi.ortamdan()
+                            neden = kaynak.eksik()
+                            if neden:
+                                st.error(neden)
+                            else:
+                                with st.spinner("E5 ONNX modeli hazırlanıyor veya mevcut önbellekten yükleniyor…"):
+                                    klasor = an.model_hazirla(kaynak)
+                                    kod = ans._kodlayici(kaynak.kimlik, klasor)
+                                    ans._HAZIR.add(kaynak.kimlik)
+                                if kod is not None:
+                                    uzunluklar = kod.belirtec_sayilari(metinler_b, an.BELGE_ONEKI)
+                                    if max(uzunluklar) > kod.azami_token:
+                                        st.error("Bazı belgeler E5'in 512 token sınırını aşıyor. "
+                                                 "Sessiz kırpma önlendi. Kısaltılmış metin veri kümesi yükleyin.")
+                                    else:
+                                        with st.spinner("Türkçe E5 vektörleri ve BERTopic konuları hesaplanıyor…"):
+                                            vectors = kod.kodla(metinler_b, an.BELGE_ONEKI)
+                                            model, docs_b, topics_b = bta.run(
+                                                metinler_b, vectors, n_topics=k_b, min_df=int(min_df_b))
+                                            docs_b.insert(1, "Belge", adlar_b)
+                                            from tmlab.konu_ornekleri import topic_examples
+                                            examples_b = topic_examples(metinler_b, docs_b["Konu"].tolist())
+                                            b_result = (docs_b, topics_b, examples_b)
+                                            _hesapla("bertopic", b_key, lambda: b_result, 1)
+                        except (ImportError, RuntimeError, ValueError, MemoryError) as exc:
+                            st.error("BERTopic işlemi tamamlanamadı: " + str(exc))
+                if b_result is not None:
+                    docs_b, topics_b, examples_b = b_result
+                    st.success(f"{len(docs_b)} belge; {len(topics_b)} konu satırı üretildi.")
+                    st.subheader("Konu bilgileri ve en önemli sözcükler")
+                    st.dataframe(topics_b, use_container_width=True, hide_index=True)
+                    if "Count" in topics_b and "Name" in topics_b:
+                        st.markdown("**Konu başına belge frekansı**")
+                        st.bar_chart(topics_b.set_index("Name")["Count"], horizontal=True)
+                        st.caption("Grafik konuya atanan belge sayısını gösterir; olasılık veya tutarlılık puanı değildir.")
+                    st.subheader("Belge düzeyinde konu atamaları")
+                    st.dataframe(docs_b, use_container_width=True, hide_index=True)
+                    st.subheader("Konuya ait örnek yorumlar (kaynak metinden alıntı)")
+                    st.caption("Her konu için en fazla üç farklı yorumun ilk 400 karakteri. "
+                               "Üretken yapay zekâ özeti değildir; belge sırası üzerinden doğrulanabilir.")
+                    st.dataframe(examples_b, use_container_width=True, hide_index=True)
+                    st.download_button("Konu örneklerini CSV indir", csv_bayt(examples_b, ";", True),
+                        "bertopic_konu_ornekleri.csv", "text/csv",
+                        key="bertopic_examples_csv", on_click="ignore")
+                    st.download_button("BERTopic konu tablosunu CSV indir", csv_bayt(topics_b, ";", True),
+                        "bertopic_konular.csv", "text/csv", key="bertopic_topics_csv", on_click="ignore")
+                    st.download_button("BERTopic belge–konu CSV indir", csv_bayt(docs_b, ";", True),
+                        "bertopic_belgeler.csv", "text/csv", key="bertopic_docs_csv", on_click="ignore")
+            st.markdown("[BERTopic yöntem, bağımlılık ve sınırlılık kılavuzu]"
+                        "(https://github.com/Tatung40/turkmetinlab/blob/gelistirme-2.5-staging/"
+                        "turkmetinlab/docs/BERTOPIC_FIZIBILITE_2_5.md)")
     belgeler = bg["belgeler"]
     toplam_sozcuk = bg["toplam_sozcuk"]
     c1, c2, c3 = st.columns(3)
@@ -1019,9 +1358,11 @@ def _konu_sonucu_goster(bg: dict, sonuc, anahtar: str):
     o = sonuc.olcutler
     m = st.columns(4)
     m[0].metric("NPMI tutarlılığı", f"{o['Ortalama NPMI tutarlılığı']:.3f}".replace(".", ","),
-                help="−1 … 1. Yüksek: konunun sözcükleri aynı belgelerde birlikte geçme eğiliminde.")
+                help="−1 … 1. Yüksek: konunun sözcükleri aynı belgelerde birlikte geçme eğiliminde. Belge düzeyi, "
+                     "derlem içi tanım (Bouma, 2009); gensim c_npmi (kayan pencere) ile aynı değildir. Keşif amaçlı.")
     m[1].metric("UMass tutarlılığı", f"{o['Ortalama UMass tutarlılığı']:.2f}".replace(".", ","),
-                help="0'a yakın değerler daha tutarlı konulara işaret eder.")
+                help="0'a yakın değerler daha tutarlı konulara işaret eder. Mimno vd. (2011), +1 yumuşatma; "
+                     "gensim u_mass ile sayısal olarak aynı değildir. Keşif amaçlı.")
     cesit = next(v for a, v in o.items() if a.startswith("Konu çeşitliliği"))
     m[2].metric("Konu çeşitliliği", f"{cesit:.2f}".replace(".", ","),
                 help="Konuların ilk 25 sözcüğü içinde benzersiz sözcüklerin oranı. 1: konular sözcük paylaşmıyor.")
@@ -1283,8 +1624,17 @@ def _terim_kenar_cubugu() -> dict:
         kisaltma = st.checkbox("Kısaltmaları da tanı (YEM, NLP, IoT…)", False, key="terim_kisaltma",
                                help="Büyük/küçük harfe duyarlıdır ('yem' eşleşmez). Tamamı büyük harfli başlık "
                                     "satırlarında kısaltma eşleştirilmez.")
+        deneysel = False
+        if DENEYSEL_ANLAMSAL:
+            deneysel = st.checkbox(
+                "Akademik Sözlük v1.1 — deneysel terimleri de ekle", False, key="terim_v11_deneysel",
+                help="6.426 tez kaydından çıkarılmış adaylar. Yalnızca staging ortamında açılır; "
+                     "mevcut 637 terimlik sözlükle birlikte çalışır. Uzman doğrulaması yapılmamıştır.")
+            if deneysel:
+                st.caption("⚠️ v1.1 girdileri doğrulanmamış adaylardır; analiz çıktılarında deneysel olarak işaretlenir.")
         st.caption("⚠️ Sözlükteki terimler uzman doğrulaması bekleyen **aday terimlerdir**.")
-    return {"acik": True, "alanlar": tuple(secili), "temsil": temsil, "kisaltma": bool(kisaltma)}
+    return {"acik": True, "alanlar": tuple(secili), "temsil": temsil,
+            "kisaltma": bool(kisaltma), "deneysel": bool(deneysel)}
 
 
 def _kullanici_terimleri() -> list:
@@ -1293,7 +1643,27 @@ def _kullanici_terimleri() -> list:
 
 
 def _etkin_sozluk(ayar: dict) -> list:
-    return tm.sozluk_olustur(ayar.get("alanlar", ()), st.session_state.get(T_KAPALI, []), _kullanici_terimleri())
+    sonuc = tm.sozluk_olustur(ayar.get("alanlar", ()), st.session_state.get(T_KAPALI, []), _kullanici_terimleri())
+    if DENEYSEL_ANLAMSAL and ayar.get("deneysel"):
+        # Add candidate data to the EXISTING tested matcher, not a parallel pipeline.
+        mevcut = {tm.katla(t.standart) for t in sonuc}
+        for i, entry in enumerate(load_lexicon()["terimler"], 1):
+            standart = str(entry["kanonik"]).strip()
+            ifade = str(entry["terim"]).strip()
+            if not standart or not ifade or len(standart.split()) < 2:
+                continue
+            anahtar = tm.katla(standart)
+            if anahtar in mevcut:
+                continue
+            try:
+                yeni = tm.kullanici_terimi(
+                    standart, ifade if tm.katla(ifade) != anahtar else "",
+                    terim_id=f"DENEYSEL11_{i:03d}", alan="Akademik v1.1 (deneysel)")
+            except tm.SozlukHatasi:
+                continue
+            sonuc.append(yeni)
+            mevcut.add(anahtar)
+    return sonuc
 
 
 def _terim_eslestirici(ayar: dict):
@@ -1311,6 +1681,7 @@ def _terim_ayar_sozlugu(ayar: dict, terimci) -> dict:
     return {
         "Akademik terim sözlüğü": "kullanıldı (aday terimler; uzman doğrulaması yok)",
         "Sözlük sürümü": tm.sozluk_surumu(),
+        "Akademik v1.1 deneysel adayları": ("açık (uzman onayı yok)" if ayar.get("deneysel") else "kapalı"),
         "Seçilen alanlar": "; ".join(ayar["alanlar"]) or "(yok)",
         "Terim temsili": tm.TEMSILLER[ayar["temsil"]],
         "Kısaltmalar tanındı mı": ayar["kisaltma"],
