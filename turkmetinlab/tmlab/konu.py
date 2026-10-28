@@ -23,7 +23,7 @@ Değerlendirme ölçütleri (aynı derlem üzerinde, belge düzeyinde birlikte g
 * Kararlılık (Greene, O'Callaghan & Cunningham, 2014): model, belgelerin rastgele %80'i üzerinde
   yeniden kurulur; konular, ilk N sözcük listelerinin Ortalama Jaccard (AJ) benzerliğine göre
   Macar algoritmasıyla eşleştirilir. 1 = alt örneklemlerde aynı konular yeniden bulunuyor.
-* LDA şaşkınlığı (perplexity) ve NMF yeniden oluşturma hatası raporlanır; şaşkınlık insan
+* LDA eğitim (örneklem içi) şaşkınlığı ve NMF yeniden oluşturma hatası raporlanır; şaşkınlık insan
   yorumlanabilirliğiyle zayıf ilişkilidir (Chang vd., 2009), tek başına konu sayısı seçmek için
   kullanılmamalıdır.
 
@@ -234,8 +234,9 @@ def konu_eslestir(referans: Sequence[Sequence[str]], diger: Sequence[Sequence[st
 def _model_kur(X, ayar: KonuAyarlari, tohum: int):
     from sklearn.exceptions import ConvergenceWarning
 
-    with warnings.catch_warnings(record=True) as uyarilar:
-        warnings.simplefilter("always", ConvergenceWarning)
+    with warnings.catch_warnings():
+        # Yakınsama, uyarı yakalanarak değil modelin n_iter_ özniteliğinden okunur (aşağıda).
+        warnings.simplefilter("ignore", ConvergenceWarning)
         if ayar.yontem == "lda":
             from sklearn.decomposition import LatentDirichletAllocation
 
@@ -243,16 +244,20 @@ def _model_kur(X, ayar: KonuAyarlari, tohum: int):
                                           max_iter=ayar.lda_yineleme, random_state=tohum)
             W = m.fit_transform(X)
             H = m.components_ / m.components_.sum(axis=1, keepdims=True)
-            ek = {"Şaşkınlık (perplexity)": float(m.perplexity(X))}
+            # evaluate_every=-1 (varsayılan): yakınsama sınanmaz, sabit sayıda yineleme yapılır. Şaşkınlık
+            # modelin eğitildiği belgeler üzerinde hesaplanır (örneklem içi); dış geçerlik ölçüsü değildir.
+            ek = {"Eğitim şaşkınlığı (perplexity, örneklem içi)": float(m.perplexity(X))}
         else:
             from sklearn.decomposition import NMF
 
             m = NMF(n_components=ayar.konu_sayisi, init="nndsvda", random_state=tohum, max_iter=ayar.nmf_yineleme)
             W = m.fit_transform(X)
             H = m.components_
+            # scikit-learn ConvergenceWarning koşulunun aynısı: n_iter_ == max_iter ve tol > 0.
             ek = {"Yeniden oluşturma hatası": float(m.reconstruction_err_),
+                  "NMF yineleme sayısı": int(m.n_iter_),
                   "NMF yakınsadı mı": "hayır (yineleme sınırına ulaşıldı)"
-                  if any(issubclass(u.category, ConvergenceWarning) for u in uyarilar) else "evet"}
+                  if m.n_iter_ >= m.max_iter and m.tol > 0 else "evet"}
     return W, H, ek
 
 
