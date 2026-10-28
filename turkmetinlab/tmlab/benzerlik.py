@@ -23,6 +23,7 @@ from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics.pairwise import linear_kernel
 
 # Tam benzerlik matrisi (ısı haritası, kümeleme) için en fazla belge sayısı:
 # 2000 belge → 2000×2000×8 bayt ≈ 32 MB.
@@ -51,7 +52,11 @@ def kosinus_matrisi(X) -> np.ndarray:
         raise ValueError(f"Tam benzerlik matrisi en fazla {YOGUN_MATRIS_SINIRI} belge için hesaplanır.")
     if not _normalize_mi(X):
         raise ValueError("Girdi satırları L2 normalleştirilmiş olmalıdır.")
-    S = np.asarray((X @ X.T).toarray(), dtype=np.float64)
+    # No re-normalization: preserve the validated L2 input (including tolerance).
+    # Empty axes were accepted by the former sparse product.
+    if 0 in X.shape:
+        return np.eye(X.shape[0], dtype=np.float64)
+    S = np.asarray(linear_kernel(X), dtype=np.float64)
     np.clip(S, 0.0, 1.0, out=S)  # kayan nokta taşmalarını (1.0000000002) düzelt
     np.fill_diagonal(S, 1.0)
     return S
@@ -83,12 +88,12 @@ def en_yakin_komsular(X, k: int = 10, parca: Optional[int] = None) -> Tuple[np.n
     if parca is None:
         parca = max(1, PARCA_HUCRE // max(n, 1))
     X = X.tocsr()
-    XT = X.T.tocsc()
     indisler = np.zeros((n, k), dtype=np.int64)
     degerler = np.zeros((n, k), dtype=np.float64)
     for bas in range(0, n, parca):
         son = min(n, bas + parca)
-        blok = np.asarray((X[bas:son] @ XT).toarray(), dtype=np.float64)
+        blok = (np.asarray(linear_kernel(X[bas:son], X), dtype=np.float64)
+                if X.shape[1] else np.zeros((son - bas, n), dtype=np.float64))
         np.clip(blok, 0.0, 1.0, out=blok)
         blok[np.arange(son - bas), np.arange(bas, son)] = -1.0  # kendisi hariç
         if k == 0:

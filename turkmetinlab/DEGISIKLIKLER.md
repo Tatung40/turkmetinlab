@@ -1,5 +1,26 @@
 # Değişiklikler
 
+## 3.0.0rc1 — Nitel analiz pilotu ve bilimsel standartlaştırma (sürüm adayı)
+
+Ayrıntılı kararlar: `docs/dongu_1_envanter.md` … `docs/dongu_4_envanter.md`, yayın kapıları:
+[`docs/yayin_kontrol_listesi.md`](docs/yayin_kontrol_listesi.md).
+
+- **Kütüphaneye taşınan hesaplar:**
+  - TF-IDF benzerlik iç çarpımı → scikit-learn `linear_kernel`.
+  - Ağ derece/strength → NetworkX.
+  - NMF yakınsama → `n_iter_`.
+  - ELECTRA kırpma → `tokenizers`; softmax → SciPy.
+  - Eski hesaplar testlerde dondurulmuş oracle olarak tutulur; eşdeğerlik toleranslı sınanır.
+- **Düzeltmeler:**
+  - ELECTRA uzun metinlerde kapanış `[SEP]` belirtecini düşürüyordu; kırpılan metinlerde tahmin değişebilir.
+  - Nitel ekranda YZ hiyerarşi önerisi onaysız olarak onaylı kayıtlara yazılıyordu; artık onay kuyruğundan geçer.
+  - Qwen pilot betiği belgelendiği gibi çalıştırılınca `tmlab` bulunamıyordu.
+- **Raporlama:**
+  - Nitel Excel raporuna yöntem/sınırlılık sayfası, sürüm ve oluşturma zamanı eklendi.
+  - LDA perplexity "örneklem içi" olarak adlandırıldı.
+  - NPMI/UMass ve deneysel modüller arayüzde sınırlılıklarıyla etiketlendi.
+- **Açık:** Gerçek Qwen3.5 kabul testi ile ELECTRA sürüm/lisans doğrulaması yapılmadı (bkz. kontrol listesi).
+
 ## 2.1.0 — Akademik terim sözlüğü ve çok sözcüklü terim tanıma
 
 Ayrıntılı validasyon ve performans raporu: [`docs/bilimsel_degerlendirme_2.1.md`](docs/bilimsel_degerlendirme_2.1.md).
