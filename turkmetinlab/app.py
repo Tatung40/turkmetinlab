@@ -48,6 +48,8 @@ from tmlab.visualize import kelime_bulutu_png, tfidf_isi_haritasi, yatay_cubuk
 KOK = os.path.dirname(os.path.abspath(__file__))
 # 2.5 deneysel anlamsal analiz yalnızca bu ortam değişkeniyle açılır (staging/streamlit_app.py); varsayılan kapalı.
 DENEYSEL_ANLAMSAL = os.environ.get("TML_DENEYSEL_ANLAMSAL") == "1"
+# Dosya başına yükleme sınırı (MB); config.toml olmadan da geçerlidir (Streamlit varsayılanı 200 MB).
+YUKLEME_SINIRI_MB = 30
 ORNEK_CSV = os.path.join(KOK, "ornek_veri", "ornek_akademik_ozetler.csv")
 
 st.set_page_config(page_title="TürkMetinLab", page_icon="📚", layout="wide")
@@ -188,7 +190,7 @@ def ana():
         else:
             dosyalar = st.file_uploader(
                 "CSV, Excel (.xlsx), TXT veya Word (.docx) dosyası seçin",
-                type=["csv", "xlsx", "txt", "docx"], accept_multiple_files=True,
+                type=["csv", "xlsx", "txt", "docx"], accept_multiple_files=True, max_upload_size=YUKLEME_SINIRI_MB,
                 key=f"yukleme_{st.session_state.get('yukleme_surumu', 0)}",
                 help="Birden fazla aynı tür TXT veya Word dosyası birlikte yüklenebilir. CSV/Excel dosyalarında tek "
                      "dosya analiz edilir (son yüklenen).",
@@ -1776,7 +1778,7 @@ def _terim_yonetimi(ayar: dict):
     with k2:
         st.markdown("**Kendi sözlüğünü yükle (CSV / Excel)**")
         st.file_uploader("İlk sütun ya da 'standart_terim' sütunu terimleri içermeli; 'yazim_varyantlari', 'alan', "
-                         "'terim_id' sütunları isteğe bağlıdır.", type=["csv", "xlsx"],
+                         "'terim_id' sütunları isteğe bağlıdır.", type=["csv", "xlsx"], max_upload_size=YUKLEME_SINIRI_MB,
                          key=f"terim_dosya_{st.session_state.get('yukleme_surumu', 0)}",
                          on_change=_terim_dosyasi_degisti)
         yuklenen = st.session_state.get(T_YUKLENEN)

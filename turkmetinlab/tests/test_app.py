@@ -112,3 +112,14 @@ def test_yukleme_moduna_gecis():
     at.radio(key="kaynak").set_value("Kendi dosyamı yükle").run()
     hatasiz(at)
     assert any("dosya yükleyin" in i.value for i in at.info)
+
+
+def test_yukleme_siniri_config_dosyasindan_bagimsiz():
+    """README'deki 30 MB sınırı config.toml'a değil koda bağlı olmalı (depoda .streamlit yok)."""
+    import inspect
+    from pathlib import Path
+    import streamlit as st
+    assert "max_upload_size" in inspect.signature(st.file_uploader).parameters
+    kaynak = (Path(__file__).parents[1] / "app.py").read_text(encoding="utf-8")
+    assert "YUKLEME_SINIRI_MB = 30" in kaynak
+    assert kaynak.count("max_upload_size=YUKLEME_SINIRI_MB") == kaynak.count("st.file_uploader(")

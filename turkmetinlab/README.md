@@ -85,7 +85,8 @@ saklar) ve **Streamlit Community Cloud** (uygulamayı çalıştırır).
 3. Alanları doldurun:
    - **Repository:** `kullanıcı-adınız/turkmetinlab`
    - **Branch:** `main`
-   - **Main file path:** `app.py`
+   - **Main file path:** `app.py` (uygulama, bu depoda olduğu gibi `turkmetinlab/` alt klasöründeyse
+     `turkmetinlab/app.py`)
 4. **Advanced settings** → **Python version** olarak **3.12** seçin → **Save**.
 5. **Deploy** düğmesine tıklayın. İlk kurulum birkaç dakika sürer.
 6. Uygulamanın adresi (`https://....streamlit.app`) oluşur; bu bağlantıyı paylaşabilirsiniz.
@@ -108,7 +109,7 @@ uygulama ancak siz onayladıktan sonra güncellenir.
    dakika içinde tamamlanır. İkisinde de yeşil ✓ görmelisiniz. Kırmızı ✗ varsa birleştirmeyin.
 3. **Deneme uygulaması kurun.** <https://share.streamlit.io>'da **Create app → Deploy a public app from
    GitHub**'ı seçin. Aynı depoyu seçin, **Branch** alanına dal adını (ör. `gelistirme-2.1`), **Main file path** alanına
-   `app.py` yazın. **App URL** alanına farklı bir ad verin (ör. `turkmetinlab-deneme`). **Advanced
+   `app.py` (alt klasördeyse `turkmetinlab/app.py`) yazın. **App URL** alanına farklı bir ad verin (ör. `turkmetinlab-deneme`). **Advanced
    settings**'te Python **3.12**'yi seçip **Deploy**'a tıklayın. Canlı uygulamanız bu adımdan etkilenmez.
 4. **Deneyin.** Deneme uygulamasında örnek veriyle ve kendi (anonimleştirilmiş) verinizle yeni
    sekmeleri deneyin.
@@ -336,7 +337,6 @@ turkmetinlab/
 │   └── veri/                 # 2.1: yapay terim test kümesi, DergiPark altın standardı (yalnızca konumlar)
 ├── docs/                     # Bilimsel değerlendirme, sözlük denetimi ve test raporları
 ├── ornek_veri/               # Örnek veri seti
-├── .streamlit/config.toml    # Uygulama ayarları
 ├── requirements.txt          # Uygulama bağımlılıkları (sürümleri sabit)
 └── requirements-dev.txt      # Test bağımlılıkları
 ```
