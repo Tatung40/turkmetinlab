@@ -265,25 +265,32 @@ def ag_sec(sonuc: BirliktelikSonucu, olcut: str = "jaccard", en_fazla_dugum: int
 
 
 def dugum_tablosu(secili: pd.DataFrame, sonuc: BirliktelikSonucu) -> pd.DataFrame:
-    """Gösterilen ağdaki düğümler: sıklık, derece, normalleştirilmiş derece, ağırlıklı derece."""
+    """Gösterilen ağdaki düğümler: sıklık, derece, normalleştirilmiş derece, ağırlıklı derece.
+
+    Derece/strength NetworkX ile hesaplanır. kenar_tablosu her sözcük çiftini bir kez verir ve öz-ilmek
+    içermez (üst üçgen, k=1); bu yüzden basit yönsüz nx.Graph kenar kaybı olmadan eşdeğerdir.
+    Normalleştirilmiş derece = derece / (n − 1); n yalnızca gösterilen ağdaki düğüm sayısıdır.
+    """
+    import networkx as nx
+
     from .analysis import turkce_sirala_anahtari
 
     if secili.empty:
         return pd.DataFrame(columns=["Sözcük", "Sıklık", "Derece", "Normalleştirilmiş derece", "Ağırlıklı derece",
                                      "Toplam birlikte görülme"])
-    uzun = pd.concat([secili[["Kaynak", "Ağırlık", "Birlikte görülme"]].rename(columns={"Kaynak": "Sözcük"}),
-                      secili[["Hedef", "Ağırlık", "Birlikte görülme"]].rename(columns={"Hedef": "Sözcük"})])
-    g = uzun.groupby("Sözcük").agg(Derece=("Ağırlık", "size"), Agirlikli=("Ağırlık", "sum"),
-                                     Toplam=("Birlikte görülme", "sum")).reset_index()
-    n = len(g)
+    G = nx.from_pandas_edgelist(secili, "Kaynak", "Hedef", edge_attr=["Ağırlık", "Birlikte görülme"])
+    if G.number_of_edges() != len(secili) or nx.number_of_selfloops(G):
+        raise ValueError("Kenar listesi yinelenen çift ya da öz-ilmek içermemelidir.")
+    sozc = sorted(G.nodes())
     siklik = dict(zip(sonuc.sozcukler, sonuc.siklik))
+    derece = np.array([G.degree(w) for w in sozc], dtype=np.int64)
     t = pd.DataFrame({
-        "Sözcük": g["Sözcük"],
-        "Sıklık": g["Sözcük"].map(siklik).astype(int),
-        "Derece": g["Derece"].astype(int),
-        "Normalleştirilmiş derece": np.round(g["Derece"] / max(n - 1, 1), 6),
-        "Ağırlıklı derece": np.round(g["Agirlikli"], 6),
-        "Toplam birlikte görülme": g["Toplam"].astype(int),
+        "Sözcük": sozc,
+        "Sıklık": [int(siklik[w]) for w in sozc],
+        "Derece": derece,
+        "Normalleştirilmiş derece": np.round(derece / max(len(sozc) - 1, 1), 6),
+        "Ağırlıklı derece": np.round([G.degree(w, weight="Ağırlık") for w in sozc], 6),
+        "Toplam birlikte görülme": [int(G.degree(w, weight="Birlikte görülme")) for w in sozc],
     })
     t["_k"] = t["Sözcük"].map(turkce_sirala_anahtari)
     t = t.sort_values(["Ağırlıklı derece", "Derece", "_k"], ascending=[False, False, True], kind="stable")
