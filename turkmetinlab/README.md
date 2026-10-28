@@ -1,7 +1,7 @@
 # 📚 TürkMetinLab
 
 **Türkçe akademik metinler için ücretsiz, kod bilgisi gerektirmeyen metin madenciliği uygulaması.**
-Sürüm 2.1.0 · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
+Sürüm 3.0.0rc1 (sürüm adayı) · Değişiklikler: [DEGISIKLIKLER.md](DEGISIKLIKLER.md) · Bilimsel değerlendirme:
 [2.1](docs/bilimsel_degerlendirme_2.1.md) · [2.0](docs/bilimsel_degerlendirme_2.0.md) ·
 [1.1](docs/bilimsel_degerlendirme_1.1.md)
 
@@ -165,6 +165,25 @@ oturumunuzda tutulur.
 
 ---
 
+## Nitel analiz (3.0 pilot, ayrı ekran)
+
+Görüşme ve açık uçlu yanıtlarda kanıt denetimli kodlama ayrı bir ekranda yapılır: `streamlit run nitel_demo.py`.
+
+- **Kanıt:** Model (ya da elle yapıştırılan JSON) her kod için bir alıntı önerir. Alıntı özgün metinde
+  birebir bulunamazsa öneri reddedilir.
+- **Onay:** Kodlar ve kategori/tema düzenlemeleri araştırmacı tek tek onaylamadan rapora girmez. YZ'nin
+  önerdiği hiyerarşi, mevcut → önerilen farkı gösterilerek onaya sunulur.
+- **Frekans:** Kod, kategori ve tema frekansları benzersiz katılımcı sayısına göre uygulama tarafından hesaplanır;
+  çoklu kodlamada yüzdeler toplamı %100'ü aşabilir.
+- **Rapor:** Excel raporu onaylı kodları, frekansları, sürüm ve oluşturma zamanını ve
+  `Yontem_Sinirliliklar` sayfasını içerir.
+- **Yerel model (isteğe bağlı, ücretsiz):** Yalnız aynı bilgisayardaki Ollama/LM Studio (`127.0.0.1`) kabul
+  edilir; veri üçüncü tarafa gönderilmez. Streamlit Community Cloud kullanıcının bilgisayarındaki modele
+  erişemez. Gerçek model kabul testi:
+  `ollama pull qwen3.5:4b && python scripts/nitel_gercek_model_pilot.py --model qwen3.5:4b --limit 1`
+- **Sınırlılıklar:** Tek araştırmacı onayıdır; kodlayıcılar arası uyum hesaplanmaz. Yerel modelin nitel
+  kodlama kalitesi gerçek veriyle henüz doğrulanmamıştır. Sıklık, önem ya da evren oranı kanıtı değildir.
+
 ## Bilimsel notlar
 
 **Türkçe küçük harf dönüşümü.** Python'un standart `lower()` işlevi Türkçede hatalıdır
@@ -237,6 +256,12 @@ Ayrıntı: `docs/bilimsel_degerlendirme_2.1.md`.
     azdır; etiketleme uzman etiketlemesi değildir.
   - Yazım hataları ve türetilmiş biçimler (*tip 2 diyabetli*) tanınmaz.
   - Terimleri tek birim yapmak belgeler arasındaki kısmi sözcük örtüşmesini azaltabilir.
+- **Konu ölçütleri:** NPMI ve UMass belge düzeyinde, derlem içi tanımlardır (Bouma 2009; Mimno vd. 2011).
+  gensim'in `c_npmi`/`u_mass` değerleriyle sayısal olarak aynı değildir; keşif amaçlıdır. LDA şaşkınlığı
+  eğitim verisinde (örneklem içi) hesaplanır.
+- **Deneysel modüller:** ELECTRA duygu sınıflandırması (model sürümü sabit commit'e bağlı değil, lisansı
+  uygulama tarafından doğrulanmadı), sözlük tabanlı duygu göstergeleri (SWNetTR++, TES-Lex) ve
+  BERTopic-KMeans (varsayılan BERTopic/HDBSCAN değildir) doğrulanmış sınıflandırma ya da tema sunmaz.
 
 ---
 

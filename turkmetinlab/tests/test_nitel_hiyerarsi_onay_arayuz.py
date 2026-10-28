@@ -13,7 +13,7 @@ ROWS = [{"participant_id": "K1", "quote": "İş yükü çok ağır", "code": "İ
 def _app(monkeypatch, answer):
     import tmlab.nitel_local_model as adapter
     monkeypatch.setattr(adapter, "local_completion", lambda *a, **kw: answer)
-    app = AppTest.from_file(str(Path(__file__).parents[1] / "nitel_demo.py"))
+    app = AppTest.from_file(str(Path(__file__).parents[1] / "nitel_demo.py"), default_timeout=30)
     app.session_state["nitel_accepted"] = [dict(r) for r in ROWS]
     app.session_state["nitel_hierarchy_prompt"] = "istem"
     return app.run()

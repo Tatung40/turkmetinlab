@@ -5,8 +5,10 @@ Yerel LLM isteğe bağlıdır; Streamlit ve model aynı bilgisayarda çalışmal
 """
 import json
 from dataclasses import asdict
+from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
+from tmlab import __version__
 from tmlab.nitel_cekirdek import EvidenceCode, prepare_prompt, analyze_model_response, frequencies
 from tmlab.nitel_local_model import local_completion, LocalModelError
 from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
@@ -19,6 +21,7 @@ from tmlab.nitel_hiyerarsi import (build_hierarchy, prepare_hierarchy_prompt, va
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
 st.title("TürkMetinLab 3.0 — Nitel Veri Analizi (Pilot)")
+st.caption(f"Sürüm {__version__}")
 st.info("Yerel modelle deneysel nitel kodlama. Streamlit ve model aynı bilgisayarda çalışmalıdır. "
         "Taslak kodlar araştırmacı onayı olmadan bilimsel sonuç sayılmaz.")
 if "nitel_accepted" not in st.session_state:
@@ -201,7 +204,10 @@ if accepted:
             for sheet, key in (("Kod_Frekans", "codes"),("Kategori_Frekans", "categories"),
                                ("Tema_Frekans", "themes")):
                 pd.DataFrame(stats[key]).to_excel(writer, sheet_name=sheet, index=False)
-            pd.DataFrame([stats["summary"]]).to_excel(writer, sheet_name="Ozet", index=False)
+            ozet = dict(stats["summary"], tool_version=f"TürkMetinLab {__version__}",
+                        generated_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+                        researcher_approved_only=True)
+            pd.DataFrame([ozet]).to_excel(writer, sheet_name="Ozet", index=False)
             pd.DataFrame(METHOD_NOTES, columns=["Başlık", "Not"]).to_excel(
                 writer, sheet_name="Yontem_Sinirliliklar", index=False)
         st.download_button("Onaylı analiz raporunu Excel indir", output.getvalue(),
