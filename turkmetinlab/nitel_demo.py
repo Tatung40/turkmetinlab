@@ -13,8 +13,9 @@ from tmlab.nitel_ucretsiz import suggest_merges, merge_approved_codes
 from tmlab.nitel_semantik import from_e5
 from tmlab.nitel_toplu import batch_analyze, regroup_once
 from tmlab.nitel_kalite import audit_hierarchy
-from tmlab.nitel_rapor import frequency_tables
-from tmlab.nitel_hiyerarsi import build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response, apply_hierarchy
+from tmlab.nitel_rapor import METHOD_NOTES, frequency_tables
+from tmlab.nitel_hiyerarsi import (build_hierarchy, prepare_hierarchy_prompt, validate_hierarchy_response,
+                                   apply_hierarchy, hierarchy_changes)
 
 st.set_page_config(page_title="TürkMetinLab | Nitel Analiz Pilot", layout="wide")
 st.title("TürkMetinLab 3.0 — Nitel Veri Analizi (Pilot)")
@@ -186,6 +187,9 @@ if accepted:
     st.caption("Payda benzersiz katılımcı sayısıdır; çoklu kodlamada yüzdeler toplamı %100'ü aşabilir. "
                "Frekansları yapay zekâ değil, uygulama hesaplar.")
     st.json(stats["summary"], expanded=False)
+    with st.expander("Yöntem ve sınırlılıklar (rapora eklenir)"):
+        for title, note in METHOD_NOTES:
+            st.markdown(f"- **{title}:** {note}")
     for label, key in (("Kod", "codes"), ("Kategori", "categories"), ("Tema", "themes")):
         st.markdown("**" + label + " frekansları**")
         st.dataframe(pd.DataFrame(stats[key]), use_container_width=True)
@@ -198,6 +202,8 @@ if accepted:
                                ("Tema_Frekans", "themes")):
                 pd.DataFrame(stats[key]).to_excel(writer, sheet_name=sheet, index=False)
             pd.DataFrame([stats["summary"]]).to_excel(writer, sheet_name="Ozet", index=False)
+            pd.DataFrame(METHOD_NOTES, columns=["Başlık", "Not"]).to_excel(
+                writer, sheet_name="Yontem_Sinirliliklar", index=False)
         st.download_button("Onaylı analiz raporunu Excel indir", output.getvalue(),
                            file_name="turkmetinlab_nitel_rapor.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -230,25 +236,43 @@ if accepted:
         if st.button("Yerel modelle kategori ve temaları otomatik öner"):
             try:
                 response_auto = _local_complete(st.session_state.nitel_hierarchy_prompt)
-                grouping_auto = validate_hierarchy_response(
+                st.session_state.nitel_hierarchy_proposal = validate_hierarchy_response(
                     response_auto, {r["code"] for r in accepted})
-                st.session_state.nitel_accepted = apply_hierarchy(accepted, grouping_auto)
-                st.success("Kategori ve temalar model tarafından önerildi. Araştırmacı onayı gereklidir.")
-                st.rerun()
             except LocalModelError as ex:
                 st.error(str(ex))
-            except Exception:
-                st.error("Yerel model kategorileri/temaları uygun JSON biçiminde döndürmedi veya erişilemedi.")
+            except (ValueError, TypeError) as ex:
+                st.error(f"Model hiyerarşi önerisi doğrulanamadı; onaylı kodlar değiştirilmedi: {ex}")
         st.caption("Model cevabını buraya yapıştırın; tüm kodlar korunmadan yeni hiyerarşi kabul edilmez.")
         response = st.text_area("Modelden gelen hiyerarşi JSON", key="nitel_hierarchy_response")
-        if st.button("Hiyerarşi önerisini uygula", disabled=not bool(response.strip())):
+        if st.button("Hiyerarşi önerisini denetle", disabled=not bool(response.strip())):
             try:
-                grouping = validate_hierarchy_response(response, {r["code"] for r in accepted})
-                st.session_state.nitel_accepted = apply_hierarchy(accepted, grouping)
-                st.success("Tüm kodlar korundu; kategori ve tema önerileri uygulandı. Sonuçları araştırmacı olarak denetleyin.")
+                st.session_state.nitel_hierarchy_proposal = validate_hierarchy_response(
+                    response, {r["code"] for r in accepted})
+            except (ValueError, TypeError) as exc:
+                st.error(f"Hiyerarşi önerisi doğrulanamadı: {exc}")
+    proposal = st.session_state.get("nitel_hierarchy_proposal")
+    if proposal:
+        # YZ önerisi onay kuyruğundadır; araştırmacı kabul etmeden onaylı kayıtlara yazılmaz.
+        try:
+            changes = hierarchy_changes(accepted, proposal)
+        except ValueError:
+            st.session_state.pop("nitel_hierarchy_proposal")
+            st.warning("Onaylı kodlar değiştiği için önceki hiyerarşi önerisi geçersiz sayıldı.")
+            changes = None
+        if changes is not None:
+            st.markdown("**Hiyerarşi önerisi (YZ taslağı — araştırmacı onayı bekliyor)**")
+            if changes:
+                st.dataframe(pd.DataFrame(changes), use_container_width=True)
+            else:
+                st.info("Öneri mevcut kategori ve temalarla aynı.")
+            c1, c2 = st.columns(2)
+            if c1.button("Önerilen kategori/temaları onayla", disabled=not changes):
+                st.session_state.nitel_accepted = apply_hierarchy(accepted, proposal)
+                st.session_state.pop("nitel_hierarchy_proposal")
                 st.rerun()
-            except (ValueError, TypeError, json.JSONDecodeError) as exc:
-                st.error(f"Hiyerarşi uygulanmadı: {exc}")
+            if c2.button("Hiyerarşi önerisini reddet"):
+                st.session_state.pop("nitel_hierarchy_proposal")
+                st.rerun()
 
 if accepted:
     with st.expander("Ücretsiz kod birleştirme önerileri — API gerekmez"):

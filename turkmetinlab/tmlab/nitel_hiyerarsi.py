@@ -103,3 +103,20 @@ def apply_hierarchy(records, mapping):
         row["category"], row["theme"] = mapping[key]
         out.append(row)
     return out
+
+
+def hierarchy_changes(records, mapping):
+    """Araştırmacı onayı için mevcut → önerilen üst etiket farkları; hiçbir kaydı değiştirmez."""
+    current = defaultdict(set)
+    for r in records:
+        current[_label(r["code"])].add((_label(r["category"]), _label(r["theme"])))
+    if set(current) != set(mapping):
+        raise ValueError("Öneri, onaylı kodlarla birebir eşleşmiyor.")
+    rows = []
+    for code in sorted(current):
+        category, theme = mapping[code]
+        for old_category, old_theme in sorted(current[code]):
+            if (old_category, old_theme) != (category, theme):
+                rows.append({"code": code, "current_category": old_category, "current_theme": old_theme,
+                             "proposed_category": category, "proposed_theme": theme})
+    return rows

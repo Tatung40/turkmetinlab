@@ -4,6 +4,15 @@ Her düzeyde payda benzersiz katılımcı sayısıdır; yüzdeler 100'ü aşabil
 """
 from collections import defaultdict
 
+# Raporla birlikte dışa aktarılan sabit yöntem ve sınırlılık notları (her rapor için aynı, veri içermez).
+METHOD_NOTES = (
+    ("Kapsam", "Yalnızca araştırmacının tek tek onayladığı kod atamaları sayılır; onaylanmamış YZ önerileri rapora girmez."),
+    ("Kanıt", "Her atamanın alıntısı özgün katılımcı metninde birebir bulunmuştur; alıntının kodu anlamca desteklediğine araştırmacı karar verir."),
+    ("Payda", "Yüzdeler benzersiz katılımcı sayısına göredir; çoklu kodlamada toplam %100'ü aşabilir."),
+    ("Kodlayıcı güvenirliği", "Tek araştırmacı onayıdır; kodlayıcılar arası uyum (ör. Cohen kappa) hesaplanmamıştır."),
+    ("Genelleme", "Frekanslar örnekleme özgüdür; nitel verideki sıklık önem ya da evren oranı kanıtı değildir."),
+)
+
 def frequency_tables(records, participant_ids=None):
     rows=list(records)
     universe=set(participant_ids) if participant_ids is not None else {r["participant_id"] for r in rows}
