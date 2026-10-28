@@ -793,7 +793,9 @@ def ana():
             st.divider()
             st.subheader("ELECTRA-small · Bağlamsal duygu sınıflandırma (deneysel)")
             st.caption("Olumlu / nötr / olumsuz. Modelin eğitim bağlamı Türkçe kısa metinlerdir; "
-                       "akademik tez özetlerinde geçerliği gösterilmedi. İlk 64 token kullanılır.")
+                       "akademik tez özetlerinde geçerliği gösterilmedi. İlk 64 token kullanılır. "
+                       "Model sürümü sabit commit'e bağlı değildir (main) ve lisansı uygulama tarafından "
+                       "doğrulanmamıştır; çıktıyı yayın öncesi bulgu olarak kullanmayın.")
             st.markdown("[Model kartı](https://huggingface.co/ayse-solmaz/turkish-sentiment-electra-small)")
             if st.button("ELECTRA sınıflandırmasını çalıştır (en fazla 100 belge)",key="electra_go"):
                 try:
@@ -1356,9 +1358,11 @@ def _konu_sonucu_goster(bg: dict, sonuc, anahtar: str):
     o = sonuc.olcutler
     m = st.columns(4)
     m[0].metric("NPMI tutarlılığı", f"{o['Ortalama NPMI tutarlılığı']:.3f}".replace(".", ","),
-                help="−1 … 1. Yüksek: konunun sözcükleri aynı belgelerde birlikte geçme eğiliminde.")
+                help="−1 … 1. Yüksek: konunun sözcükleri aynı belgelerde birlikte geçme eğiliminde. Belge düzeyi, "
+                     "derlem içi tanım (Bouma, 2009); gensim c_npmi (kayan pencere) ile aynı değildir. Keşif amaçlı.")
     m[1].metric("UMass tutarlılığı", f"{o['Ortalama UMass tutarlılığı']:.2f}".replace(".", ","),
-                help="0'a yakın değerler daha tutarlı konulara işaret eder.")
+                help="0'a yakın değerler daha tutarlı konulara işaret eder. Mimno vd. (2011), +1 yumuşatma; "
+                     "gensim u_mass ile sayısal olarak aynı değildir. Keşif amaçlı.")
     cesit = next(v for a, v in o.items() if a.startswith("Konu çeşitliliği"))
     m[2].metric("Konu çeşitliliği", f"{cesit:.2f}".replace(".", ","),
                 help="Konuların ilk 25 sözcüğü içinde benzersiz sözcüklerin oranı. 1: konular sözcük paylaşmıyor.")

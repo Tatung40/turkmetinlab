@@ -41,3 +41,17 @@ def test_conflict_is_flagged_not_silently_resolved():
     changed=[dict(RECORDS[0],theme="Başka tema"), RECORDS[1]]
     result=build_hierarchy(changed,["T01"])
     assert result["conflicting_codes"]==["Zaman tasarrufu"]
+
+
+def test_hierarchy_changes_lists_only_differences_and_never_mutates():
+    from tmlab.nitel_hiyerarsi import hierarchy_changes
+    rows = [{"participant_id": "K1", "quote": "İş yükü çok ağır", "code": "İş yükü", "category": "Zorluk", "theme": "Çalışma"},
+            {"participant_id": "K2", "quote": "Öğrenciler ilgili", "code": "İlgi", "category": "Motivasyon", "theme": "Öğrenme"}]
+    before = [dict(r) for r in rows]
+    mapping = {"İş yükü": ("Zorluk", "Çalışma"), "İlgi": ("Katılım", "Öğrenme")}
+    assert hierarchy_changes(rows, mapping) == [{"code": "İlgi", "current_category": "Motivasyon",
+        "current_theme": "Öğrenme", "proposed_category": "Katılım", "proposed_theme": "Öğrenme"}]
+    assert rows == before
+    import pytest
+    with pytest.raises(ValueError):
+        hierarchy_changes(rows, {"İş yükü": ("Zorluk", "Çalışma")})
