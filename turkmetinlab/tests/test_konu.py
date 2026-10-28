@@ -149,7 +149,7 @@ def test_olasilik_ve_oran_toplamlari(ekilmis):
     assert np.allclose(lda.konu_sozcuk.sum(axis=1), 1) and np.allclose(lda.belge_konu.sum(axis=1), 1)
     nmf = konu_modeli(ekilmis[0], KonuAyarlari("nmf", 4, en_az_belge=1))
     assert np.allclose(nmf.belge_konu.sum(axis=1), 1) and (nmf.konu_sozcuk >= 0).all()
-    assert "Şaşkınlık (perplexity)" in lda.olcutler and "Yeniden oluşturma hatası" in nmf.olcutler
+    assert "Eğitim şaşkınlığı (perplexity, örneklem içi)" in lda.olcutler and "Yeniden oluşturma hatası" in nmf.olcutler
 
 
 # --- Tablolar ve adlandırma -------------------------------------------------
