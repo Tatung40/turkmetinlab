@@ -30,3 +30,21 @@ Dal: gelistirme-3-0-nitel-mvp. main'e ve Streamlit canlı uygulamasına alınmad
 - **Nitel ekran:** Ayrı giriş noktası (`nitel_demo.py`), "Pilot" ve deneysel olarak etiketli. Yerel model yalnız 127.0.0.1 üzerinden çalışır; gerçek Qwen kabul testi ertelendi.
 - **Gizli bilgi:** Diff'te açık anahtar yok; iş akışları yalnız `secrets.*` referansı içeriyor.
 - **Bilinen kalıntı:** `fizibilite_2.5/` kökte araştırma artefaktlarını ve `vendor/` altında kod kopyalarını taşıyor (uygulama çalışma yolunda değil). `staging/vendor/` içinde BERTopic wheel'i var (MIT iddiası; yukarı akışla içerik eşliği denetlenmedi). Yayından sonra temizlenebilir.
+
+## Yayın sonrası kabul (main `c1e3434` + PR #19, 29 Ekim 2026)
+
+| Kontrol | Sonuç | Kanıt |
+| --- | --- | --- |
+| main CI (Python 3.12 / 3.13) | ✅ | `c1e3434` için testler.yml başarılı |
+| PR #19 CI | ✅ | 4/4 kontrol başarılı |
+| Yerel Streamlit sunucusu (depo kökünden `turkmetinlab/app.py`) | ✅ | `/_stcore/health` = ok, `/` = 200 |
+| Açılış (yalnız `requirements.txt`, ağır paketler engelli) | ✅ | 15 sekme, istisna yok |
+| CSV yükleme → analiz | ✅ | 16 belge, 836 sözcük, 540 farklı sözcük |
+| TXT yükleme → analiz | ✅ | 3 belge; konu modeli küçük derlemi açık uyarıyla reddediyor (beklenen) |
+| Rapor indirme | ✅ | Her senaryoda 6 indirme düğmesi; Excel dosyaları openpyxl ile açılıyor |
+| **Canlı uygulama (Streamlit Cloud)** | ⛔ Doğrulanamadı | Bu ortamdan `*.streamlit.app` ve share.streamlit.io erişimi engelli (bağlantı kurulamadı) |
+
+Canlıda yapılması gerekenler (sahip):
+1. PR #19'u birleştirmek.
+2. share.streamlit.io → uygulama ⋮ → Settings: Branch `main`, Main file path `turkmetinlab/app.py`, Python 3.12.
+3. Canlı adreste örnek veriyle bir analiz çalıştırmak, küçük bir CSV yüklemek ve Excel raporunu indirmek.
