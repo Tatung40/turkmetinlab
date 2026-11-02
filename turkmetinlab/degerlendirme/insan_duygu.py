@@ -222,7 +222,7 @@ def yontem_tahminleri(metinler: list, sw_sozluk=None, tes_cerceve=None, electra_
             notlar["ELECTRA"] = (f"{NOT_RUN}: model yüklenemedi ({type(exc).__name__}); sürüm commit'e sabitli değil "
                                  "ve lisans doğrulanmadı")
         else:
-            esle = {"negative": 2, "neutral": 0, "positive": 1}
+            esle = {"negative": 2, "neutral": 0, "notr": 0, "nötr": 0, "positive": 1}  # config.json: "Notr"
             etiketler = {k: esle.get(str(v).lower()) for k, v in durum[2].items()}
             if None in etiketler.values():
                 notlar["ELECTRA"] = f"{NOT_RUN}: beklenmeyen model etiketleri {sorted(durum[2].values())}"

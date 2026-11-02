@@ -82,3 +82,11 @@ def test_pinned_template_source_verifies_sha256(tmp_path, monkeypatch):
     monkeypatch.setattr(e, "_SHA_ENV", "")
     with pytest.raises(ValueError, match="SHA-256"):
         e._fetch("config.json", 50_000)
+
+
+def test_empty_text_is_not_classified():
+    with pytest.raises(ValueError, match="Boş"):
+        e.infer("   ", (_tokenizer(), EchoSess([0., 0., 9.]), LABELS))
+    rows = e.classify_corpus(["", "çok güzel"], ["a", "b"], (_tokenizer(), EchoSess([0., 0., 9.]), LABELS))
+    assert rows[0]["Etiket"].startswith("Sınıflandırılmadı") and rows[0]["En yüksek model skoru"] is None
+    assert rows[1]["Etiket"] == "Positive"

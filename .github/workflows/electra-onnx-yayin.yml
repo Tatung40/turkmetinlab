@@ -54,7 +54,9 @@ jobs:
           cfg = json.load(open(os.path.join(hedef, "config.json")))
           id2label = {int(k): str(v) for k, v in cfg["id2label"].items()}
           assert sorted(id2label) == [0, 1, 2], id2label
-          assert {v.lower() for v in id2label.values()} == {"negative", "neutral", "positive"}, id2label
+          notr = {"neutral", "notr", "nötr"}  # model config.json nötr sınıfı Türkçe adlandırabilir ("Notr")
+          adlar = {"nötr" if v.lower() in notr else v.lower() for v in id2label.values()}
+          assert adlar == {"negative", "nötr", "positive"}, id2label
           tok = Tokenizer.from_file(os.path.join(hedef, "tokenizer.json"))
           tok.enable_truncation(max_length=64)
           cumleler = ["Ürün harika, çok memnun kaldım.", "Berbat, hiç beğenmedim ve iade ettim.",

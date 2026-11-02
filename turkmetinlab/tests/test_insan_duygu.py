@@ -119,8 +119,8 @@ def test_lexicon_and_electra_label_mappings(monkeypatch):
     sw = {("güzel",): (0.8, 1), ("berbat",): (-0.9, -1)}
     tes = pd.DataFrame({"Kelime (Word)": ["güzel", "berbat", "kargo"],
                         "Pozitif/Negatif/Nötr\n(Sentiment)": ["Pozitif", "Negatif", "Nötr"]})
-    etiket = {"çok güzel": "Positive", "berbat ürün": "Negative", "kargo geldi": "Neutral"}
-    monkeypatch.setattr(el, "load_model", lambda: ("tok", "sess", {0: "Negative", 1: "Neutral", 2: "Positive"}))
+    etiket = {"çok güzel": "Positive", "berbat ürün": "Negative", "kargo geldi": "Notr"}  # gerçek config.json adı
+    monkeypatch.setattr(el, "load_model", lambda: ("tok", "sess", {0: "Negative", 1: "Notr", 2: "Positive"}))
     monkeypatch.setattr(el, "infer", lambda m, durum: {"Etiket": etiket[m]})
     r = idu.yontem_tahminleri(list(etiket), sw_sozluk=sw, tes_cerceve=tes)
     for ad in ("SWNetTR++", "TES-Lex", "ELECTRA"):
