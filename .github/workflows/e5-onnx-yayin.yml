@@ -1,0 +1,115 @@
+# E5-small ONNX FP32 modelini sabit Hugging Face commit'inden üretir, PyTorch'a karşı doğrular ve bu deponun
+# GitHub release'ine (ön sürüm) yükler. Model ağırlıkları git geçmişine girmez; kullanıcı verisi kullanılmaz.
+# Uygulama release dosyalarını TML_E5_ONNX_URL şablonu ve TML_E5_ONNX_SHA256 ile indirir ve özetle doğrular.
+# Release zaten varsa yeniden yüklenmez (tek seferlik). Ücretli servis/GPU kullanılmaz.
+# YALNIZCA depo sahibi elle başlatır (Actions → "E5 ONNX yayını (release)" → Run workflow): herkese açık
+# bir release oluşturur; otomatik tetikleyici bilerek yoktur.
+name: E5 ONNX yayını (release)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: e5-onnx-yayin
+  cancel-in-progress: false
+env:
+  ETIKET: e5-onnx-fp32-614241f
+  KAYNAK_COMMIT: 614241f622f53c4eeff9890bdc4f31cfecc418b3
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  TOKENIZERS_PARALLELISM: "false"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+jobs:
+  yayin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release zaten var mı?
+        id: var
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$ETIKET" > /dev/null 2>&1; then echo "var=1" >> "$GITHUB_OUTPUT"; echo "Release mevcut; yeniden üretilmez."; else echo "var=0" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-python@v5
+        if: steps.var.outputs.var == '0'
+        with:
+          python-version: "3.12"
+      - name: Bağımlılıklar (PyTorch CPU; yalnız dönüştürme ve referans)
+        if: steps.var.outputs.var == '0'
+        timeout-minutes: 15
+        run: |
+          pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r fizibilite_2.5/requirements-fizibilite.txt -r fizibilite_2.5/onnx/requirements-donusturme.txt
+      - name: Model önbelleği
+        if: steps.var.outputs.var == '0'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/turkmetinlab_modeller
+          key: modeller-e5-v1
+      - name: E5'i sabit commit'ten indir ve doğrula
+        if: steps.var.outputs.var == '0'
+        run: |
+          mkdir -p cikti
+          python - <<'PY'
+          import os
+          from huggingface_hub import snapshot_download
+          yol = snapshot_download("intfloat/multilingual-e5-small", revision=os.environ["KAYNAK_COMMIT"],
+                                  cache_dir=os.path.expanduser("~/.cache/turkmetinlab_modeller"),
+                                  allow_patterns=["*.json", "*.txt", "model.safetensors", "sentencepiece.bpe.model",
+                                                  "1_Pooling/*", "README.md"])
+          assert os.path.basename(yol) == os.environ["KAYNAK_COMMIT"], yol
+          print("kaynak:", yol)
+          open(os.environ["GITHUB_ENV"], "a").write(f"SNAP={yol}\n")
+          PY
+      - name: ONNX FP32'ye dönüştür
+        if: steps.var.outputs.var == '0'
+        run: >
+          python fizibilite_2.5/onnx/e5_onnx_donustur.py --model "$SNAP"
+          --onbellek ~/.cache/turkmetinlab_modeller --cikti "$RUNNER_TEMP/e5" --kunye cikti/onnx_kunye.json
+      - name: PyTorch eşdeğerliği (20 örnek; FP32 uyumsuzsa iş durur)
+        if: steps.var.outputs.var == '0'
+        run: |
+          curl -fsSL --max-time 120 -o "$RUNNER_TEMP/TRAll.txt" https://raw.githubusercontent.com/humakilicunlu/DergiParkEn/main/TRAll.txt
+          python fizibilite_2.5/onnx/e5_onnx_uyum.py --onnx-klasor "$RUNNER_TEMP/e5" --model "$SNAP" --onbellek ~/.cache/turkmetinlab_modeller \
+            --veri "$RUNNER_TEMP/TRAll.txt" --cikti cikti --adaylar cikti/onnx_adaylar.txt
+          python - <<'PY'
+          import json
+          u = json.load(open("cikti/onnx_uyum_20.json"))
+          assert u["fp32"]["gecti"], u
+          k = json.load(open("cikti/onnx_kunye.json"))
+          assert k["kaynak_surum"] == __import__("os").environ["KAYNAK_COMMIT"], k["kaynak_surum"]
+          print(json.dumps({"uyum_fp32": u["fp32"], "kaynak_surum": k["kaynak_surum"],
+                            "model_fp32_sha256": k["dosyalar"]["model_fp32.onnx"]["sha256"],
+                            "tokenizer_sha256": k["dosyalar"]["tokenizer.json"]["sha256"]}, ensure_ascii=False))
+          PY
+      - name: Uygulama kodlayıcısıyla duman testi (TML_E5_ONNX_YEREL)
+        if: steps.var.outputs.var == '0'
+        working-directory: turkmetinlab
+        env:
+          TML_E5_ONNX_YEREL: ${{ runner.temp }}/e5
+        run: |
+          pip install -q -r requirements.txt
+          python - <<'PY'
+          import numpy as np
+          from tmlab import anlamsal as an
+          k = an.ModelKaynagi.ortamdan()
+          v = an.E5Kodlayici(an.model_hazirla(k)).kodla(["Öğretmenlerin ölçme yeterliği", "Ilık ışık, çığ ve şeker"], an.BELGE_ONEKI)
+          assert v.shape[0] == 2 and np.allclose(np.linalg.norm(v, axis=1), 1, atol=1e-5) and np.isfinite(v).all()
+          print("uygulama kodlayıcısı:", v.shape)
+          PY
+      - name: Release'e yükle (ön sürüm)
+        if: steps.var.outputs.var == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          D="$RUNNER_TEMP/e5"
+          cp "$SNAP/README.md" "$RUNNER_TEMP/MODEL_KARTI_MIT.md"
+          SHA=$(python -c "import json;print(json.load(open('$D/onnx_kunye.json'))['dosyalar']['model_fp32.onnx']['sha256'])")
+          cat > "$RUNNER_TEMP/notlar.md" <<EOF
+          intfloat/multilingual-e5-small (MIT) — commit $KAYNAK_COMMIT — ONNX FP32 (opset 17), PyTorch'a karşı 20 örnekte doğrulandı.
+          model_fp32.onnx SHA-256: $SHA
+          Uygulama ayarı: TML_E5_ONNX_URL=https://github.com/${GITHUB_REPOSITORY}/releases/download/$ETIKET/{dosya}  TML_E5_ONNX_SHA256=$SHA
+          EOF
+          gh release create "$ETIKET" --prerelease --target "$GITHUB_SHA" --title "E5-small ONNX FP32 ($ETIKET)" \
+            --notes-file "$RUNNER_TEMP/notlar.md" \
+            "$D/model_fp32.onnx" "$D/tokenizer.json" "$D/onnx_kunye.json" "$RUNNER_TEMP/MODEL_KARTI_MIT.md" cikti/onnx_uyum_20.json
