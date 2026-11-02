@@ -1,0 +1,127 @@
+# ELECTRA-small Türkçe duygu modeli (ONNX INT8) için tek seferlik doğrulama ve yayın.
+# Hugging Face'teki çözülmüş commit sabitlenir; model kartı lisansı MIT DEĞİLSE hiçbir şey yayımlanmaz.
+# config.json etiketleri, gerçek INT8 çıkarımı ve (varsa) FP32 ONNX ile eşdeğerlik doğrulanır; ardından
+# dosyalar bu deponun ön sürüm release'ine yüklenir. Kullanıcı verisi kullanılmaz; ücretli servis/GPU yoktur.
+name: ELECTRA ONNX yayını (release)
+# YALNIZCA elle başlatılır (Actions → "ELECTRA ONNX yayını (release)" → Run workflow): herkese açık release oluşturur.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: electra-onnx-yayin
+  cancel-in-progress: false
+env:
+  REPO_HF: ayse-solmaz/turkish-sentiment-electra-small
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+jobs:
+  yayin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Paketler (yalnız CPU çıkarımı)
+        run: pip install huggingface-hub==1.33.0 onnxruntime==1.31.0 tokenizers==0.23.3 numpy==2.5.3 scipy==1.18.1
+      - name: Commit, lisans ve dosyaları doğrula; gerçek çıkarım
+        run: |
+          mkdir -p "$RUNNER_TEMP/el" cikti
+          python - <<'PY'
+          import hashlib, json, os, shutil
+          import numpy as np, onnxruntime as ort
+          from huggingface_hub import HfApi, hf_hub_download
+          from scipy.special import softmax
+          from tokenizers import Tokenizer
+          repo, hedef = os.environ["REPO_HF"], os.environ["RUNNER_TEMP"] + "/el"
+          info = HfApi().model_info(repo, files_metadata=True)
+          sha = info.sha
+          kart = info.card_data.to_dict() if info.card_data else {}
+          lisans = str(kart.get("license", "")).lower()
+          etiketler = [t for t in (info.tags or []) if t.startswith("license:")]
+          dosyalar = sorted(s.rfilename for s in info.siblings)
+          print(json.dumps({"commit": sha, "kart_lisans": lisans, "lisans_etiketleri": etiketler, "dosyalar": dosyalar}, ensure_ascii=False))
+          assert lisans == "mit" or "license:mit" in etiketler, f"Lisans MIT olarak doğrulanamadı: {lisans!r} {etiketler}; yayın yapılmaz"
+          gerekli = {"onnx/model_quantized.onnx": "model_quantized.onnx", "tokenizer.json": "tokenizer.json",
+                     "config.json": "config.json", "README.md": "MODEL_KARTI.md"}
+          for kaynak, ad in gerekli.items():
+              shutil.copy(hf_hub_download(repo, kaynak, revision=sha), os.path.join(hedef, ad))
+          fp32 = "onnx/model.onnx" in dosyalar
+          if fp32:
+              shutil.copy(hf_hub_download(repo, "onnx/model.onnx", revision=sha), os.path.join(hedef, "fp32.onnx"))
+          cfg = json.load(open(os.path.join(hedef, "config.json")))
+          id2label = {int(k): str(v) for k, v in cfg["id2label"].items()}
+          assert sorted(id2label) == [0, 1, 2], id2label
+          assert {v.lower() for v in id2label.values()} == {"negative", "neutral", "positive"}, id2label
+          tok = Tokenizer.from_file(os.path.join(hedef, "tokenizer.json"))
+          tok.enable_truncation(max_length=64)
+          cumleler = ["Ürün harika, çok memnun kaldım.", "Berbat, hiç beğenmedim ve iade ettim.",
+                      "Kargo salı günü geldi.", "Güzel değil.", "", "İŞÇİLİK ığdır şırıngası " * 40]
+          def calistir(yol):
+              s = ort.InferenceSession(yol, providers=["CPUExecutionProvider"])
+              cikis = []
+              for c in cumleler:
+                  e = tok.encode(c)
+                  feeds = {}
+                  for g in s.get_inputs():
+                      v = {"input_ids": e.ids, "attention_mask": e.attention_mask, "token_type_ids": e.type_ids}[g.name]
+                      feeds[g.name] = np.asarray([v], dtype=np.int64)
+                  cikis.append(softmax(np.asarray(s.run(None, feeds)[0], dtype=np.float64)[0]))
+              return np.array(cikis)
+          p8 = calistir(os.path.join(hedef, "model_quantized.onnx"))
+          assert np.allclose(p8.sum(1), 1, atol=1e-9) and np.isfinite(p8).all()
+          tahmin = [id2label[int(i)] for i in p8.argmax(1)]
+          uyum = {"int8_tahminler": dict(zip(cumleler[:5], tahmin[:5])), "uzun_metin_belirtec": len(tok.encode(cumleler[-1]).ids)}
+          assert uyum["uzun_metin_belirtec"] == 64
+          if fp32:
+              p32 = calistir(os.path.join(hedef, "fp32.onnx"))
+              uyum.update(fp32_mevcut=True, argmax_ayni=float(np.mean(p8.argmax(1) == p32.argmax(1))),
+                          en_buyuk_olasilik_farki=float(np.abs(p8 - p32).max()))
+              os.remove(os.path.join(hedef, "fp32.onnx"))
+          else:
+              uyum["fp32_mevcut"] = False
+          def ozet(f):
+              return hashlib.sha256(open(f, "rb").read()).hexdigest()
+          kunye = {"kaynak": repo, "kaynak_commit": sha, "lisans": "MIT (model kartı)", "id2label": id2label,
+                   "azami_token": 64, "dosyalar": {ad: {"bayt": os.path.getsize(os.path.join(hedef, ad)), "sha256": ozet(os.path.join(hedef, ad))}
+                                                   for ad in ("model_quantized.onnx", "tokenizer.json", "config.json")},
+                   "dogrulama": uyum}
+          json.dump(kunye, open(os.path.join(hedef, "electra_kunye.json"), "w"), ensure_ascii=False, indent=1)
+          open(os.environ["GITHUB_ENV"], "a").write(f"KAYNAK_COMMIT={sha}\n")
+          print(json.dumps(kunye, ensure_ascii=False))
+          PY
+      - name: Release'e yükle (ön sürüm; yalnız lisans MIT doğrulandıysa buraya gelinir)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ETIKET="electra-onnx-int8-${KAYNAK_COMMIT:0:7}"
+          if gh release view "$ETIKET" > /dev/null 2>&1; then echo "Release mevcut: $ETIKET"; exit 0; fi
+          D="$RUNNER_TEMP/el"
+          cat > "$D/LICENSE_MIT.txt" <<'LICENSE'
+          Source model: ayse-solmaz/turkish-sentiment-electra-small
+          Copyright holders: see the original MODEL_KARTI.md and upstream project.
+          MIT License
+
+          Permission is hereby granted, free of charge, to any person obtaining a copy
+          of this software and associated documentation files (the "Software"), to deal
+          in the Software without restriction, including without limitation the rights
+          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+          copies of the Software, and to permit persons to whom the Software is
+          furnished to do so, subject to the following conditions:
+
+          The above copyright notice and this permission notice shall be included in
+          all copies or substantial portions of the Software.
+
+          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+          AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+          LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+          THE SOFTWARE.
+          LICENSE
+          gh release create "$ETIKET" --prerelease --target "$GITHUB_SHA" --title "ELECTRA-small Türkçe duygu ONNX INT8 ($ETIKET)" \
+            --notes "$REPO_HF @ $KAYNAK_COMMIT — MIT. Dosya özetleri electra_kunye.json içinde." \
+            "$D/model_quantized.onnx" "$D/tokenizer.json" "$D/config.json" "$D/electra_kunye.json" "$D/MODEL_KARTI.md" "$D/LICENSE_MIT.txt"

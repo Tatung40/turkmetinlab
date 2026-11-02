@@ -5,7 +5,9 @@ Model card: 13.7M parameters, 3 classes, 64-token training limit.
 No user text sent to external services. We download public model artifacts only.
 """
 from __future__ import annotations
+import hashlib
 import json
+import os
 import urllib.request
 import numpy as np
 from functools import lru_cache
@@ -19,14 +21,36 @@ MAX_SIZES = {"onnx/model_quantized.onnx": 24_000_000,
 MAX_TOKENS = 64
 MAX_DOCUMENTS = 100
 DEFAULT_LABELS = ("Negative","Neutral","Positive")
-# REV is a moving branch, not a pinned commit: record it with every prediction.
-MODEL_ID = REPO + "@" + REV
+# Pinned source (e.g. a GitHub release built by .github/workflows/electra-onnx-yayin.yml):
+# TML_ELECTRA_URL contains "{dosya}" and TML_ELECTRA_SHA256 maps each file name to its SHA-256.
+# Without them the moving Hugging Face "main" branch is used and recorded as such.
+URL_TEMPLATE = os.environ.get("TML_ELECTRA_URL", "").strip()
+_SHA_ENV = os.environ.get("TML_ELECTRA_SHA256", "").strip()
+MODEL_ID = (URL_TEMPLATE + "#" + hashlib.sha256(_SHA_ENV.encode()).hexdigest()[:12]) if URL_TEMPLATE else REPO + "@" + REV
+
+def _expected_sha() -> dict:
+    if not URL_TEMPLATE:
+        return {}
+    try:
+        expected = json.loads(_SHA_ENV)
+    except ValueError:
+        expected = None
+    if not isinstance(expected, dict) or not all(isinstance(v, str) and len(v) == 64 for v in expected.values()):
+        raise ValueError("TML_ELECTRA_URL için dosya başına SHA-256 içeren TML_ELECTRA_SHA256 gerekli")
+    return expected
 
 def _fetch(filename: str, limit: int) -> bytes:
-    req = urllib.request.Request(BASE+filename, headers={"User-Agent":"TurkMetinLab-2.5-evaluation"})
+    name = filename.rsplit("/", 1)[-1]
+    url = URL_TEMPLATE.replace("{dosya}", name) if URL_TEMPLATE else BASE + filename
+    expected = _expected_sha()
+    if URL_TEMPLATE and name not in expected:
+        raise ValueError("Model dosyası için doğrulanmış özet yok: " + name)
+    req = urllib.request.Request(url, headers={"User-Agent":"TurkMetinLab-2.5-evaluation"})
     with urllib.request.urlopen(req,timeout=35) as response:
         data = response.read(limit+1)
     if len(data)>limit: raise ValueError("Model dosyası beklenen boyuttan büyük")
+    if expected and hashlib.sha256(data).hexdigest() != expected[name]:
+        raise ValueError("Model dosyası doğrulanmış özetle uyuşmuyor: " + name)
     return data
 
 @lru_cache(maxsize=1)

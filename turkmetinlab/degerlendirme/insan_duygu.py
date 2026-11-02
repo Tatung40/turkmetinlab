@@ -49,19 +49,34 @@ def _norm(s) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", str(s if s is not None else ""))).strip()
 
 
-def puanlayici_oku(yol: str) -> pd.DataFrame:
+def _sutun(sutunlar, kosul, ad):
+    bulunan = [c for c in sutunlar if kosul(c.casefold())]
+    if len(bulunan) != 1:
+        raise ValueError(f"'{ad}' sütunu belirsiz ya da yok: {list(sutunlar)}")
+    return bulunan[0]
+
+
+def puanlayici_oku(yol: str, esleme: dict | None = None) -> pd.DataFrame:
+    """esleme: yalnız analizde uygulanan kod dönüşümü (ör. {3: 0}); dosya değiştirilmez.
+
+    Geçerli kodlar dışındaki dolu hücreler (ör. metinsel not) durdurmaz: eksik sayılır, ham değeri
+    'gecersiz' sütununda uzlaşma listesine taşınır.
+    """
     t = pd.read_excel(yol, dtype=object)
     t.columns = [_norm(c) for c in t.columns]
-    eksik = [s for s in SUTUNLAR if s not in t.columns]
-    if eksik:
-        raise ValueError(f"{os.path.basename(yol)}: eksik sütun {eksik}")
-    t = t[t[list(SUTUNLAR)].notna().any(axis=1)]
-    etiket = pd.to_numeric(t["Puanlayıcı"], errors="coerce")
-    gecersiz = (t["Puanlayıcı"].notna() & etiket.isna()) | (etiket.notna() & ~etiket.isin(list(ETIKETLER)))
-    if gecersiz.any():
-        raise ValueError(f"{os.path.basename(yol)}: 0/1/2 dışında etiket: {sorted(map(str, t.loc[gecersiz, 'Puanlayıcı'].unique()))}")
-    return pd.DataFrame({"id": t["Yorum ID"].map(_norm), "metin": t["Ürün yorumu"].map(_norm),
-                         "etiket": etiket.to_numpy(dtype=float)})
+    kimlik = _sutun(t.columns, lambda c: c.startswith("yorum id"), "Yorum ID")
+    metin = _sutun(t.columns, lambda c: "yorum" in c and not c.startswith("yorum id"), "yorum metni")
+    puan = _sutun(t.columns, lambda c: c.startswith("puanlayıcı"), "Puanlayıcı")
+    t = t[t[[kimlik, metin]].notna().any(axis=1) & (t[kimlik].map(_norm) != "")]
+    ham = t[puan]
+    sayi = pd.to_numeric(ham, errors="coerce")
+    gecerli = set(esleme or {}) | set(ETIKETLER)
+    gecersiz = ham.notna() & (ham.map(_norm) != "") & (sayi.isna() | ~sayi.isin(gecerli))
+    if esleme:
+        sayi = sayi.map(lambda v: esleme.get(v, v) if pd.notna(v) else v)
+    sayi = sayi.where(~gecersiz)
+    return pd.DataFrame({"id": t[kimlik].map(_norm), "metin": t[metin].map(_norm), "etiket": sayi.to_numpy(dtype=float),
+                         "gecersiz": ham.where(gecersiz).map(lambda v: None if pd.isna(v) else str(v).strip()).to_numpy()})
 
 
 def birlestir(tablolar: dict) -> tuple:
@@ -71,6 +86,7 @@ def birlestir(tablolar: dict) -> tuple:
         kumeler[ad] = set(anahtar)
         butunluk.append({"Puanlayıcı": ad, "Satır": len(t), "Benzersiz kayıt": len(kumeler[ad]),
                          "Yinelenen kimlik": int(t["id"].duplicated().sum()), "Eksik etiket": int(t["etiket"].isna().sum()),
+                         "Geçersiz hücre (eksik sayıldı)": int(t["gecersiz"].notna().sum()),
                          **{f"{k}={v}": int((t["etiket"] == k).sum()) for k, v in ETIKETLER.items()}})
     if any(b["Yinelenen kimlik"] for b in butunluk):
         raise ValueError("Aynı yorum kimliği bir dosyada birden çok kez geçiyor.")
@@ -79,7 +95,12 @@ def birlestir(tablolar: dict) -> tuple:
         raise ValueError("Puanlayıcıların (kimlik, yorum) kümeleri farklı; eşleştirme yapılamaz.")
     kayitlar = sorted(ilk)
     M = np.array([[dict(zip(zip(t["id"], t["metin"]), t["etiket"]))[k] for k in kayitlar] for t in tablolar.values()])
-    return M, kayitlar, pd.DataFrame(butunluk)
+    gecersiz = {}
+    for ad, t in tablolar.items():
+        for k, g in zip(zip(t["id"], t["metin"]), t["gecersiz"]):
+            if g is not None:
+                gecersiz.setdefault(k, []).append(f"{ad}: {g}")
+    return M, kayitlar, pd.DataFrame(butunluk), gecersiz
 
 
 def fleiss_kappa(C: np.ndarray) -> tuple:
@@ -123,24 +144,30 @@ def uyum(M: np.ndarray, adlar: list) -> dict:
     return {"ozet": ozet, "ciftler": pd.DataFrame(ciftler), "matrisler": matrisler}
 
 
-def oy_tablosu(M: np.ndarray, adlar: list, kayitlar: list) -> pd.DataFrame:
+ASGARI_OY = 2  # referans için en az iki insan yargısı (iki kişilik veride yalnız uzlaşılan yorumlar)
+
+
+def oy_tablosu(M: np.ndarray, adlar: list, kayitlar: list, gecersiz: dict | None = None) -> pd.DataFrame:
     satirlar = []
     for j, (kid, metin) in enumerate(kayitlar):
         v = M[:, j][~np.isnan(M[:, j])].astype(int)
         say = Counter(v)
-        en = say.most_common()
+        en = say.most_common() or [(None, 0)]
         n, tepe = len(v), en[0][1]
+        yeterli = n >= ASGARI_OY
         esit = len(en) > 1 and en[1][1] == tepe
         satirlar.append({"Yorum ID": kid, "Yorum": metin, **{a: (None if np.isnan(M[i, j]) else int(M[i, j])) for i, a in enumerate(adlar)},
                          "Oy sayısı": n, **{f"{ETIKETLER[k]} oyu": say.get(k, 0) for k in ETIKETLER},
                          "En çok oy": tepe, "Eşitlik": esit,
-                         "Oy birliği": int(en[0][0]) if tepe == n else None,
-                         "Mutlak çoğunluk": int(en[0][0]) if tepe > n / 2 else None,
-                         "Güçlü çoğunluk (oran ≥ 5/6)": int(en[0][0]) if tepe / n >= 5 / 6 else None})
+                         "Oy birliği": int(en[0][0]) if yeterli and tepe == n else None,
+                         "Mutlak çoğunluk": int(en[0][0]) if yeterli and tepe > n / 2 else None,
+                         "Güçlü çoğunluk (oran ≥ 5/6)": int(en[0][0]) if yeterli and tepe / n >= 5 / 6 else None,
+                         "Geçersiz hücre": "; ".join((gecersiz or {}).get((kid, metin), [])) or None})
     t = pd.DataFrame(satirlar)
-    t["Durum"] = np.select([t["Oy birliği"].notna(), t["Güçlü çoğunluk (oran ≥ 5/6)"].notna(), t["Mutlak çoğunluk"].notna(), t["Eşitlik"]],
-                           ["oy birliği", "güçlü çoğunluk", "mutlak çoğunluk", "eşitlik — uzlaşma gerekli"],
-                           "çoğunluk yok — uzlaşma gerekli")
+    t["Durum"] = np.select([t["Oy birliği"].notna(), t["Güçlü çoğunluk (oran ≥ 5/6)"].notna(), t["Mutlak çoğunluk"].notna(),
+                            t["Oy sayısı"] < ASGARI_OY, t["Eşitlik"]],
+                           ["oy birliği", "güçlü çoğunluk", "mutlak çoğunluk", "yetersiz oy — uzlaşma gerekli",
+                            "eşitlik — uzlaşma gerekli"], "çoğunluk yok — uzlaşma gerekli")
     return t
 
 
@@ -221,15 +248,15 @@ STRATEJILER = ("Oy birliği", "Güçlü çoğunluk (oran ≥ 5/6)", "Mutlak ço�
 
 def degerlendir(tablolar: dict, haric: tuple = (), yontemler: dict | None = None) -> dict:
     adlar = list(tablolar)
-    M, kayitlar, butunluk = birlestir(tablolar)
-    oy = oy_tablosu(M, adlar, kayitlar)
+    M, kayitlar, butunluk, gecersiz = birlestir(tablolar)
+    oy = oy_tablosu(M, adlar, kayitlar, gecersiz)
     yontemler = yontemler or yontem_tahminleri([m for _, m in kayitlar])
     sonuc = {"butunluk": butunluk, "uyum": uyum(M, adlar), "oy": oy, "notlar": yontemler["notlar"]}
     duyarlilik = []
     if haric:
         kalan = [i for i, a in enumerate(adlar) if a not in haric]
         sonuc["uyum_haric"] = uyum(M[kalan], [adlar[i] for i in kalan])
-        oy_h = oy_tablosu(M[kalan], [adlar[i] for i in kalan], kayitlar)
+        oy_h = oy_tablosu(M[kalan], [adlar[i] for i in kalan], kayitlar, gecersiz)
     satir, matrisler = [], []
     for ad, r in yontemler["sonuc"].items():
         for etiket_tablosu, kume in [(oy, "tüm puanlayıcılar")] + ([(oy_h, "hariç: " + ",".join(haric))] if haric else []):
@@ -310,7 +337,7 @@ def excel_yaz(sonuc: dict, yol: str, haric: tuple = ()) -> None:
         oy["Durum"].value_counts().rename_axis("Oy durumu").to_frame("Yorum").to_excel(
             w, sheet_name="Sinif_Dagilimlari", startrow=len(dag) + 3)
         oy.to_excel(w, sheet_name="Oylar", index=False)
-        oy[oy["Mutlak çoğunluk"].isna()].to_excel(w, sheet_name="Uzlasma_Gerekli", index=False)
+        oy[oy["Mutlak çoğunluk"].isna() | oy["Geçersiz hücre"].notna()].to_excel(w, sheet_name="Uzlasma_Gerekli", index=False)
         sonuc["basari"].to_excel(w, sheet_name="Model_Basari", index=False)
         if not sonuc["duyarlilik"].empty:
             sonuc["duyarlilik"].to_excel(w, sheet_name="Model_Duyarlilik", index=False)
@@ -332,10 +359,12 @@ def main(argv=None) -> int:
     ap.add_argument("dosyalar", nargs="+")
     ap.add_argument("--cikti", required=True, help="Rapor .xlsx yolu (depo dışında tutun)")
     ap.add_argument("--haric", nargs="*", default=[], help="Duyarlılık analizinde dışarıda bırakılacak puanlayıcılar (ör. P5)")
+    ap.add_argument("--esleme", nargs="*", default=[], help="Yalnız analizde kod dönüşümü, ör. 3=0 (dosya değişmez)")
     a = ap.parse_args(argv)
+    esleme = {float(k): float(v) for k, v in (x.split("=") for x in a.esleme)}
     if len(a.dosyalar) < 2:
         ap.error("En az iki puanlayıcı dosyası gerekir.")
-    tablolar = {f"P{i}": puanlayici_oku(y) for i, y in enumerate(a.dosyalar, start=1)}
+    tablolar = {f"P{i}": puanlayici_oku(y, esleme) for i, y in enumerate(a.dosyalar, start=1)}
     sonuc = degerlendir(tablolar, tuple(a.haric))
     excel_yaz(sonuc, a.cikti, tuple(a.haric))
     print(sonuc["uyum"]["ozet"].to_string(index=False))

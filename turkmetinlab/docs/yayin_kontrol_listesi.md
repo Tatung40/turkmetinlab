@@ -84,3 +84,14 @@ Canlıda yapılması gerekenler (sahip):
 - Sözlük yöntemleri (SWNetTR++, TES-Lex) önceden sabitlenmiş sayım kuralıyla 3 sınıfa eşlenir; ayar yapılmaz.
   ELECTRA modeli yüklenemezse `NOT_RUN`. TürkMetinLab'de olumsuzlamayı ele alan bir sınıflandırıcı yoktur.
 - `--haric` ile bir puanlayıcının etkisi duyarlılık analizi olarak ayrıca raporlanır; etiketleri değiştirilmez.
+
+## ELECTRA: sabit kaynak ve iki veri setli doğrulama
+
+- `.github/workflows/electra-onnx-yayin.yml` (yalnız elle): Hugging Face commit'ini çözüp sabitler; model kartı lisansı
+  MIT değilse durur; `config.json` id2label (negative/neutral/positive), INT8 çıkarımı (olasılık toplamı, 64 belirteç,
+  Türkçe metin, boş girdi) ve varsa FP32 ONNX eşdeğerliğini sınar; dosyaları ve SHA-256 künyesini ön sürüm release'ine yükler.
+- Uygulama: `TML_ELECTRA_URL` (`{dosya}` şablonu) ve `TML_ELECTRA_SHA256` (dosya → özet JSON) verilirse model bu sabit
+  kaynaktan indirilir ve her dosya özetle doğrulanır; verilmezse Hugging Face `main` kullanılır ve kimlikte öyle yazılır.
+- Etiket dönüşümü proje kuralına adla yapılır: Negative → 2 (OLUMSUZ), Neutral → 0 (NÖTR), Positive → 1 (OLUMLU).
+- `degerlendirme/insan_duygu.py`: farklı sütun adları, `--esleme 3=0` (yalnız analizde), metinsel/geçersiz hücreler
+  eksik sayılıp uzlaşmaya gider; referans için en az iki oy gerekir (iki kişilik veride yalnız uzlaşılan yorumlar).
