@@ -104,6 +104,26 @@ jobs:
         run: |
           D="$RUNNER_TEMP/e5"
           cp "$SNAP/README.md" "$RUNNER_TEMP/MODEL_KARTI_MIT.md"
+          cat > "$RUNNER_TEMP/LICENSE_MIT.txt" <<'LICENSE'
+          Source: intfloat/multilingual-e5-small (MIT)
+          Copyright (c) respective original copyright holders; see MODEL_KARTI_MIT.md.
+          MIT License
+          Permission is hereby granted, free of charge, to any person obtaining a copy
+          of this software and associated documentation files (the "Software"), to deal
+          in the Software without restriction, including without limitation the rights
+          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+          copies of the Software, and to permit persons to whom the Software is
+          furnished to do so, subject to the following conditions:
+          The above copyright notice and this permission notice shall be included in
+          all copies or substantial portions of the Software.
+          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+          AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+          LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+          THE SOFTWARE.
+          LICENSE
           SHA=$(python -c "import json;print(json.load(open('$D/onnx_kunye.json'))['dosyalar']['model_fp32.onnx']['sha256'])")
           cat > "$RUNNER_TEMP/notlar.md" <<EOF
           intfloat/multilingual-e5-small (MIT) — commit $KAYNAK_COMMIT — ONNX FP32 (opset 17), PyTorch'a karşı 20 örnekte doğrulandı.
@@ -112,4 +132,4 @@ jobs:
           EOF
           gh release create "$ETIKET" --prerelease --target "$GITHUB_SHA" --title "E5-small ONNX FP32 ($ETIKET)" \
             --notes-file "$RUNNER_TEMP/notlar.md" \
-            "$D/model_fp32.onnx" "$D/tokenizer.json" "$D/onnx_kunye.json" "$RUNNER_TEMP/MODEL_KARTI_MIT.md" cikti/onnx_uyum_20.json
+            "$D/model_fp32.onnx" "$D/tokenizer.json" "$D/onnx_kunye.json" "$RUNNER_TEMP/MODEL_KARTI_MIT.md" "$RUNNER_TEMP/LICENSE_MIT.txt" cikti/onnx_uyum_20.json
