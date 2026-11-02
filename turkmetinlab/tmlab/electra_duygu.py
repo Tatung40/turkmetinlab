@@ -82,7 +82,8 @@ def infer(text: str, state, max_length: int = MAX_TOKENS):
         tokenizer.enable_truncation(max_length=max_length)
     encoding=tokenizer.encode(text)
     ids=list(encoding.ids)
-    if not ids: raise ValueError("Boş metin")
+    # [CLS]/[SEP] make ids non-empty even for "": check the text itself (the model labels "" as Positive).
+    if not ids or not text.strip(): raise ValueError("Boş metin")
     feeds={}
     for item in session.get_inputs():
         if item.name=="input_ids": vals=ids
@@ -103,4 +104,7 @@ def infer(text: str, state, max_length: int = MAX_TOKENS):
 
 def classify_corpus(texts,names,state):
     if len(texts)>MAX_DOCUMENTS: raise ValueError("Deneysel CPU için en fazla 100 belge")
-    return [{"Belge":str(name),**infer(str(text),state)} for name,text in zip(names,texts)]
+    empty={"Etiket":"Sınıflandırılmadı (boş metin)","En yüksek model skoru":None,"İşlenen token":0,
+           "Kesildi mi":False,"Model":MODEL_ID}
+    return [{"Belge":str(name),**(infer(str(text),state) if str(text).strip() else empty)}
+            for name,text in zip(names,texts)]

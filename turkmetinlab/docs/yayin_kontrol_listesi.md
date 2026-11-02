@@ -95,3 +95,13 @@ Canlıda yapılması gerekenler (sahip):
 - Etiket dönüşümü proje kuralına adla yapılır: Negative → 2 (OLUMSUZ), Neutral → 0 (NÖTR), Positive → 1 (OLUMLU).
 - `degerlendirme/insan_duygu.py`: farklı sütun adları, `--esleme 3=0` (yalnız analizde), metinsel/geçersiz hücreler
   eksik sayılıp uzlaşmaya gider; referans için en az iki oy gerekir (iki kişilik veride yalnız uzlaşılan yorumlar).
+- **Doğrulanmış ELECTRA kaynağı (Actions, 2 Kasım 2026):** `ayse-solmaz/turkish-sentiment-electra-small` @
+  `805c7a7d33e2a22b70e94b9797921057df97cc68`, model kartı ve etiketi `license: mit`. id2label `{0: Negative, 1: Notr, 2: Positive}`.
+  INT8 ↔ FP32 ONNX: 6 sınama cümlesinde argmax %100 aynı, en büyük olasılık farkı 0,018. Release `electra-onnx-int8-805c7a7`.
+  SHA-256: `model_quantized.onnx` 542b1a8bfbf906535ebd0ac36bb74df5e527e2d19836177d32d634c11678dbee ·
+  `tokenizer.json` 4d32cdfbca6a0f9d0a74108f5d9524307e68c361ac3db7a5c3e41df4dfa6256a ·
+  `config.json` 61179e0f585c1b7b84fa1c391836fe6c4c87e6bffd4c34bbbcc0c2869a464a20.
+- **Streamlit Secrets (deneysel):** `TML_ELECTRA_URL = "https://github.com/Tatung40/turkmetinlab/releases/download/electra-onnx-int8-805c7a7/{dosya}"`,
+  `TML_ELECTRA_SHA256` = yukarıdaki üç özetin JSON eşlemesi. Model ~14 MB; `onnxruntime` ve `tokenizers` gerekir.
+- **İnsan doğrulaması (özet, ayrıntı özel raporlarda):** ELECTRA olumlu/olumsuz sınıflarda güçlü, nötr sınıfı neredeyse hiç
+  bulmuyor (nötr F1 ≈ 0). Boş metin artık sınıflandırılmaz (model "" girdisini Positive etiketliyordu).
