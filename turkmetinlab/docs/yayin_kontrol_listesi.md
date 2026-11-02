@@ -58,3 +58,13 @@ Canlıda yapılması gerekenler (sahip):
 - Sıralama: yalnız verilen aday listeleri içinde; ölçütler sorgu başına hesaplanıp ortalanır. Hibrit sabit
   eşit ağırlıklıdır (veriyle ayarlanmaz). E5 modeli yapılandırılmamışsa E5/Hibrit `NOT_RUN` raporlanır.
 - Gerçek puanlayıcı Excel'leri ve raporlar `.gitignore` ile dışlanır; çıktı depo dışına yazılmalıdır.
+
+## İnsan duygu doğrulaması (yöntem; gerçek veri depoda değil)
+
+- Betik: `degerlendirme/insan_duygu.py`; testler `tests/test_insan_duygu.py` (yalnız sentetik veri, ağ yok).
+- Etiketler değiştirilmez: 0 = NÖTR, 1 = OLUMLU, 2 = OLUMSUZ. Kayıtlar kimlik + normalize metinle eşleşir; eksikler doldurulmaz.
+- Uyum: Krippendorff alfa (nominal), Fleiss kappa (tam kayıt; Fleiss 1971 örneğiyle sınanmış formül ya da statsmodels),
+  çift Cohen kappa. Referans: oy birliği / güçlü çoğunluk (oran ≥ 5/6) / mutlak çoğunluk; çoğunluksuz yorumlar uzlaşmaya.
+- Sözlük yöntemleri (SWNetTR++, TES-Lex) önceden sabitlenmiş sayım kuralıyla 3 sınıfa eşlenir; ayar yapılmaz.
+  ELECTRA modeli yüklenemezse `NOT_RUN`. TürkMetinLab'de olumsuzlamayı ele alan bir sınıflandırıcı yoktur.
+- `--haric` ile bir puanlayıcının etkisi duyarlılık analizi olarak ayrıca raporlanır; etiketleri değiştirilmez.
