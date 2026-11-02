@@ -190,7 +190,8 @@ def e5_skorlari(metinler: dict):
         if not all(os.path.exists(os.path.join(klasor, ad)) for ad in an.DOSYALAR):
             return None, f"Doğrulanmış E5 modeli yerel önbellekte yok ({klasor}); bu betik model indirmez."
         kimlikler = sorted(metinler)
-        V = an.E5Kodlayici(an.model_hazirla(kaynak)).kodla([metinler[k] for k in kimlikler], an.BELGE_ONEKI)
+        # Belge–belge benzerliği: uygulamanın "simetrik" kipiyle aynı, iki tarafta da "query: " öneki.
+        V = an.E5Kodlayici(an.model_hazirla(kaynak)).kodla([metinler[k] for k in kimlikler], an.SORGU_ONEKI)
         return V @ V.T, None
     except Exception as exc:  # bağımlılık veya model hatası: sonuç uydurma, gerekçeyi raporla
         return None, f"{type(exc).__name__}: {exc}"
@@ -211,8 +212,8 @@ def degerlendir(tablolar: dict, tekrar: int = 2000) -> dict:
         from tmlab import anlamsal as an
         yontemler["E5"] = S_e5
         tf_inf, e5_inf = S_tf.copy(), S_e5.copy()
-        np.fill_diagonal(tf_inf, np.inf)
-        np.fill_diagonal(e5_inf, np.inf)
+        np.fill_diagonal(tf_inf, -np.inf)  # uygulamadaki gibi: belgenin kendisi z-puanına katılmaz
+        np.fill_diagonal(e5_inf, -np.inf)
         yontemler["Hibrit"] = an.hibrit(tf_inf, e5_inf)  # uygulamadaki sabit eşit ağırlık
     sorgu_satir, cift_satir = [], []
     for qi, q in enumerate(sorted(set(sorgular)), start=1):

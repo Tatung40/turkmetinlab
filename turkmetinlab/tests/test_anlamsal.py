@@ -164,6 +164,25 @@ def test_basarisiz_indirme_tek_deneme(depo):
     s2.kapat()
 
 
+def test_dosya_sablonu_ile_indirme_github_release_bicimi(model, tmp_path, monkeypatch):
+    d = tmp_path / "sunucu" / "releases" / "download" / "e5-v1"  # depo/sürüm yolu yok, dosyalar düz
+    shutil.copytree(model[0], d)
+    s = _Sunucu(str(tmp_path / "sunucu"))
+    monkeypatch.setenv("TML_MODEL_ONBELLEK", str(tmp_path / "onbellek"))
+    try:
+        sha = an.sha256_dosya(str(d / "model_fp32.onnx"))
+        k = an.ModelKaynagi(sha256=sha, adres=s.adres + "/releases/download/e5-v1/{dosya}")
+        assert k.sablon and k.eksik() is None and k.kimlik.endswith(sha[:12])
+        klasor = an.model_hazirla(k)
+        assert sorted(s.istek) == sorted(f"/releases/download/e5-v1/{ad}" for ad in an.DOSYALAR)
+        assert an.E5Kodlayici(klasor).kodla(["Öğretmen ışık"], an.SORGU_ONEKI).shape == (1, 16)
+        with pytest.raises(an.ModelHatasi, match="özet"):  # şablonla da özet doğrulaması zorunlu
+            an.model_hazirla(an.ModelKaynagi(sha256="0" * 64, adres=k.adres))
+    finally:
+        s.kapat()
+    assert "yapılandırılmamış" in an.ModelKaynagi(adres="https://ornek/{dosya}", sha256="kisa").eksik()
+
+
 def test_eksik_yapilandirma():
     assert "yapılandırılmamış" in an.ModelKaynagi().eksik()
     assert "yapılandırılmamış" in an.ModelKaynagi(repo="a/b", sha256="kisa").eksik()

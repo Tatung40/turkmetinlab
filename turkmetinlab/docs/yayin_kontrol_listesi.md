@@ -59,6 +59,22 @@ Canlıda yapılması gerekenler (sahip):
   eşit ağırlıklıdır (veriyle ayarlanmaz). E5 modeli yapılandırılmamışsa E5/Hibrit `NOT_RUN` raporlanır.
 - Gerçek puanlayıcı Excel'leri ve raporlar `.gitignore` ile dışlanır; çıktı depo dışına yazılmalıdır.
 
+## E5 + Hibrit: model kaynağı ve etkinleştirme
+
+- **Doğrulanmış kaynak (Actions günlüğü, 20 Ekim 2026):** `intfloat/multilingual-e5-small` (MIT), commit
+  `614241f622f53c4eeff9890bdc4f31cfecc418b3`. ONNX FP32 (opset 17), 20 örnekte PyTorch ile kosinüs 1,0 ve en büyük
+  mutlak fark 0. O çalıştırmadaki `model_fp32.onnx` SHA-256 `a1b6428e37d1b6370b0f22d843f3153da145cb401dfcda77ab0b15722752b652`
+  (470.233.634 bayt); `tokenizer.json` `0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39`. INT8 bu denetimi geçemedi; kullanılmaz.
+- **Yayın:** `.github/workflows/e5-onnx-yayin.yml` yalnız elle başlatılır. Modeli aynı commit'ten yeniden üretir,
+  PyTorch'a ve uygulama kodlayıcısına karşı doğrular, ardından `e5-onnx-fp32-614241f` ön sürüm release'ine yükler.
+  Ağırlıklar git geçmişine girmez. Gerçek SHA-256 değeri release notlarında yazar; yukarıdakinden farklıysa o geçerlidir.
+- **Streamlit Cloud (deneysel, isteğe bağlı) Secrets:**
+  `TML_E5_ONNX_URL = "https://github.com/Tatung40/turkmetinlab/releases/download/e5-onnx-fp32-614241f/{dosya}"`,
+  `TML_E5_ONNX_SHA256 = "<release notlarındaki değer>"`, `TML_DENEYSEL_ANLAMSAL = "1"`.
+  `requirements.txt` ONNX paketlerini içermez; canlıda E5 için `onnxruntime` ve `tokenizers` gerekir (staging gereksinimleri).
+  Model yaklaşık 450 MB indirir ve önbelleğe alır; ücretsiz sunucunun belleği sınırlıdır. Canlı tarayıcı testi yapılmadan "canlıda çalışıyor" denmez.
+- **İnsan değerlendirmesi protokolü:** Belge–belge benzerliğinde E5 iki tarafta da `query: ` öneki kullanır (uygulamanın
+  simetrik kipi). Hibrit, sabit eşit ağırlıklı z-puanı toplamıdır; 75 çift üzerinde ağırlık ayarlanmaz.
 ## İnsan duygu doğrulaması (yöntem; gerçek veri depoda değil)
 
 - Betik: `degerlendirme/insan_duygu.py`; testler `tests/test_insan_duygu.py` (yalnız sentetik veri, ağ yok).
