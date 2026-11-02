@@ -1,3 +1,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+# Gerçek insan değerlendirme verileri ve raporları depoya girmez
+*Puanlayici*.xlsx
+*Puanlayici*.pdf
+*ilgililik_raporu*.xlsx

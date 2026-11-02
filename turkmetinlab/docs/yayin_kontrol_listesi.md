@@ -48,3 +48,13 @@ Canlıda yapılması gerekenler (sahip):
 1. PR #19'u birleştirmek.
 2. share.streamlit.io → uygulama ⋮ → Settings: Branch `main`, Main file path `turkmetinlab/app.py`, Python 3.12.
 3. Canlı adreste örnek veriyle bir analiz çalıştırmak, küçük bir CSV yüklemek ve Excel raporunu indirmek.
+
+## İnsan ilgililik doğrulaması (yöntem; gerçek veri depoda değil)
+
+- Betik: `degerlendirme/insan_ilgililik.py` (testler: `tests/test_insan_ilgililik.py`, yalnız sentetik veri).
+- Puanlayıcı dosyaları satır sırasıyla değil, normalize metin özetiyle eşleştirilir; eksik puan doldurulmaz.
+- Uyum: Cohen kappa (ağırlıksız, doğrusal), Krippendorff alfa (ordinal/nominal/aralık; Krippendorff 2011
+  örneğiyle doğrulanmış bağımsız uygulama), sorgu düzeyinde küme bootstrap.
+- Sıralama: yalnız verilen aday listeleri içinde; ölçütler sorgu başına hesaplanıp ortalanır. Hibrit sabit
+  eşit ağırlıklıdır (veriyle ayarlanmaz). E5 modeli yapılandırılmamışsa E5/Hibrit `NOT_RUN` raporlanır.
+- Gerçek puanlayıcı Excel'leri ve raporlar `.gitignore` ile dışlanır; çıktı depo dışına yazılmalıdır.
