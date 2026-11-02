@@ -108,3 +108,34 @@ def test_end_to_end_report_marks_e5_and_hybrid_not_run(uc_dosya, tmp_path, monke
     assert karsilastirma["Yöntem"].tolist() == ["TF-IDF"]
     uzlasma = pd.read_excel(cikti, sheet_name="Uzlasma_Gerekli")
     assert len(uzlasma) == 2  # P2'nin eksik puanı ve P3'ün farklı puanı; uyuşan çiftler listelenmez
+
+
+def test_e5_and_hybrid_use_real_encoder_path_with_small_model(uc_dosya, tmp_path, monkeypatch):
+    """Küçük sınama ONNX modeliyle gerçek E5 kod yolu (gerçek E5 değil): skorlar kodlayıcıyla aynı, hibrit sabit."""
+    pytest.importorskip("onnxruntime")
+    pytest.importorskip("onnx")
+    sys.path.insert(0, str(Path(__file__).parent))
+    from anlamsal_model import kucuk_model_olustur
+    from tmlab import anlamsal as an
+
+    klasor = str(tmp_path / "e5")
+    kucuk_model_olustur(klasor, azami_token=32)
+    monkeypatch.setenv("TML_E5_ONNX_YEREL", klasor)
+    tablolar = {f"P{i}": ii.puanlayici_oku(y) for i, y in enumerate(uc_dosya, start=1)}
+    sonuc = ii.degerlendir(tablolar, tekrar=20)
+    assert sonuc["e5_gerekce"] is None
+    assert sonuc["karsilastirma"]["Yöntem"].tolist() == ["TF-IDF", "E5", "Hibrit"]
+    ilk = next(iter(tablolar.values()))
+    metinler = {**dict(zip(ilk["sorgu"], ilk["sorgu_metni"])), **dict(zip(ilk["aday"], ilk["aday_metni"]))}
+    V = an.E5Kodlayici(klasor).kodla([metinler[k] for k in sorted(metinler)], an.SORGU_ONEKI)
+    S = V @ V.T
+    pos = {k: i for i, k in enumerate(sorted(metinler))}
+    q, c = ii.anahtar(SORGULAR["S1"]), ii.anahtar(ADAYLAR["S1"][0])
+    satir = sonuc["ciftler"].query("Sorgu == 'S1'").iloc[0]
+    assert satir["E5 skoru"] == pytest.approx(round(float(S[pos[q], pos[satir_aday(satir, metinler, pos)]]), 6), abs=1e-6)
+    assert sonuc["sorgu_olcutleri"].groupby("Yöntem").size().to_dict() == {"TF-IDF": 2, "E5": 2, "Hibrit": 2}
+
+
+def satir_aday(satir, metinler, pos):
+    baslik_to_aday = {f"Başlık {q}-{j}": ii.anahtar(a) for q, adaylar in ADAYLAR.items() for j, a in enumerate(adaylar)}
+    return baslik_to_aday[satir["Aday başlığı"]]

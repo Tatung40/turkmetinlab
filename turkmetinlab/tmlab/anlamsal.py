@@ -62,7 +62,7 @@ class ModelKaynagi:
     sha256: str = ""
     yerel: str = ""  # önceden hazırlanmış klasör (test/CI); indirme yapılmaz
     belirtec: str = ""  # özel Hugging Face deposu için (isteğe bağlı)
-    adres: str = "https://huggingface.co"  # testlerde yerel sunucu
+    adres: str = "https://huggingface.co"  # testlerde yerel sunucu; "{dosya}" içerirse doğrudan dosya şablonu
 
     @classmethod
     def ortamdan(cls) -> "ModelKaynagi":
@@ -74,14 +74,24 @@ class ModelKaynagi:
     def eksik(self) -> Optional[str]:
         if self.yerel:
             return None if os.path.isdir(self.yerel) else "Yerel model klasörü bulunamadı (TML_E5_ONNX_YEREL)."
-        if not self.repo or len(self.sha256) != 64:
+        if not (self.repo or self.sablon) or len(self.sha256) != 64:
             return ("Model kaynağı yapılandırılmamış. TML_E5_ONNX_REPO ve doğrulanmış model özeti "
                     "TML_E5_ONNX_SHA256 tanımlanmalıdır (kurulum: staging/README.md).")
         return None
 
     @property
+    def sablon(self) -> bool:
+        """TML_E5_ONNX_URL bir dosya şablonuysa (ör. GitHub release: .../releases/download/<etiket>/{dosya})."""
+        return "{dosya}" in self.adres
+
+    @property
     def kimlik(self) -> str:
-        return self.yerel or f"{self.repo}@{self.surum}#{self.sha256[:12]}"
+        return self.yerel or f"{self.adres if self.sablon else self.repo + '@' + self.surum}#{self.sha256[:12]}"
+
+    def dosya_adresi(self, ad: str) -> str:
+        if self.sablon:
+            return self.adres.replace("{dosya}", ad)
+        return f"{self.adres}/{self.repo}/resolve/{self.surum}/{ad}"
 
 
 def onbellek_klasoru(kaynak: ModelKaynagi) -> str:
@@ -142,7 +152,7 @@ def model_hazirla(kaynak: ModelKaynagi, ilerleme: Optional[Callable[[str, float]
         for ad in DOSYALAR:
             hedef = os.path.join(klasor, ad)
             gecici = hedef + ".indiriliyor"
-            url = f"{kaynak.adres}/{kaynak.repo}/resolve/{kaynak.surum}/{ad}"
+            url = kaynak.dosya_adresi(ad)
             istek = urllib.request.Request(url, headers={"User-Agent": "TurkMetinLab"})
             if kaynak.belirtec:
                 istek.add_header("Authorization", f"Bearer {kaynak.belirtec}")
