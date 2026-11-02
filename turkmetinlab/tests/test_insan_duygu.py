@@ -64,7 +64,7 @@ def _dosyalar(tmp_path, etiketler):
 def test_end_to_end_with_injected_methods_and_electra_not_run(tmp_path):
     yollar = _dosyalar(tmp_path, [[1, 2, 0, 1], [1, 2, 0, 2], [1, 2, 0, 0], [1, 2, None, 1]])
     tablolar = {f"P{i}": idu.puanlayici_oku(y) for i, y in enumerate(yollar, start=1)}
-    M, kayitlar, butunluk = idu.birlestir(tablolar)
+    M, kayitlar, butunluk, _ = idu.birlestir(tablolar)
     assert [k[0] for k in kayitlar] == ["URUN-001", "URUN-002", "URUN-003", "URUN-004"]
     assert butunluk["Eksik etiket"].tolist() == [0, 0, 0, 1] and np.isnan(M).sum() == 1
     sahte = {"sonuc": {"Sözlük": {"tahmin": np.array([1, 2, 1, 1]), "kapsam": np.array([True, True, False, True]),
@@ -82,16 +82,35 @@ def test_end_to_end_with_injected_methods_and_electra_not_run(tmp_path):
     assert notlar["Not"].str.startswith(idu.NOT_RUN).any()
 
 
-def test_invalid_label_and_mismatched_comments_rejected(tmp_path):
-    yollar = _dosyalar(tmp_path, [[1, 2, 0, 3], [1, 2, 0, 1]])
-    with pytest.raises(ValueError, match="0/1/2 dışında"):
-        idu.puanlayici_oku(yollar[0])
+def test_mismatched_comments_rejected(tmp_path):
+    yollar = _dosyalar(tmp_path, [[1, 2, 0, 1], [1, 2, 0, 1]])
     t = pd.read_excel(yollar[1])
     t.loc[0, "Ürün yorumu"] = "Farklı metin"
     t.to_excel(yollar[1], index=False)
-    ok = _dosyalar(tmp_path / ".." / tmp_path.name, [[1, 2, 0, 1]])[0]
     with pytest.raises(ValueError, match="kümeleri farklı"):
-        idu.birlestir({"P1": idu.puanlayici_oku(ok), "P2": idu.puanlayici_oku(yollar[1])})
+        idu.birlestir({"P1": idu.puanlayici_oku(yollar[0]), "P2": idu.puanlayici_oku(yollar[1])})
+
+
+def test_two_rater_format_mapping_invalid_cell_and_single_vote(tmp_path):
+    """Veri B biçimi: farklı sütun adları, 1/2/3 kodları (3 = NÖTR yalnız analizde), metinsel hücre."""
+    yorumlar = ["Harika", "Berbat", "Kargo geldi", "İdare eder", "Fena değil"]
+    kodlar = [[1, 2, 3, "1 sonradan 2", 3], [1, 2, 3, 2, None]]
+    yollar = []
+    for i, k in enumerate(kodlar, start=1):
+        satir = [[f"GRUP2-{j + 1:03d}", y, k[j]] for j, y in enumerate(yorumlar)] + [[None, None, None]] * 3
+        yol = tmp_path / f"DT{i}.xlsx"
+        pd.DataFrame(satir, columns=["Yorum ID", "Müşteri ürün yorumu", "Puanlayıcı kodu (1, 2, 3)"]).to_excel(yol, index=False)
+        yollar.append(str(yol))
+    ham = pd.read_excel(yollar[0])
+    tablolar = {f"P{i}": idu.puanlayici_oku(y, {3.0: 0.0}) for i, y in enumerate(yollar, start=1)}
+    assert pd.read_excel(yollar[0]).equals(ham)  # özgün dosya değişmez
+    assert tablolar["P1"]["etiket"].tolist()[:3] == [1, 2, 0] and np.isnan(tablolar["P1"]["etiket"].iat[3])
+    M, kayitlar, butunluk, gecersiz = idu.birlestir(tablolar)
+    assert len(kayitlar) == 5 and butunluk["Geçersiz hücre (eksik sayıldı)"].tolist() == [1, 0]
+    oy = idu.oy_tablosu(M, ["P1", "P2"], kayitlar, gecersiz)
+    assert oy["Mutlak çoğunluk"].tolist()[:3] == [1, 2, 0]
+    assert oy["Durum"].tolist()[3:] == ["yetersiz oy — uzlaşma gerekli"] * 2  # tek oy referans sayılmaz
+    assert oy["Geçersiz hücre"].iat[3] == "P1: 1 sonradan 2"
 
 
 def test_lexicon_and_electra_label_mappings(monkeypatch):

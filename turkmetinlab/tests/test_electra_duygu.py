@@ -67,3 +67,18 @@ def test_short_text_unchanged_and_truncation_keeps_sep():
 def test_unexpected_label_count_is_rejected():
     with pytest.raises(ValueError,match="etiket"):
         e.infer("çok güzel",(_tokenizer(),EchoSess([0.,1.,2.,3.]),LABELS))
+
+
+def test_pinned_template_source_verifies_sha256(tmp_path, monkeypatch):
+    import hashlib, json as _json
+    (tmp_path / "config.json").write_bytes(b'{"id2label": {"0": "Negative", "1": "Neutral", "2": "Positive"}}')
+    sha = hashlib.sha256((tmp_path / "config.json").read_bytes()).hexdigest()
+    monkeypatch.setattr(e, "URL_TEMPLATE", (tmp_path / "{dosya}").as_uri().replace("%7Bdosya%7D", "{dosya}"))
+    monkeypatch.setattr(e, "_SHA_ENV", _json.dumps({"config.json": sha}))
+    assert _json.loads(e._fetch("config.json", 50_000))["id2label"]["2"] == "Positive"
+    monkeypatch.setattr(e, "_SHA_ENV", _json.dumps({"config.json": "0" * 64}))
+    with pytest.raises(ValueError, match="özetle uyuşmuyor"):
+        e._fetch("config.json", 50_000)
+    monkeypatch.setattr(e, "_SHA_ENV", "")
+    with pytest.raises(ValueError, match="SHA-256"):
+        e._fetch("config.json", 50_000)
